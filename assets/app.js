@@ -27,8 +27,8 @@ var geo = {}, text = {areas: {}, districts: {}}, legacy = {cells: {}, districts:
 var mine = {items: {}};
 var sel = null; // {k: "d"|"a", id}
 var editing = false, status = "", toolStatus = "", confirmWipe = false, moreOpen = {};
-var map, layerOf = {d: {}, a: {}}, featOf = {d: {}, a: {}}, labelPt = {d: {}, a: {}};
-var selLayer = null, distLayer, areaLayer, dLabels, aLabels, shields, gridLayer, gridLabels;
+var map, layerOf = {d: {}, a: {}, r: {}}, featOf = {d: {}, a: {}, r: {}}, labelPt = {d: {}, a: {}};
+var selLayer = null, distLayer, areaLayer, dLabels, aLabels, gridLayer, gridLabels;
 var panel = document.getElementById("panel"), toolsEl = document.getElementById("tools");
 
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (ch) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[ch]; }); }
@@ -82,53 +82,80 @@ function dist(ll) {
 }
 
 // ---------- карта ----------
+// Что видно на каком масштабе (как в Google Maps: издалека только главное, детали проявляются при приближении).
+// Слой показывается, если zoom >= порога.
+var SHOW = {primary: 11, secondary: 13, dart: 11, rail: 12.5, creek: 13, limit: 12.5, distLines: 11.5, roadHit: 9};
+var roadVis = {}, roadHit = {}, roadLine = {}, layerByZoom = [];
+
 function buildMap() {
   map = L.map("map", {zoomSnap: 0.5, zoomDelta: 0.5, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
     maxBoundsViscosity: 0.8, attributionControl: true, renderer: L.svg({padding: 0.5})});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
-  [["land", 200], ["green", 250], ["water", 300], ["dist", 350], ["roads", 400], ["areas", 420], ["sel", 430], ["grid", 440], ["labels", 450]].forEach(function (p) {
+  [["land", 200], ["tint", 220], ["green", 250], ["water", 300], ["dist", 350], ["roads", 400], ["areas", 420], ["roadhit", 425], ["sel", 430], ["grid", 440], ["labels", 450]].forEach(function (p) {
     map.createPane(p[0]).style.zIndex = p[1];
   });
-  ["roads", "grid", "labels"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
+  ["tint", "roads", "grid", "labels"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
 
   L.rectangle(BOUNDS, {pane: "land", className: "land", interactive: false}).addTo(map);
+  // цвет областей — отдельным неинтерактивным слоем под всем остальным
+  L.geoJSON(geo.areas, {pane: "tint", interactive: false, style: function (f) { return {className: "tint t" + (f.properties.tone || 0)}; }}).addTo(map);
   L.geoJSON(geo.green, {pane: "green", interactive: false, style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
+  L.geoJSON(geo.water, {pane: "water", interactive: false, filter: function (f) { return f.properties.cls !== "creek"; },
+    style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
+  byZoom(L.geoJSON(geo.water, {pane: "water", interactive: false, filter: function (f) { return f.properties.cls === "creek"; }, style: {className: "creek"}}), SHOW.creek);
 
-  distLayer = L.geoJSON(geo.districts, {pane: "dist", style: function (f) { return {className: distClass(f.properties.id, f.properties.tone)}; },
+  distLayer = L.geoJSON(geo.districts, {pane: "dist", style: function (f) { return {className: distClass(f.properties.id)}; },
     onEachFeature: function (f, l) { hook("d", f, l); }}).addTo(map);
-  L.geoJSON(geo.water, {pane: "water", interactive: false, style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
-  L.geoJSON(geo.roads, {pane: "roads", interactive: false, style: function (f) { return {className: "rd rd-" + f.properties.cls}; }}).addTo(map);
-  L.geoJSON(geo.rail, {pane: "roads", interactive: false, style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
-  L.geoJSON(geo.cities, {pane: "roads", interactive: false, style: {className: "limit"}}).addTo(map);
-  areaLayer = L.geoJSON(geo.areas, {pane: "areas", style: function (f) { return {className: "area"}; },
-    onEachFeature: function (f, l) { hook("a", f, l); }}).addTo(map);
+  areaLayer = L.geoJSON(geo.areas, {pane: "areas", style: {className: "area"}, onEachFeature: function (f, l) { hook("a", f, l); }}).addTo(map);
 
-  dLabels = L.layerGroup(); aLabels = L.layerGroup(); shields = L.layerGroup();
+  // дороги: видимая линия + невидимая широкая полоса, по которой удобно попасть мышкой
+  ["secondary", "primary", "motorway"].forEach(function (cls) {
+    var feats = geo.roads.features.filter(function (f) { return f.properties.cls === cls; });
+    roadVis[cls] = L.geoJSON(feats, {pane: "roads", interactive: false, style: {className: "rd rd-" + cls},
+      onEachFeature: function (f, l) { if (f.properties.id) roadLine[f.properties.id] = l; }});
+    if (cls !== "secondary") {
+      roadHit[cls] = L.geoJSON(feats.filter(function (f) { return f.properties.id; }), {pane: "roadhit", style: {className: "rdhit", weight: 14},
+        onEachFeature: function (f, l) { hookRoad(f, l); }});
+    }
+  });
+  roadVis.motorway.addTo(map);
+  byZoom(roadVis.primary, SHOW.primary);
+  byZoom(roadVis.secondary, SHOW.secondary);
+  byZoom(roadHit.motorway, SHOW.roadHit);
+  byZoom(roadHit.primary, SHOW.primary);
+  byZoom(L.geoJSON(geo.rail, {pane: "roads", interactive: false, filter: function (f) { return f.properties.cls === "dart"; }, style: {className: "dart"}}), SHOW.dart);
+  byZoom(L.geoJSON(geo.rail, {pane: "roads", interactive: false, filter: function (f) { return f.properties.cls === "rail"; }, style: {className: "rail"}}), SHOW.rail);
+  byZoom(L.geoJSON(geo.cities, {pane: "roads", interactive: false, style: {className: "limit"}}), SHOW.limit);
+
+  dLabels = L.layerGroup(); aLabels = L.layerGroup();
+  var maxArea = Math.max.apply(null, geo.areas.features.map(function (f) { return f.properties.km2; }));
   geo.labels.features.forEach(function (f) {
     var p = f.properties, ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]], k = p.level === "area" ? "a" : "d";
     labelPt[k][p.id] = ll;
-    var m = L.marker(ll, {pane: "labels", interactive: false, keyboard: false,
-      icon: L.divIcon({className: "lbl lbl-" + k, html: "<span>" + esc(p.name) + "</span>", iconSize: null})});
-    m.km2 = p.km2;
+    // у областей размер шрифта зависит от площади: крупные подписаны крупнее
+    var size = k === "a" ? (p.km2 > maxArea / 3 || /^(dal|fw)-/.test(p.id) ? "" : p.km2 > maxArea / 8 ? "" : " small") : "";
+    var m = L.marker(ll, {pane: "labels", interactive: false, keyboard: false, opacity: 0,
+      icon: L.divIcon({className: "lbl lbl-" + k + size, html: "<span>" + esc(p.name) + "</span>", iconSize: null})});
+    // важность подписи: части самих Далласа и Форт-Уэрта важнее пригородов того же размера
+    m.km2 = p.km2; m.lid = p.id; m.rank = p.km2 * (k !== "a" ? 1 : /^(dal|fw)-center$/.test(p.id) ? 100 : /^(dal|fw)-/.test(p.id) ? 5 : 1);
     (k === "a" ? aLabels : dLabels).addLayer(m);
   });
-  geo.shields.features.forEach(function (f) {
-    shields.addLayer(L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], {pane: "labels", interactive: false, keyboard: false,
-      icon: L.divIcon({className: "shield", html: "<span>" + esc(f.properties.ref) + "</span>", iconSize: null})}));
-  });
+  aLabels.addTo(map); dLabels.addTo(map);
   buildGrid();
 
-  dLabels.addTo(map);
   map.on("zoomend", onZoom);
-  map.fitBounds([[32.62, -97.45], [33.02, -96.58]]);
+  // на узком экране весь охват слишком мелкий — начинаем с Далласа
+  if (map.getSize().x < 600) map.fitBounds([[32.68, -97.0], [32.95, -96.62]]);
+  else map.fitBounds([[32.62, -97.45], [33.02, -96.58]]);
   onZoom();
   window.vtmMap = map; // для отладки из консоли
 }
 
-function distClass(id, tone) {
+function byZoom(layer, minZoom) { layerByZoom.push([layer, minZoom]); }
+
+function distClass(id) {
   var m = marker({k: "d", id: id});
-  if (tone == null) tone = featOf.d[id] ? featOf.d[id].properties.tone : 0;
-  return "dist t" + (tone || 0) + (m ? " m-" + m : "");
+  return "dist" + (m ? " m-" + m : "");
 }
 
 function hook(k, f, l) {
@@ -139,21 +166,55 @@ function hook(k, f, l) {
   l.on("mouseout", function () { var el = l.getElement(); if (el) el.classList.remove("hov"); });
 }
 
+function roadTitle(p) { return p.ref && p.name ? p.ref + " · " + p.name : (p.ref || p.name); }
+
+function hookRoad(f, l) {
+  var id = f.properties.id;
+  featOf.r[id] = f; layerOf.r[id] = l;
+  l.bindTooltip(esc(roadTitle(f.properties)), {sticky: true, direction: "top", className: "tip tip-road", offset: [0, -8]});
+  l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "r", id: id}, false); });
+  l.on("mouseover", function () { var v = roadLine[id] && roadLine[id].getElement(); if (v) v.classList.add("rd-hov"); });
+  l.on("mouseout", function () { var v = roadLine[id] && roadLine[id].getElement(); if (v) v.classList.remove("rd-hov"); });
+}
+
 function onZoom() {
   var z = map.getZoom(), el = map.getContainer(), detail = z >= DETAIL_ZOOM;
-  el.className = el.className.replace(/\bz\d+\b/g, "").replace(/\b(overview|detail)\b/g, "").trim() +
-    " z" + Math.floor(z) + (detail ? " detail" : " overview");
-  // подписи районов: на каждом шаге приближения показываем районы вчетверо меньше
-  var minKm2 = 4 * Math.pow(4, DETAIL_ZOOM - z);
-  dLabels.eachLayer(function (m) { var show = detail && m.km2 >= minKm2; if (show !== m._shown) { m._shown = show; m.setOpacity(show ? 1 : 0); } });
-  if (detail) map.removeLayer(aLabels); else aLabels.addTo(map);
-  // подписи областей на самом мелком масштабе — только у крупных, чтобы не налезали
-  var minArea = 30 * Math.pow(4, 10 - z);
-  aLabels.eachLayer(function (m) { var show = m.km2 >= minArea; if (show !== m._shown) { m._shown = show; m.setOpacity(show ? 1 : 0); } });
-  if (z >= 11) shields.addTo(map); else map.removeLayer(shields);
+  el.className = el.className.replace(/\bz\d+\b/g, "").replace(/\b(overview|detail|dl)\b/g, "").trim() +
+    " z" + Math.floor(z) + (detail ? " detail" : " overview") + (z >= SHOW.distLines ? " dl" : "");
+  layerByZoom.forEach(function (x) { if (z >= x[1]) { if (!map.hasLayer(x[0])) x[0].addTo(map); } else if (map.hasLayer(x[0])) map.removeLayer(x[0]); });
   if (gridLabels) { if (gridOn() && z >= 10.5) gridLabels.addTo(map); else map.removeLayer(gridLabels); }
+  placeLabels();
   document.getElementById("lv-a").setAttribute("aria-pressed", detail ? "false" : "true");
   document.getElementById("lv-d").setAttribute("aria-pressed", detail ? "true" : "false");
+}
+
+// Подписи без наложения: важные (крупные) ставятся первыми, остальные — только если есть место.
+// У района подпись появляется, когда сам район на экране не меньше 34 px.
+function placeLabels() {
+  var z = map.getZoom(), detail = z >= DETAIL_ZOOM, placed = [];
+  var pxPerKm = 256 * Math.pow(2, z) / (40075 * Math.cos(32.8 * Math.PI / 180));
+  function fits(m) {
+    var el = m.getElement(); if (!el) return false;
+    var sp = el.firstChild, w = sp.offsetWidth, h = sp.offsetHeight, p = map.latLngToLayerPoint(m.getLatLng());
+    var b = [p.x - w / 2 - 6, p.y - h / 2 - 3, p.x + w / 2 + 6, p.y + h / 2 + 3];
+    for (var i = 0; i < placed.length; i++) {
+      var o = placed[i];
+      if (b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]) return false;
+    }
+    placed.push(b); return true;
+  }
+  function run(group, active, minSide) {
+    var list = []; group.eachLayer(function (m) { list.push(m); });
+    list.sort(function (a, b) { return b.rank - a.rank; });
+    // выбранное место подписываем всегда
+    if (sel) list.sort(function (a, b) { return (b.lid === sel.id) - (a.lid === sel.id); });
+    list.forEach(function (m) {
+      var show = active && (Math.sqrt(m.km2) * pxPerKm >= minSide || (sel && m.lid === sel.id)) && fits(m);
+      if (show !== m._shown) { m._shown = show; m.setOpacity(show ? 1 : 0); }
+    });
+  }
+  run(aLabels, !detail, 0);
+  run(dLabels, detail, 34);
 }
 
 function gridOn() { try { return localStorage.getItem(GRID_KEY) === "1"; } catch (_) { return false; } }
@@ -181,17 +242,51 @@ function select(s, fly) {
   if (!s || !featOf[s.k][s.id]) return;
   sel = s; editing = false; status = "";
   if (selLayer) map.removeLayer(selLayer);
-  selLayer = L.geoJSON(featOf[s.k][s.id], {pane: "sel", interactive: false, style: {className: "selpath"}}).addTo(map);
+  selLayer = L.geoJSON(featOf[s.k][s.id], {pane: "sel", interactive: false, style: {className: s.k === "r" ? "selroad" : "selpath"}}).addTo(map);
   if (fly) {
     var b = layerOf[s.k][s.id].getBounds();
-    map.flyToBounds(b, {maxZoom: s.k === "a" ? DETAIL_ZOOM - 0.5 : 14, padding: [30, 30], duration: 0.6});
-  }
+    map.flyToBounds(b, {maxZoom: s.k === "a" ? DETAIL_ZOOM - 0.5 : s.k === "r" ? 13 : 14, padding: [30, 30], duration: 0.6});
+  } else placeLabels();
   renderPanel(); syncHash();
   if (window.matchMedia("(max-width:900px)").matches && !fly) { try { panel.scrollIntoView({behavior: "smooth", block: "start"}); } catch (_) {} }
 }
 
 function refreshStyles() {
   Object.keys(layerOf.d).forEach(function (id) { var el = layerOf.d[id].getElement(); if (el) el.setAttribute("class", distClass(id) + " leaflet-interactive"); });
+}
+
+// ---------- карточка дороги ----------
+// Объяснение для тех, кто не водит и не бывал в Америке.
+var ROAD_TYPES = {
+  motorway: ["Фривей", "Скоростное шоссе, вроде нашей автомагистрали. Светофоров и перекрёстков нет, заехать и съехать можно только по развязкам (на указателях они называются exit). Вдоль большинства фривеев идут односторонние улицы-дублёры (frontage road), и уже на них выходят заправки, мотели, фастфуд и торговые центры. Пешком фривей не перейти, только по мосту или под эстакадой. Для пешехода это стена между районами, для машины самый быстрый путь через город."],
+  primary: ["Большая улица", "Главная улица района, американцы говорят arterial. Обычно четыре–шесть полос и светофоры на перекрёстках. По сторонам торговые центры с парковками, заправки, рестораны, автобусные остановки. По таким улицам ездят между районами, ночью тут светло и почти всегда кто-то едет."],
+  secondary: ["Районная улица", "Улица внутри района: две–четыре полосы, светофоры только на крупных перекрёстках. Ведёт к большим улицам и фривеям."]
+};
+
+function roadPanel(p) {
+  var t = ROAD_TYPES[p.cls] || ["Дорога", ""];
+  var facts = [];
+  if (p.lanes) facts.push("Около " + p.lanes + " " + plural(p.lanes, "полосы", "полос", "полос") + " в каждую сторону.");
+  if (p.speed) facts.push("Ограничение скорости " + p.speed + " миль в час, это около " + Math.round(p.speed * 1.609 / 5) * 5 + " км/ч.");
+  if (p.km) facts.push("На карте около " + p.km + " км.");
+  var areas = (p.areas || []).filter(function (a) { return featOf.a[a]; });
+  return '<div class="pmeta"><span>' + esc(t[0]) + '</span>' + (p.toll ? '<span class="chip">платная</span>' : '') + '</div>' +
+    '<h2>' + esc(p.ref || p.name) + '</h2>' +
+    (p.ref && p.name ? '<p class="psum">' + esc(p.name) + '</p>' : '') +
+    '<div class="pdet"><p>' + esc(t[1]) + '</p>' +
+    (p.toll ? '<p>Это платная дорога. В 2005 году за проезд платили наличными в будках на въездах или меткой TollTag на лобовом стекле.</p>' : '') +
+    (facts.length ? '<p>' + esc(facts.join(" ")) + '</p>' : '') +
+    (p.aka && p.aka.length ? '<p>На разных участках называется ещё ' + esc(p.aka.join(", ")) + '. Местные часто зовут фривеи по именам, а не по номерам.</p>' : '') +
+    '</div>' +
+    (areas.length ? '<div class="kids"><h3>Проходит через</h3><ul>' + areas.map(function (a) {
+      return '<li><button type="button" data-go="a:' + esc(a) + '">' + esc(featOf.a[a].properties.name) + '</button></li>'; }).join("") + '</ul></div>' : '') +
+    '<p class="hint" style="margin-top:14px;font-size:12.5px">Полосы и скорость взяты из современных данных OpenStreetMap, в 2005 году где-то могло быть иначе.</p>' +
+    '<div class="actions"><button class="btn" type="button" id="p-show">Показать на карте</button></div>';
+}
+
+function plural(n, one, few, many) {
+  var a = n % 10, b = n % 100;
+  return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 10 || b >= 20) ? few : many;
 }
 
 // ---------- карточка ----------
@@ -215,6 +310,12 @@ function renderPanel() {
       '<p class="psum">Издалека город поделён на крупные области, чтобы понять общий характер места. Приблизь карту или нажми «Районы», и области распадутся на районы, нарезанные по настоящим улицам.</p>' +
       '<div class="pdet"><p>Нажми на область или район, и здесь откроется описание. К любому месту можно добавить свою метку и заметки: они хранятся только в твоём браузере.</p>' +
       '<p>Галочка «Старая сетка» накладывает клетки прежней карты, чтобы было проще договариваться по старым обозначениям вроде D5.</p></div>';
+    return;
+  }
+  if (sel.k === "r") {
+    panel.innerHTML = roadPanel(featOf.r[sel.id].properties);
+    var rs = sel;
+    document.getElementById("p-show").addEventListener("click", function () { select(rs, true); });
     return;
   }
   var s = sel, p = props(s), x = info(s), o = own(s) || {marker: "", label: "", notes: ""};
@@ -299,6 +400,10 @@ function setupSearch() {
   geo.districts.features.forEach(function (f) {
     var a = featOf.a[f.properties.area];
     all.push({k: "d", id: f.properties.id, name: f.properties.name, sub: a ? a.properties.name : ""});
+  });
+  geo.roads.features.forEach(function (f) {
+    var p = f.properties; if (!p.id || p.cls === "secondary") return;
+    all.push({k: "r", id: p.id, name: roadTitle(p), sub: ROAD_TYPES[p.cls][0].toLowerCase()});
   });
   function norm(s) { return s.toLowerCase().replace(/ё/g, "е").replace(/[-‐\s]+/g, " "); }
   function show() {
@@ -385,14 +490,14 @@ function importFile(p) {
 // #d/<район>, #a/<область>; старые ссылки #city-D5, #core-B4, #fw-E6 открывают район в центре клетки
 function syncHash() { try { history.replaceState(null, "", sel ? "#" + sel.k + "/" + sel.id : location.pathname); } catch (_) {} }
 function readHash(fly) {
-  var h = location.hash || "", m = /^#([da])\/(.+)$/.exec(h);
+  var h = location.hash || "", m = /^#([dar])\/(.+)$/.exec(h);
   if (m) { select({k: m[1], id: decodeURIComponent(m[2])}, fly); return; }
   m = /^#(city|core|fw)-([A-I])([1-9])$/.exec(h);
   if (m) { var ll = cellCenter(m[1], m[2] + m[3]), id = districtAt(ll[0], ll[1]); if (id) select({k: "d", id: id}, fly); }
 }
 
 // ---------- запуск ----------
-var files = ["districts", "areas", "labels", "roads", "water", "rail", "green", "cities", "shields"];
+var files = ["districts", "areas", "labels", "roads", "water", "rail", "green", "cities"];
 Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(function (r) { if (!r.ok) throw new Error(n); return r.json(); }); })
   .concat([fetch("data/map.json", {cache: "no-cache"}).then(function (r) { return r.json(); }),
     fetch(GEO + "legacy.json").then(function (r) { return r.ok ? r.json() : legacy; }).catch(function () { return legacy; })]))

@@ -15,7 +15,7 @@ dal-center	farmersmarket	Фермерский рынок	1.1 км²
 dal-center	floodplain	Пойма Тринити	22.9 км²
 dal-center	knox	Нокс-Хендерсон	1.5 км²
 dal-center	marketcenter	Отель Anatole и Market Center	3.6 км²
-dal-center	medical	Медрайон и Паркленд	3.1 км²
+dal-center	medical	Медрайон и Паркленд	2.9 км²
 dal-center	oaklawn	Оук-Лоун	5.3 км²
 dal-center	turtlecreek	Тертл-Крик	2.0 км²
 dal-center	uptown	Аптаун	2.1 км²
@@ -41,9 +41,9 @@ dal-north	northpark	НортПарк	4.1 км²
 dal-north	prestonhollow	Престон-Холлоу	16.1 км²
 dal-north	prestonwood	Престонвуд	15.9 км²
 dal-north	vickery	Викери-Медоу	10.4 км²
-dal-northwest	bachman	Бахман	13.3 км²
-dal-northwest	bluffview	Блаффвью	18.6 км²
-dal-northwest	harryhines	Харри-Хайнс	11.1 км²
+dal-northwest	bachman	Бахман	13.9 км²
+dal-northwest	bluffview	Блаффвью	18.5 км²
+dal-northwest	harryhines	Харри-Хайнс	13.2 км²
 dal-northwest	koreatown	Ройал-Лейн и Корейский квартал	38.2 км²
 dal-northwest	lovefield	Аэропорт Лав-Филд	4.0 км²
 dal-northwest	stemmons	Стеммонс-коридор	3.0 км²
@@ -57,7 +57,7 @@ dal-oakcliff	lakecliff	Лейк-Клифф	2.4 км²
 dal-oakcliff	mountaincreek	Маунтин-Крик	77.4 км²
 dal-oakcliff	redbird	Ред-Бёрд	27.0 км²
 dal-oakcliff	redbirdairport	Аэропорт Ред-Бёрд	3.0 км²
-dal-oakcliff	westmoreland	Западный Оук-Клифф	9.4 км²
+dal-oakcliff	westmoreland	Западный Оук-Клифф	13.6 км²
 dal-oakcliff	wynnewood	Уиннвуд	8.3 км²
 dal-oakcliff	zoo	Зоопарк и Марсалис	7.9 км²
 dal-south	cedarcrest	Сидар-Крест	11.6 км²
@@ -69,8 +69,8 @@ dal-south	southdallas	Южный Даллас	8.9 км²
 dal-southeast	kleberg	Клеберг	45.6 км²
 dal-southeast	lakejune	Лейк-Джун	30.1 км²
 dal-southeast	pleasantgrove	Плезант-Гроув	27.4 км²
-dal-southeast	trinityforest	Великий Тринити-лес	39.2 км²
-dal-west	arcadia	Аркадия-Парк	5.9 км²
+dal-southeast	trinityforest	Великий Тринити-лес	39.0 км²
+dal-west	arcadia	Аркадия-Парк	13.4 км²
 dal-west	eagleford	Иггл-Форд	12.0 км²
 dal-west	elmfork	Пойма Элм-Форка	9.1 км²
 dal-west	westdallas	Западный Даллас	9.0 км²
@@ -83,7 +83,7 @@ denton	c-highland-village	Хайленд-Виллидж	3.3 км²
 denton	c-lewisville	Льюисвилл	97.1 км²
 denton	c-marshall-creek	Маршалл-Крик	0.6 км²
 denton	c-the-colony	Зе-Колони	10.7 км²
-denton	rural-denton	Сельский юг округа Дентон	99.1 км²
+denton	rural-denton	Сельский юг округа Дентон	99.0 км²
 e-suburbs	c-balch-springs	Болч-Спрингс	23.5 км²
 e-suburbs	c-combine	Комбайн	13.7 км²
 e-suburbs	c-seagoville	Сиговилл	49.5 км²
@@ -110,9 +110,9 @@ fw-far-north	c-haslet	Хаслет	20.5 км²
 fw-far-north	c-justin	Джастин	1.5 км²
 fw-far-north	c-new-fairview	Нью-Фэрвью	0.7 км²
 fw-far-north	c-newark	Ньюарк	1.9 км²
-fw-far-north	c-northlake	Нортлейк	26.7 км²
+fw-far-north	c-northlake	Нортлейк	27.0 км²
 fw-far-north	c-rhome	Роум	4.3 км²
-fw-far-north	c-roanoke	Роанок	16.9 км²
+fw-far-north	c-roanoke	Роанок	16.7 км²
 fw-far-north	c-saginaw	Сагино	19.3 км²
 fw-far-north	fw-alliance	Аэропорт Альянс	4.2 км²
 fw-far-north	fw-eaglemountain	Северо-запад (к озеру Игл-Маунтин)	15.0 км²
@@ -147,7 +147,7 @@ fw-suburbs-w	c-lake-worth	Лейк-Уэрт	7.9 км²
 fw-suburbs-w	c-lakeside	Лейксайд	4.0 км²
 fw-suburbs-w	c-pelican-bay	Пеликан-Бей	1.7 км²
 fw-suburbs-w	c-reno	Рино	3.0 км²
-fw-suburbs-w	c-river-oaks	Ривер-Оукс	5.1 км²
+fw-suburbs-w	c-river-oaks	Ривер-Оукс	5.2 км²
 fw-suburbs-w	c-sansom-park	Сэнсом-Парк	3.2 км²
 fw-suburbs-w	c-white-settlement	Уайт-Сеттлмент	12.1 км²
 fw-suburbs-w	rural-tarrant-w	Запад округа Таррант	78.2 км²
@@ -156,9 +156,9 @@ fw-west	c-westworth-village	Уэстуорт-Виллидж	3.7 км²
 fw-west	fw-arlingtonheights	Арлингтон-Хайтс	3.5 км²
 fw-west	fw-campbowie	Кэмп-Боуи и Ридгли	18.4 км²
 fw-west	fw-hulen	Хьюлен и Сити-Вью	31.3 км²
-fw-west	fw-lasvegastrail	Лас-Вегас-Трейл	64.0 км²
-fw-west	fw-nasjrb	Авиабаза и Lockheed	10.3 км²
-fw-west	fw-rivercrest	Риверкрест	15.6 км²
+fw-west	fw-lasvegastrail	Лас-Вегас-Трейл	60.6 км²
+fw-west	fw-nasjrb	Авиабаза и Lockheed	13.8 км²
+fw-west	fw-rivercrest	Риверкрест	13.8 км²
 fw-west	fw-tanglewood	Тэнглвуд	14.0 км²
 garland	c-heath	Хит	0.6 км²
 garland	c-rowlett	Роулетт	51.8 км²
@@ -208,7 +208,7 @@ parks	c-university-park	Юниверсити-Парк	9.6 км²
 s-suburbs	c-cedar-hill	Сидар-Хилл	46.0 км²
 s-suburbs	c-desoto	Де-Сото	44.6 км²
 s-suburbs	c-duncanville	Данканвилл	29.1 км²
-s-suburbs	c-hutchins	Хатчинс	26.4 км²
+s-suburbs	c-hutchins	Хатчинс	26.6 км²
 s-suburbs	c-lancaster	Ланкастер	60.0 км²
 s-suburbs	c-wilmer	Уилмер	17.5 км²
 s-suburbs	rural-dallas-s	Сельский юг округа Даллас	39.1 км²
