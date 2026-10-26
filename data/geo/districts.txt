@@ -1,0 +1,214 @@
+arlington	arl-airport	Аэропорт Арлингтона	1.5 км²
+arlington	arl-center	Арлингтон: центр и UTA	48.0 км²
+arlington	arl-entertainment	Арлингтон: стадион и Six Flags	16.7 км²
+arlington	arl-north	Арлингтон: север	35.9 км²
+arlington	arl-south	Арлингтон: юг	71.1 км²
+arlington	arl-southwest	Арлингтон: юго-запад	73.3 км²
+arlington	c-dalworthington-gardens	Долуэртингтон-Гарденс	4.7 км²
+arlington	c-pantego	Пантиго	2.5 км²
+dal-center	arts	Арт-район	1.5 км²
+dal-center	cedars	Сидарс	3.7 км²
+dal-center	deepellum	Дип-Эллум	0.9 км²
+dal-center	design	Дизайн-дистрикт	6.9 км²
+dal-center	downtown	Даунтаун	0.9 км²
+dal-center	farmersmarket	Фермерский рынок	1.1 км²
+dal-center	floodplain	Пойма Тринити	22.9 км²
+dal-center	knox	Нокс-Хендерсон	1.5 км²
+dal-center	marketcenter	Отель Anatole и Market Center	3.6 км²
+dal-center	medical	Медрайон и Паркленд	3.1 км²
+dal-center	oaklawn	Оук-Лоун	5.3 км²
+dal-center	turtlecreek	Тертл-Крик	2.0 км²
+dal-center	uptown	Аптаун	2.1 км²
+dal-center	victory	Виктори и American Airlines Center	2.5 км²
+dal-center	westend	Вест-Энд	1.0 км²
+dal-east	baylor	Бейлор и Старый Восточный Даллас	2.9 км²
+dal-east	buckner	Бакнер и I-30	22.8 км²
+dal-east	casalinda	Каса-Линда	16.3 км²
+dal-east	eastgrand	Ист-Гранд и Тенисон-Парк	3.2 км²
+dal-east	foresthills	Форест-Хиллс	17.2 км²
+dal-east	lakewood	Лейквуд	15.6 км²
+dal-east	laprada	Восточный край (Фергюсон-роуд)	36.8 км²
+dal-east	lowergreenville	Лоуэр-Гринвилл	2.5 км²
+dal-east	mstreets	М-стритс	8.4 км²
+dal-east	swiss	Суисс-авеню	5.7 км²
+dal-north	benttree	Бент-Три	23.7 км²
+dal-north	farnorth	Дальний Север	7.8 км²
+dal-north	forestlane	Форест-Лейн	27.7 км²
+dal-north	galleria	Galleria и Валли-Вью	13.3 км²
+dal-north	lakehighlands	Лейк-Хайлендс	19.9 км²
+dal-north	lakehighlandsn	Северный Лейк-Хайлендс	21.1 км²
+dal-north	northpark	НортПарк	4.1 км²
+dal-north	prestonhollow	Престон-Холлоу	16.1 км²
+dal-north	prestonwood	Престонвуд	15.9 км²
+dal-north	vickery	Викери-Медоу	10.4 км²
+dal-northwest	bachman	Бахман	13.3 км²
+dal-northwest	bluffview	Блаффвью	18.6 км²
+dal-northwest	harryhines	Харри-Хайнс	11.1 км²
+dal-northwest	koreatown	Ройал-Лейн и Корейский квартал	38.2 км²
+dal-northwest	lovefield	Аэропорт Лав-Филд	4.0 км²
+dal-northwest	stemmons	Стеммонс-коридор	3.0 км²
+dal-oakcliff	bishoparts	Бишоп-Артс	1.4 км²
+dal-oakcliff	c-cockrell-hill	Кокрелл-Хилл	1.5 км²
+dal-oakcliff	elmwood	Элмвуд	2.4 км²
+dal-oakcliff	jefferson	Джефферсон-бульвар	5.3 км²
+dal-oakcliff	kessler	Кесслер-Парк	5.7 км²
+dal-oakcliff	kiest	Кист-Парк	18.1 км²
+dal-oakcliff	lakecliff	Лейк-Клифф	2.4 км²
+dal-oakcliff	mountaincreek	Маунтин-Крик	77.4 км²
+dal-oakcliff	redbird	Ред-Бёрд	27.0 км²
+dal-oakcliff	redbirdairport	Аэропорт Ред-Бёрд	3.0 км²
+dal-oakcliff	westmoreland	Западный Оук-Клифф	9.4 км²
+dal-oakcliff	wynnewood	Уиннвуд	8.3 км²
+dal-oakcliff	zoo	Зоопарк и Марсалис	7.9 км²
+dal-south	cedarcrest	Сидар-Крест	11.6 км²
+dal-south	fairpark	Фэр-Парк	7.9 км²
+dal-south	highlandhills	Хайленд-Хиллс	29.2 км²
+dal-south	i20south	Южный пояс I-20	26.9 км²
+dal-south	i45	Бонтон и промзона I-45	5.4 км²
+dal-south	southdallas	Южный Даллас	8.9 км²
+dal-southeast	kleberg	Клеберг	45.6 км²
+dal-southeast	lakejune	Лейк-Джун	30.1 км²
+dal-southeast	pleasantgrove	Плезант-Гроув	27.4 км²
+dal-southeast	trinityforest	Великий Тринити-лес	39.2 км²
+dal-west	arcadia	Аркадия-Парк	5.9 км²
+dal-west	eagleford	Иггл-Форд	12.0 км²
+dal-west	elmfork	Пойма Элм-Форка	9.1 км²
+dal-west	westdallas	Западный Даллас	9.0 км²
+denton	c-bartonville	Бартонвилл	8.6 км²
+denton	c-copper-canyon	Коппер-Каньон	2.1 км²
+denton	c-double-oak	Дабл-Оук	5.5 км²
+denton	c-flower-mound	Флауэр-Маунд	118.1 км²
+denton	c-hebron	Хеброн	8.3 км²
+denton	c-highland-village	Хайленд-Виллидж	3.3 км²
+denton	c-lewisville	Льюисвилл	97.1 км²
+denton	c-marshall-creek	Маршалл-Крик	0.6 км²
+denton	c-the-colony	Зе-Колони	10.7 км²
+denton	rural-denton	Сельский юг округа Дентон	99.1 км²
+e-suburbs	c-balch-springs	Болч-Спрингс	23.5 км²
+e-suburbs	c-combine	Комбайн	13.7 км²
+e-suburbs	c-seagoville	Сиговилл	49.5 км²
+e-suburbs	c-sunnyvale	Саннивейл	50.0 км²
+e-suburbs	mesquite-center	Меските: центр	72.7 км²
+e-suburbs	mesquite-towneast	Меските: Таун-Ист	41.2 км²
+e-suburbs	rural-dallas-se	Сельский юго-восток округа Даллас	70.3 км²
+fw-center	fw-cultural	Культурный район	2.1 км²
+fw-center	fw-downtown	Даунтаун Форт-Уэрта	7.2 км²
+fw-center	fw-medical	Медрайон (Ниар-Саутсайд)	2.9 км²
+fw-center	fw-samuels	Сэмюэлс-авеню	3.5 км²
+fw-center	fw-trinitypark	Тринити-Парк	3.5 км²
+fw-east	fw-eastchase	Истчейз	2.1 км²
+fw-east	fw-eastlancaster	Ист-Ланкастер	4.2 км²
+fw-east	fw-handley	Хэндли и озеро Арлингтон	16.7 км²
+fw-east	fw-meadowbrook	Медоубрук	34.8 км²
+fw-east	fw-poly	Политехник	35.1 км²
+fw-east	fw-rivertrails	Ривер-Трейлс	53.0 км²
+fw-east	fw-stopsix	Стоп-Сикс	20.2 км²
+fw-far-north	c-aurora	Аврора	8.3 км²
+fw-far-north	c-blue-mound	Блу-Маунд	1.3 км²
+fw-far-north	c-boyd	Бойд	0.1 км²
+fw-far-north	c-haslet	Хаслет	20.5 км²
+fw-far-north	c-justin	Джастин	1.5 км²
+fw-far-north	c-new-fairview	Нью-Фэрвью	0.7 км²
+fw-far-north	c-newark	Ньюарк	1.9 км²
+fw-far-north	c-northlake	Нортлейк	26.7 км²
+fw-far-north	c-rhome	Роум	4.3 км²
+fw-far-north	c-roanoke	Роанок	16.9 км²
+fw-far-north	c-saginaw	Сагино	19.3 км²
+fw-far-north	fw-alliance	Аэропорт Альянс	4.2 км²
+fw-far-north	fw-eaglemountain	Северо-запад (к озеру Игл-Маунтин)	15.0 км²
+fw-far-north	fw-farnorth	Дальний север Форт-Уэрта	66.7 км²
+fw-far-north	fw-fossilcreek	Фоссил-Крик	27.3 км²
+fw-far-north	fw-summerfields	Саммерфилдс	52.6 км²
+fw-far-north	rural-tarrant-nw	Северо-запад округа Таррант	310.2 км²
+fw-north	fw-diamondhill	Даймонд-Хилл	27.3 км²
+fw-north	fw-jacksboro	Джексборо-хайвей	45.7 км²
+fw-north	fw-meacham	Аэропорт Мичем	2.9 км²
+fw-north	fw-northside	Норт-сайд	11.1 км²
+fw-north	fw-riverside	Риверсайд и Оукхерст	12.6 км²
+fw-north	fw-rosenheights	Розен-Хайтс	3.2 км²
+fw-north	fw-stockyards	Стокъярдс	3.4 км²
+fw-south	fw-fairmount	Фэрмаунт	2.4 км²
+fw-south	fw-morningside	Морнингсайд	7.4 км²
+fw-south	fw-ryanplace	Райан-Плейс	2.8 км²
+fw-south	fw-seminary	Семинари	20.2 км²
+fw-south	fw-southi20	Южный Форт-Уэрт (I-20)	117.2 км²
+fw-south	fw-tcu	TCU и Берри-стрит	8.8 км²
+fw-south	fw-wedgwood	Уэджвуд	55.5 км²
+fw-suburbs-s	c-crowley	Краули	8.4 км²
+fw-suburbs-s	c-edgecliff-village	Эджклифф-Виллидж	3.1 км²
+fw-suburbs-s	c-everman	Эверман	5.1 км²
+fw-suburbs-s	c-forest-hill	Форест-Хилл	10.9 км²
+fw-suburbs-s	c-kennedale	Кеннедейл	15.8 км²
+fw-suburbs-s	c-mansfield	Мансфилд	33.5 км²
+fw-suburbs-s	rural-tarrant-s	Юг округа Таррант	87.2 км²
+fw-suburbs-w	c-azle	Азл	18.0 км²
+fw-suburbs-w	c-benbrook	Бенбрук	30.5 км²
+fw-suburbs-w	c-lake-worth	Лейк-Уэрт	7.9 км²
+fw-suburbs-w	c-lakeside	Лейксайд	4.0 км²
+fw-suburbs-w	c-pelican-bay	Пеликан-Бей	1.7 км²
+fw-suburbs-w	c-reno	Рино	3.0 км²
+fw-suburbs-w	c-river-oaks	Ривер-Оукс	5.1 км²
+fw-suburbs-w	c-sansom-park	Сэнсом-Парк	3.2 км²
+fw-suburbs-w	c-white-settlement	Уайт-Сеттлмент	12.1 км²
+fw-suburbs-w	rural-tarrant-w	Запад округа Таррант	78.2 км²
+fw-west	c-westover-hills	Уэстовер-Хиллс	1.8 км²
+fw-west	c-westworth-village	Уэстуорт-Виллидж	3.7 км²
+fw-west	fw-arlingtonheights	Арлингтон-Хайтс	3.5 км²
+fw-west	fw-campbowie	Кэмп-Боуи и Ридгли	18.4 км²
+fw-west	fw-hulen	Хьюлен и Сити-Вью	31.3 км²
+fw-west	fw-lasvegastrail	Лас-Вегас-Трейл	64.0 км²
+fw-west	fw-nasjrb	Авиабаза и Lockheed	10.3 км²
+fw-west	fw-rivercrest	Риверкрест	15.6 км²
+fw-west	fw-tanglewood	Тэнглвуд	14.0 км²
+garland	c-heath	Хит	0.6 км²
+garland	c-rowlett	Роулетт	51.8 км²
+garland	c-sachse	Сакси	26.1 км²
+garland	garland-center	Гарленд: центр	39.0 км²
+garland	garland-north	Гарленд: север	49.8 км²
+garland	garland-south	Гарленд: юг	56.8 км²
+grandprairie	gp-center	Гранд-Прери: центр	56.3 км²
+grandprairie	gp-north	Гранд-Прери: север	35.4 км²
+grandprairie	gp-south	Гранд-Прери: юг	77.0 км²
+irving	irving-center	Центр Ирвинга	56.4 км²
+irving	irving-lascolinas	Лас-Колинас	74.8 км²
+irving	irving-stadium	Texas Stadium	13.8 км²
+irving	irving-valleyranch	Валли-Ранч	19.9 км²
+midcities	c-bedford	Бедфорд	25.8 км²
+midcities	c-euless	Юлесс	39.5 км²
+midcities	c-haltom-city	Холтом-Сити	32.1 км²
+midcities	c-hurst	Херст	25.3 км²
+midcities	c-north-richland-hills	Норт-Ричленд-Хиллс	47.3 км²
+midcities	c-richland-hills	Ричленд-Хиллс	8.1 км²
+midcities	c-watauga	Уотога	10.7 км²
+n-suburbs	c-allen	Аллен	3.2 км²
+n-suburbs	c-lucas	Лукас	19.6 км²
+n-suburbs	c-murphy	Мерфи	15.2 км²
+n-suburbs	c-parker	Паркер	20.1 км²
+n-suburbs	c-st-paul	Сент-Пол	6.2 км²
+n-suburbs	c-wylie	Уайли	48.7 км²
+n-suburbs	plano-center	Плано: центр	48.2 км²
+n-suburbs	plano-east	Плано: восток	70.1 км²
+n-suburbs	plano-west	Плано: запад и Legacy	37.9 км²
+n-suburbs	rich-center	Ричардсон: центр	43.8 км²
+n-suburbs	rich-telecom	Ричардсон: Телеком-коридор	30.0 км²
+n-suburbs	rural-collin	Сельский юго-восток округа Коллин	28.4 км²
+ne-tarrant	c-colleyville	Колливилл	34.2 км²
+ne-tarrant	c-grapevine	Грейпвайн	68.3 км²
+ne-tarrant	c-keller	Келлер	47.7 км²
+ne-tarrant	c-southlake	Саутлейк	56.8 км²
+ne-tarrant	c-trophy-club	Трофи-Клаб	10.2 км²
+ne-tarrant	c-westlake	Уэстлейк	17.8 км²
+ne-tarrant	dfw	Аэропорт DFW	26.4 км²
+nw-suburbs	c-addison	Аддисон	11.5 км²
+nw-suburbs	c-carrollton	Карролтон	96.1 км²
+nw-suburbs	c-coppell	Коппелл	38.1 км²
+nw-suburbs	c-farmers-branch	Фармерс-Бранч	30.7 км²
+parks	c-highland-park	Хайленд-Парк	5.8 км²
+parks	c-university-park	Юниверсити-Парк	9.6 км²
+s-suburbs	c-cedar-hill	Сидар-Хилл	46.0 км²
+s-suburbs	c-desoto	Де-Сото	44.6 км²
+s-suburbs	c-duncanville	Данканвилл	29.1 км²
+s-suburbs	c-hutchins	Хатчинс	26.4 км²
+s-suburbs	c-lancaster	Ланкастер	60.0 км²
+s-suburbs	c-wilmer	Уилмер	17.5 км²
+s-suburbs	rural-dallas-s	Сельский юг округа Даллас	39.1 км²

@@ -1,0 +1,89 @@
+# Города по переписи 2000 года. Если у города нет своих районов в seeds.tsv, он становится одним районом.
+# имя в переписи	русское название	область
+Dallas	Даллас	dal-center
+Fort Worth	Форт-Уэрт	fw-center
+Arlington	Арлингтон	arlington
+Grand Prairie	Гранд-Прери	grandprairie
+Irving	Ирвинг	irving
+Plano	Плано	n-suburbs
+Garland	Гарленд	garland
+Mesquite	Меските	e-suburbs
+Flower Mound	Флауэр-Маунд	denton
+Lewisville	Льюисвилл	denton
+Carrollton	Карролтон	nw-suburbs
+Grapevine	Грейпвайн	ne-tarrant
+Richardson	Ричардсон	n-suburbs
+Southlake	Саутлейк	ne-tarrant
+Lancaster	Ланкастер	s-suburbs
+Wylie	Уайли	n-suburbs
+Rowlett	Роулетт	garland
+Keller	Келлер	ne-tarrant
+North Richland Hills	Норт-Ричленд-Хиллс	midcities
+Cedar Hill	Сидар-Хилл	s-suburbs
+DeSoto	Де-Сото	s-suburbs
+Sunnyvale	Саннивейл	e-suburbs
+Euless	Юлесс	midcities
+Seagoville	Сиговилл	e-suburbs
+Coppell	Коппелл	nw-suburbs
+Colleyville	Колливилл	ne-tarrant
+Mansfield	Мансфилд	fw-suburbs-s
+Haltom City	Холтом-Сити	midcities
+Farmers Branch	Фармерс-Бранч	nw-suburbs
+Benbrook	Бенбрук	fw-suburbs-w
+Duncanville	Данканвилл	s-suburbs
+Sachse	Сакси	garland
+Bedford	Бедфорд	midcities
+Hurst	Херст	midcities
+Northlake	Нортлейк	fw-far-north
+Hutchins	Хатчинс	s-suburbs
+Balch Springs	Болч-Спрингс	e-suburbs
+Haslet	Хаслет	fw-far-north
+Saginaw	Сагино	fw-far-north
+Westlake	Уэстлейк	ne-tarrant
+Azle	Азл	fw-suburbs-w
+Roanoke	Роанок	fw-far-north
+Kennedale	Кеннедейл	fw-suburbs-s
+Wilmer	Уилмер	s-suburbs
+Murphy	Мерфи	n-suburbs
+White Settlement	Уайт-Сеттлмент	fw-suburbs-w
+Parker	Паркер	n-suburbs
+Combine	Комбайн	e-suburbs
+The Colony	Зе-Колони	denton
+Addison	Аддисон	nw-suburbs
+Forest Hill	Форест-Хилл	fw-suburbs-s
+Hebron	Хеброн	denton
+Watauga	Уотога	midcities
+Trophy Club	Трофи-Клаб	ne-tarrant
+University Park	Юниверсити-Парк	parks
+Aurora	Аврора	fw-far-north
+Richland Hills	Ричленд-Хиллс	midcities
+Crowley	Краули	fw-suburbs-s
+Bartonville	Бартонвилл	denton
+Lake Worth	Лейк-Уэрт	fw-suburbs-w
+Highland Park	Хайленд-Парк	parks
+Double Oak	Дабл-Оук	denton
+Westworth Village	Уэстуорт-Виллидж	fw-west
+River Oaks	Ривер-Оукс	fw-suburbs-w
+Everman	Эверман	fw-suburbs-s
+Dalworthington Gardens	Долуэртингтон-Гарденс	arlington
+Rhome	Роум	fw-far-north
+Lakeside	Лейксайд	fw-suburbs-w
+St. Paul	Сент-Пол	n-suburbs
+Lucas	Лукас	n-suburbs
+Allen	Аллен	n-suburbs
+Highland Village	Хайленд-Виллидж	denton
+Sansom Park	Сэнсом-Парк	fw-suburbs-w
+Edgecliff Village	Эджклифф-Виллидж	fw-suburbs-s
+Reno	Рино	fw-suburbs-w
+Pantego	Пантиго	arlington
+Newark	Ньюарк	fw-far-north
+Westover Hills	Уэстовер-Хиллс	fw-west
+Pelican Bay	Пеликан-Бей	fw-suburbs-w
+Copper Canyon	Коппер-Каньон	denton
+Justin	Джастин	fw-far-north
+Cockrell Hill	Кокрелл-Хилл	dal-oakcliff
+Blue Mound	Блу-Маунд	fw-far-north
+Heath	Хит	garland
+New Fairview	Нью-Фэрвью	fw-far-north
+Boyd	Бойд	fw-far-north
+Marshall Creek	Маршалл-Крик	denton

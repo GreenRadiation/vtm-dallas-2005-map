@@ -1,0 +1,171 @@
+/* Карта на всю ширину, карточка района справа (на телефоне под картой). Цвета — токены в :root, есть тёмная тема. */
+:root{
+  --bg:#e6eaee; --paper:#f7f8f9; --ink:#1b2130; --muted:#5b6475; --line:#bcc4ce;
+  --accent:#b0242d; --hostile:#b0242d; --hostile-bg:#f6dcdd; --ally:#1f7368; --ally-bg:#d3ebe6;
+  --haven:#2f8a46; --haven-bg:#dcf3df; --imp:#a86a00; --imp-bg:#f7e8c6;
+  --sel:#1b2130; --on-accent:#ffffff;
+  --sea:#d9dee3; --land:#f2f0ea; --water:#b7d5e6; --park:#dbe4c6; --airport:#e2dfe8;
+  --t0:#efe6d6; --t1:#e3ebdc; --t2:#e6e2ef; --t3:#dcebee; --t4:#f1e1e1; --t5:#eaeadb;
+  --dline:#8f98a5; --aline:#3b4352; --limit:#7d6a8f;
+  --r-motorway:#d0843a; --r-trunk:#d0843a; --r-primary:#8d96a2; --r-secondary:#b9bfc7; --rail:#6c6c6c; --dart:#b0242d;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Golos Text","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f131b; --paper:#171c26; --ink:#e5e8ee; --muted:#9aa3b2; --line:#2f3849;
+  --accent:#ff6268; --hostile:#ff6268; --hostile-bg:#4a1d22; --ally:#55c2b2; --ally-bg:#123a33;
+  --haven:#6fd487; --haven-bg:#173a20; --imp:#f0b544; --imp-bg:#45330f;
+  --sel:#f2f4f7; --on-accent:#10131a;
+  --sea:#0b0e14; --land:#181d27; --water:#1b3a4c; --park:#1e2a1e; --airport:#252436;
+  --t0:#3a3222; --t1:#22372a; --t2:#322c46; --t3:#1f3b40; --t4:#43272c; --t5:#363722;
+  --dline:#6a7488; --aline:#c3cad6; --limit:#a58fbb;
+  --r-motorway:#c4823f; --r-trunk:#c4823f; --r-primary:#8a93a3; --r-secondary:#566074; --rail:#8a8a8a; --dart:#ff6268;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f131b; --paper:#171c26; --ink:#e5e8ee; --muted:#9aa3b2; --line:#2f3849;
+  --accent:#ff6268; --hostile:#ff6268; --hostile-bg:#4a1d22; --ally:#55c2b2; --ally-bg:#123a33;
+  --haven:#6fd487; --haven-bg:#173a20; --imp:#f0b544; --imp-bg:#45330f;
+  --sel:#f2f4f7; --on-accent:#10131a;
+  --sea:#0b0e14; --land:#181d27; --water:#1b3a4c; --park:#1e2a1e; --airport:#252436;
+  --t0:#3a3222; --t1:#22372a; --t2:#322c46; --t3:#1f3b40; --t4:#43272c; --t5:#363722;
+  --dline:#6a7488; --aline:#c3cad6; --limit:#a58fbb;
+  --r-motorway:#c4823f; --r-trunk:#c4823f; --r-primary:#8a93a3; --r-secondary:#566074; --rail:#8a8a8a; --dart:#ff6268;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- шапка ---------- */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--paper)}
+.brand{display:grid;gap:2px;margin-right:auto}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;margin:0}
+.search{position:relative;flex:0 1 280px;min-width:180px}
+.search input{width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg)}
+.search input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.results{position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;max-height:320px;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.results button{all:unset;box-sizing:border-box;display:block;width:100%;padding:7px 10px;cursor:pointer;font-size:14px}
+.results button small{color:var(--muted);margin-left:6px}
+.results button:hover,.results button:focus-visible{background:var(--bg)}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--paper);padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.tog{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+@media (max-width:620px){.brand{flex-basis:100%}.search{flex:1 1 100%}}
+
+/* ---------- карта и карточка ---------- */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 420px;height:calc(100vh - 66px);min-height:520px}
+.mapbox{position:relative;min-width:0;border-right:1px solid var(--line)}
+#map{position:absolute;inset:0;background:var(--sea);font-family:var(--body)}
+.loading{position:absolute;inset:auto 0 50% 0;text-align:center;color:var(--muted);margin:0}
+.panel{overflow:auto;padding:18px 20px 28px;background:var(--paper)}
+@media (max-width:900px){
+  .main{grid-template-columns:minmax(0,1fr);height:auto}
+  .mapbox{height:62vh;min-height:360px;border-right:0;border-bottom:1px solid var(--line)}
+  .panel{overflow:visible}
+}
+
+/* ---------- слои карты ---------- */
+.leaflet-container{background:var(--sea);outline:0}
+.land{fill:var(--land);stroke:none}
+.park{fill:var(--park);stroke:none}
+.airport{fill:var(--airport);stroke:none}
+.lake{fill:var(--water);stroke:none}
+.river{stroke:var(--water);fill:none;stroke-width:3}
+.creek{stroke:var(--water);fill:none;stroke-width:1.2}
+.dist{stroke:var(--dline);stroke-width:.9;fill-opacity:.7}
+.area{stroke:var(--aline);stroke-width:1.6;fill:transparent;stroke-opacity:.75}
+.t0{fill:var(--t0)}.t1{fill:var(--t1)}.t2{fill:var(--t2)}.t3{fill:var(--t3)}.t4{fill:var(--t4)}.t5{fill:var(--t5)}
+.dist.m-haven{fill:var(--haven-bg);fill-opacity:.9;stroke:var(--haven);stroke-width:2.5}
+.dist.m-ally{fill:var(--ally-bg);fill-opacity:.9;stroke:var(--ally);stroke-width:2.5}
+.dist.m-hostile{fill:var(--hostile-bg);fill-opacity:.9;stroke:var(--hostile);stroke-width:2.5}
+.dist.m-important{fill:var(--imp-bg);fill-opacity:.9;stroke:var(--imp);stroke-width:2.5}
+.limit{stroke:var(--limit);stroke-width:1;stroke-dasharray:3 3;fill:none;opacity:.7}
+.rd{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.rd-motorway,.rd-trunk{stroke:var(--r-motorway);stroke-width:2}
+.rd-primary{stroke:var(--r-primary);stroke-width:.9}
+.rd-secondary{stroke:var(--r-secondary);stroke-width:.6}
+.rail{stroke:var(--rail);stroke-width:1.1;stroke-dasharray:4 3;fill:none}
+.dart{stroke:var(--dart);stroke-width:1.8;fill:none;opacity:.8}
+.grid{stroke:var(--accent);stroke-width:1;fill:none;opacity:.55}
+.selpath{fill:none;stroke:var(--sel);stroke-width:3.5;stroke-linejoin:round}
+.hov{stroke:var(--sel);stroke-width:2}
+
+/* масштаб: z9…z16 — классы на контейнере карты */
+.z12 .rd-motorway,.z12 .rd-trunk,.z13 .rd-motorway,.z13 .rd-trunk{stroke-width:3.2}
+.z14 .rd-motorway,.z14 .rd-trunk,.z15 .rd-motorway,.z15 .rd-trunk,.z16 .rd-motorway,.z16 .rd-trunk{stroke-width:5}
+.z12 .rd-primary,.z13 .rd-primary{stroke-width:1.6}
+.z14 .rd-primary,.z15 .rd-primary,.z16 .rd-primary{stroke-width:2.6}
+.z13 .rd-secondary{stroke-width:1}.z14 .rd-secondary,.z15 .rd-secondary,.z16 .rd-secondary{stroke-width:1.6}
+.z9 .rd-secondary,.z10 .rd-secondary,.z11 .rd-secondary{display:none}
+.z9 .rd-primary,.z10 .rd-primary{stroke-width:.6}
+.z14 .river,.z15 .river,.z16 .river{stroke-width:6}
+.z9 .creek,.z10 .creek{display:none}
+/* обзор: кликаются области; районы — только контуры */
+.overview .dist{pointer-events:none!important;stroke-opacity:.35}
+.overview .dist.m-haven,.overview .dist.m-ally,.overview .dist.m-hostile,.overview .dist.m-important{stroke-opacity:1}
+.overview .area{fill:rgba(0,0,0,0)}
+.detail .area{pointer-events:none!important;stroke-width:2.4}
+
+/* подписи */
+.lbl{pointer-events:none!important;background:none;border:0}
+.lbl span{display:block;transform:translate(-50%,-50%);width:max-content;max-width:150px;text-align:center;font-weight:600;line-height:1.1;color:var(--ink);
+  text-shadow:0 0 3px var(--land),0 0 3px var(--land),0 0 2px var(--land)}
+.lbl-d span{font-size:11px}
+.z14 .lbl-d span,.z15 .lbl-d span,.z16 .lbl-d span{font-size:13px}
+.lbl-a span{font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.02em;max-width:180px;text-transform:uppercase}
+.lbl-g span{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);opacity:.8}
+.shield span{display:block;transform:translate(-50%,-50%);width:max-content;font-family:var(--mono);font-size:9.5px;font-weight:700;padding:0 3px;border-radius:3px;background:var(--paper);color:var(--ink);border:1px solid var(--r-motorway)}
+.leaflet-tooltip.tip{background:var(--paper);color:var(--ink);border:1px solid var(--line);font:600 13px var(--body);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.leaflet-tooltip.tip::before{display:none}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--paper) 80%,transparent)!important;color:var(--muted)!important;font-size:10.5px}
+.leaflet-control-attribution a{color:var(--muted)!important}
+.leaflet-bar a{background:var(--paper);color:var(--ink);border-color:var(--line)}
+
+/* ---------- карточка ---------- */
+.panel h2{font-family:var(--display);font-weight:700;font-size:23px;line-height:1.12;margin:6px 0 6px;text-wrap:balance}
+.pmeta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.pmeta a,.linkbtn{all:unset;cursor:pointer;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.psum{color:var(--muted);margin:0 0 10px}
+.pdet p{margin:0 0 10px}
+.chip{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+.chip.m-haven{background:var(--haven-bg);border-color:var(--haven)}
+.chip.m-ally{background:var(--ally-bg);border-color:var(--ally)}
+.chip.m-hostile{background:var(--hostile-bg);border-color:var(--hostile)}
+.chip.m-important{background:var(--imp-bg);border-color:var(--imp)}
+details.pmore,details.legacy{border-top:1px solid var(--line);padding:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details.legacy summary small{font-family:var(--mono);color:var(--muted);font-weight:500;margin-left:6px}
+.legacybox{margin-top:14px;padding:10px 12px;border:1px dashed var(--line);border-radius:6px}
+.legacybox h3,.notes h3,.mine h3,.kids h3{font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px}
+.legacybox > p{font-size:13px;color:var(--muted);margin:0 0 4px}
+.notes,.mine{margin-top:14px;padding:10px 12px;border-radius:6px;background:var(--bg)}
+.notes p,.mine p{margin:0;white-space:pre-wrap}
+.kids{margin-top:14px}
+.kids ul{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px}
+.kids button{all:unset;cursor:pointer;font-size:13px;padding:3px 8px;border-radius:4px;border:1px solid var(--line);background:var(--bg)}
+.kids button:hover{border-color:var(--ink)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
+.btn{font-weight:600;font-size:13px;padding:7px 12px;border-radius:6px;border:1.5px solid var(--ink);background:var(--paper);cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.danger{border-color:var(--hostile);color:var(--hostile)}
+.btn.small{font-size:12px;padding:4px 9px}
+.btn:disabled{opacity:.5;cursor:default}
+.status{font-size:12.5px;color:var(--muted)}
+.form{display:grid;gap:10px}
+.form .row{display:grid;gap:4px}
+.form label{font-size:12px;color:var(--muted)}
+.form input,.form select,.form textarea{padding:7px 9px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);width:100%}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{color:var(--muted);font-size:13.5px}
+
+/* ---------- подвал ---------- */
+.foot{padding:14px 16px 28px;display:grid;gap:10px;font-size:13px;color:var(--muted);max-width:1180px}
+.foot p{margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;display:inline-block}
+.ln{width:22px;height:0;display:inline-block}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}

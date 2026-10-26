@@ -1,0 +1,147 @@
+# Районы: центр (или несколько опорных точек с одним id) внутри своего города.
+# Кусок территории между крупными дорогами достаётся ближайшей опорной точке своего города.
+# Город = имя в переписи 2000 года (cities.tsv), "-" — сельская земля вне городов. "@aero:Имя" — аэропорт: район = территория аэродрома из OSM.
+# Чтобы подвинуть границу, добавь району ещё одну строку с тем же id и новой точкой.
+# id	область	город	широта	долгота	название	запрос для геокодера
+downtown	dal-center	Dallas	32.7800	-96.7985	Даунтаун	Main Street District, Dallas
+westend	dal-center	Dallas	32.7795	-96.8075	Вест-Энд	West End Historic District, Dallas
+arts	dal-center	Dallas	32.7890	-96.7985	Арт-район	Dallas Arts District
+uptown	dal-center	Dallas	32.8000	-96.8030	Аптаун	Uptown, Dallas
+victory	dal-center	Dallas	32.7905	-96.8105	Виктори и American Airlines Center	American Airlines Center, Dallas
+cedars	dal-center	Dallas	32.7690	-96.7930	Сидарс	The Cedars, Dallas
+deepellum	dal-center	Dallas	32.7840	-96.7820	Дип-Эллум	Deep Ellum, Dallas
+farmersmarket	dal-center	Dallas	32.7760	-96.7880	Фермерский рынок	Dallas Farmers Market
+oaklawn	dal-center	Dallas	32.8130	-96.8140	Оук-Лоун	Oak Lawn, Dallas
+turtlecreek	dal-center	Dallas	32.8060	-96.8090	Тертл-Крик	Turtle Creek, Dallas
+medical	dal-center	Dallas	32.8120	-96.8380	Медрайон и Паркленд	Parkland Memorial Hospital, Dallas
+marketcenter	dal-center	Dallas	32.8040	-96.8310	Отель Anatole и Market Center	Hilton Anatole, Dallas
+design	dal-center	Dallas	32.7900	-96.8270	Дизайн-дистрикт	Dallas Design District
+floodplain	dal-center	Dallas	32.7780	-96.8230	Пойма Тринити	Trinity River, Dallas
+floodplain	dal-center	Dallas	32.7930	-96.8700		
+floodplain	dal-center	Dallas	32.7880	-96.8500		
+floodplain	dal-center	Dallas	32.7700	-96.8130		
+floodplain	dal-center	Dallas	32.7550	-96.7950		
+floodplain	dal-center	Dallas	32.7450	-96.7820		
+knox	dal-center	Dallas	32.8215	-96.7905	Нокс-Хендерсон	Knox Street, Dallas
+baylor	dal-east	Dallas	32.7900	-96.7790	Бейлор и Старый Восточный Даллас	Baylor University Medical Center, Dallas
+swiss	dal-east	Dallas	32.8060	-96.7650	Суисс-авеню	Swiss Avenue Historic District, Dallas
+lowergreenville	dal-east	Dallas	32.8220	-96.7700	Лоуэр-Гринвилл	Lower Greenville, Dallas
+mstreets	dal-east	Dallas	32.8330	-96.7760	М-стритс	Greenland Hills, Dallas
+lakewood	dal-east	Dallas	32.8200	-96.7500	Лейквуд	Lakewood, Dallas
+eastgrand	dal-east	Dallas	32.7960	-96.7330	Ист-Гранд и Тенисон-Парк	Tenison Park, Dallas
+foresthills	dal-east	Dallas	32.8050	-96.7150	Форест-Хиллс	Forest Hills, Dallas
+casalinda	dal-east	Dallas	32.8300	-96.7000	Каса-Линда	Casa Linda, Dallas
+buckner	dal-east	Dallas	32.7650	-96.6850	Бакнер и I-30	Buckner Boulevard, Dallas
+laprada	dal-east	Dallas	32.8350	-96.6650	Восточный край (Фергюсон-роуд)	Ferguson Road, Dallas
+lakehighlands	dal-north	Dallas	32.8800	-96.7200	Лейк-Хайлендс	Lake Highlands, Dallas
+lakehighlandsn	dal-north	Dallas	32.9150	-96.7150	Северный Лейк-Хайлендс	Skyline Road, Dallas
+northpark	dal-north	Dallas	32.8680	-96.7740	НортПарк	NorthPark Center, Dallas
+vickery	dal-north	Dallas	32.8680	-96.7530	Викери-Медоу	Vickery Meadow, Dallas
+prestonhollow	dal-north	Dallas	32.8800	-96.8000	Престон-Холлоу	Preston Hollow, Dallas
+forestlane	dal-north	Dallas	32.9100	-96.7850	Форест-Лейн	Forest Lane, Dallas
+galleria	dal-north	Dallas	32.9300	-96.8200	Galleria и Валли-Вью	Galleria Dallas
+prestonwood	dal-north	Dallas	32.9687	-96.7975	Престонвуд	Prestonwood, Dallas
+benttree	dal-north	Dallas	32.9960	-96.8250	Бент-Три	Bent Tree, Dallas
+farnorth	dal-north	Dallas	32.9900	-96.7900	Дальний Север	Far North Dallas
+lovefield	dal-northwest	@aero:Love Field	32.8470	-96.8510	Аэропорт Лав-Филд	Dallas Love Field
+bachman	dal-northwest	Dallas	32.8620	-96.8650	Бахман	Bachman Lake, Dallas
+harryhines	dal-northwest	Dallas	32.8400	-96.8700	Харри-Хайнс	Harry Hines Boulevard, Dallas
+koreatown	dal-northwest	Dallas	32.8950	-96.8850	Ройал-Лейн и Корейский квартал	Royal Lane, Dallas
+bluffview	dal-northwest	Dallas	32.8650	-96.8250	Блаффвью	Bluffview, Dallas
+stemmons	dal-northwest	Dallas	32.8180	-96.8600	Стеммонс-коридор	Inwood Road, Dallas
+westdallas	dal-west	Dallas	32.7760	-96.8550	Западный Даллас	Singleton Boulevard, Dallas
+eagleford	dal-west	Dallas	32.7849	-96.9008	Иггл-Форд	Eagle Ford, Dallas
+arcadia	dal-west	Dallas	32.7520	-96.9030	Аркадия-Парк	Arcadia Park, Dallas
+elmfork	dal-west	Dallas	32.8050	-96.8950	Пойма Элм-Форка	California Crossing, Dallas
+bishoparts	dal-oakcliff	Dallas	32.7490	-96.8280	Бишоп-Артс	Bishop Arts District, Dallas
+lakecliff	dal-oakcliff	Dallas	32.7600	-96.8170	Лейк-Клифф	Lake Cliff Park, Dallas
+kessler	dal-oakcliff	Dallas	32.7640	-96.8380	Кесслер-Парк	Kessler Park, Dallas
+jefferson	dal-oakcliff	Dallas	32.7430	-96.8350	Джефферсон-бульвар	Jefferson Boulevard, Dallas
+zoo	dal-oakcliff	Dallas	32.7380	-96.8150	Зоопарк и Марсалис	Dallas Zoo
+elmwood	dal-oakcliff	Dallas	32.7300	-96.8520	Элмвуд	Elmwood, Dallas
+westmoreland	dal-oakcliff	Dallas	32.7500	-96.8750	Западный Оук-Клифф	Westmoreland Road, Dallas
+kiest	dal-oakcliff	Dallas	32.7078	-96.8528	Кист-Парк	Kiest Park, Dallas
+wynnewood	dal-oakcliff	Dallas	32.7215	-96.8560	Уиннвуд	Wynnewood Village, Dallas
+redbird	dal-oakcliff	Dallas	32.6650	-96.8450	Ред-Бёрд	Red Bird, Dallas
+redbirdairport	dal-oakcliff	@aero:Dallas Executive	32.6810	-96.8680	Аэропорт Ред-Бёрд	Dallas Executive Airport
+mountaincreek	dal-oakcliff	Dallas	32.7050	-96.9500	Маунтин-Крик	Dallas Baptist University
+southdallas	dal-south	Dallas	32.7640	-96.7680	Южный Даллас	South Dallas, Dallas
+fairpark	dal-south	Dallas	32.7790	-96.7600	Фэр-Парк	Fair Park, Dallas
+cedarcrest	dal-south	Dallas	32.7180	-96.7930	Сидар-Крест	Cedar Crest, Dallas
+i45	dal-south	Dallas	32.7400	-96.7600	Бонтон и промзона I-45	Bexar Street, Dallas
+highlandhills	dal-south	Dallas	32.6850	-96.7700	Хайленд-Хиллс	Highland Hills, Dallas
+i20south	dal-south	Dallas	32.6580	-96.8000	Южный пояс I-20	Camp Wisdom Road, Dallas
+trinityforest	dal-southeast	Dallas	32.7150	-96.7350	Великий Тринити-лес	Great Trinity Forest, Dallas
+trinityforest	dal-southeast	Dallas	32.6970	-96.7633		
+pleasantgrove	dal-southeast	Dallas	32.7200	-96.6900	Плезант-Гроув	Pleasant Grove, Dallas
+lakejune	dal-southeast	Dallas	32.7380	-96.6700	Лейк-Джун	Lake June Road, Dallas
+kleberg	dal-southeast	Dallas	32.6715	-96.6158	Клеберг	Kleberg, Dallas
+irving-center	irving	Irving	32.8150	-96.9500	Центр Ирвинга	Irving, Texas
+irving-stadium	irving	Irving	32.8400	-96.9110	Texas Stadium	Texas Stadium, Irving
+irving-lascolinas	irving	Irving	32.8907	-96.9619	Лас-Колинас	Las Colinas, Irving
+irving-valleyranch	irving	Irving	32.9300	-96.9550	Валли-Ранч	Valley Ranch, Irving
+dfw	ne-tarrant	@aero:Dallas/Fort Worth	32.8990	-97.0400	Аэропорт DFW	Dallas/Fort Worth International Airport
+arl-center	arlington	Arlington	32.7300	-97.1150	Арлингтон: центр и UTA	University of Texas at Arlington
+arl-entertainment	arlington	Arlington	32.7550	-97.0750	Арлингтон: стадион и Six Flags	Six Flags Over Texas
+arl-north	arlington	Arlington	32.7820	-97.1050	Арлингтон: север	North Arlington, Texas
+arl-south	arlington	Arlington	32.6801	-97.1298	Арлингтон: юг	The Parks Mall, Arlington
+arl-southwest	arlington	Arlington	32.6600	-97.1800	Арлингтон: юго-запад	Southwest Arlington, Texas
+arl-airport	arlington	@aero:Arlington Municipal	32.6640	-97.0940	Аэропорт Арлингтона	Arlington Municipal Airport
+gp-center	grandprairie	Grand Prairie	32.7450	-96.9950	Гранд-Прери: центр	Grand Prairie, Texas
+gp-north	grandprairie	Grand Prairie	32.8000	-97.0300	Гранд-Прери: север	Lone Star Park, Grand Prairie
+gp-south	grandprairie	Grand Prairie	32.6500	-97.0200	Гранд-Прери: юг	Joe Pool Lake
+plano-east	n-suburbs	Plano	33.0200	-96.7000	Плано: восток	Downtown Plano
+plano-center	n-suburbs	Plano	33.0350	-96.7600	Плано: центр	Collin Creek Mall, Plano
+plano-west	n-suburbs	Plano	33.0650	-96.8200	Плано: запад и Legacy	Legacy, Plano
+rich-center	n-suburbs	Richardson	32.9500	-96.7300	Ричардсон: центр	Richardson, Texas
+rich-telecom	n-suburbs	Richardson	32.9900	-96.7100	Ричардсон: Телеком-коридор	Telecom Corridor, Richardson
+garland-center	garland	Garland	32.9100	-96.6380	Гарленд: центр	Downtown Garland
+garland-north	garland	Garland	32.9600	-96.6200	Гарленд: север	North Garland, Texas
+garland-south	garland	Garland	32.8700	-96.6200	Гарленд: юг	South Garland, Texas
+mesquite-center	e-suburbs	Mesquite	32.7700	-96.6000	Меските: центр	Mesquite, Texas
+mesquite-towneast	e-suburbs	Mesquite	32.8150	-96.6200	Меските: Таун-Ист	Town East Mall, Mesquite
+fw-downtown	fw-center	Fort Worth	32.7530	-97.3310	Даунтаун Форт-Уэрта	Sundance Square, Fort Worth
+fw-medical	fw-center	Fort Worth	32.7330	-97.3320	Медрайон (Ниар-Саутсайд)	John Peter Smith Hospital, Fort Worth
+fw-cultural	fw-center	Fort Worth	32.7480	-97.3640	Культурный район	Kimbell Art Museum, Fort Worth
+fw-samuels	fw-center	Fort Worth	32.7660	-97.3250	Сэмюэлс-авеню	Samuels Avenue, Fort Worth
+fw-trinitypark	fw-center	Fort Worth	32.7426	-97.3572	Тринити-Парк	Trinity Park, Fort Worth
+fw-stockyards	fw-north	Fort Worth	32.7890	-97.3470	Стокъярдс	Fort Worth Stockyards
+fw-northside	fw-north	Fort Worth	32.7780	-97.3500	Норт-сайд	Northside Drive, Fort Worth
+fw-rosenheights	fw-north	Fort Worth	32.7950	-97.3650	Розен-Хайтс	Rosen Heights, Fort Worth
+fw-diamondhill	fw-north	Fort Worth	32.8050	-97.3300	Даймонд-Хилл	Diamond Hill, Fort Worth
+fw-meacham	fw-north	@aero:Meacham	32.8200	-97.3620	Аэропорт Мичем	Fort Worth Meacham International Airport
+fw-jacksboro	fw-north	Fort Worth	32.8150	-97.4000	Джексборо-хайвей	Jacksboro Highway, Fort Worth
+fw-riverside	fw-north	Fort Worth	32.7800	-97.3050	Риверсайд и Оукхерст	Oakhurst, Fort Worth
+fw-fossilcreek	fw-far-north	Fort Worth	32.8550	-97.3200	Фоссил-Крик	Fossil Creek, Fort Worth
+fw-summerfields	fw-far-north	Fort Worth	32.8900	-97.2900	Саммерфилдс	Summerfields, Fort Worth
+fw-alliance	fw-far-north	@aero:Alliance	32.9870	-97.3190	Аэропорт Альянс	Fort Worth Alliance Airport
+fw-farnorth	fw-far-north	Fort Worth	32.9650	-97.2950	Дальний север Форт-Уэрта	North Fort Worth, Texas
+fw-eaglemountain	fw-far-north	Fort Worth	32.8550	-97.4800	Северо-запад (к озеру Игл-Маунтин)	Eagle Mountain Lake
+fw-arlingtonheights	fw-west	Fort Worth	32.7380	-97.3850	Арлингтон-Хайтс	Arlington Heights, Fort Worth
+fw-campbowie	fw-west	Fort Worth	32.7270	-97.4150	Кэмп-Боуи и Ридгли	Ridglea, Fort Worth
+fw-rivercrest	fw-west	Fort Worth	32.7550	-97.3800	Риверкрест	Rivercrest, Fort Worth
+fw-lasvegastrail	fw-west	Fort Worth	32.7365	-97.4669	Лас-Вегас-Трейл	Las Vegas Trail, Fort Worth
+fw-nasjrb	fw-west	@aero:Naval Air Station	32.7690	-97.4410	Авиабаза и Lockheed	Naval Air Station Joint Reserve Base Fort Worth
+fw-tanglewood	fw-west	Fort Worth	32.7000	-97.3850	Тэнглвуд	Tanglewood, Fort Worth
+fw-hulen	fw-west	Fort Worth	32.6800	-97.4050	Хьюлен и Сити-Вью	Hulen Mall, Fort Worth
+fw-tcu	fw-south	Fort Worth	32.7100	-97.3630	TCU и Берри-стрит	Texas Christian University
+fw-fairmount	fw-south	Fort Worth	32.7280	-97.3340	Фэрмаунт	Fairmount, Fort Worth
+fw-ryanplace	fw-south	Fort Worth	32.7120	-97.3370	Райан-Плейс	Ryan Place, Fort Worth
+fw-morningside	fw-south	Fort Worth	32.7150	-97.3150	Морнингсайд	Morningside, Fort Worth
+fw-seminary	fw-south	Fort Worth	32.6803	-97.3482	Семинари	Southwestern Baptist Theological Seminary
+fw-wedgwood	fw-south	Fort Worth	32.6600	-97.3800	Уэджвуд	Wedgwood, Fort Worth
+fw-southi20	fw-south	Fort Worth	32.6550	-97.3200	Южный Форт-Уэрт (I-20)	Sycamore School Road, Fort Worth
+fw-poly	fw-east	Fort Worth	32.7300	-97.2800	Политехник	Texas Wesleyan University
+fw-eastlancaster	fw-east	Fort Worth	32.7500	-97.2800	Ист-Ланкастер	East Lancaster Avenue, Fort Worth
+fw-meadowbrook	fw-east	Fort Worth	32.7570	-97.2350	Медоубрук	Meadowbrook, Fort Worth
+fw-stopsix	fw-east	Fort Worth	32.7247	-97.2335	Стоп-Сикс	Stop Six, Fort Worth
+fw-handley	fw-east	Fort Worth	32.7350	-97.2100	Хэндли и озеро Арлингтон	Handley, Fort Worth
+fw-eastchase	fw-east	Fort Worth	32.7601	-97.1672	Истчейз	Eastchase Parkway, Fort Worth
+fw-rivertrails	fw-east	Fort Worth	32.7957	-97.1860	Ривер-Трейлс	River Trails, Fort Worth
+rural-tarrant-w	fw-suburbs-w	-	32.8000	-97.5300	Запад округа Таррант	
+rural-tarrant-nw	fw-far-north	-	32.9500	-97.4900	Северо-запад округа Таррант	
+rural-tarrant-s	fw-suburbs-s	-	32.6000	-97.5200	Юг округа Таррант	
+rural-denton	denton	-	33.0700	-97.3000	Сельский юг округа Дентон	
+rural-collin	n-suburbs	-	33.0700	-96.5300	Сельский юго-восток округа Коллин	
+rural-dallas-se	e-suburbs	-	32.6200	-96.5700	Сельский юго-восток округа Даллас	
+rural-dallas-s	s-suburbs	-	32.5900	-96.6800	Сельский юг округа Даллас	

@@ -1,0 +1,31 @@
+{
+ "schema": 2,
+ "updated": "2026-10-26",
+ "areas": {},
+ "districts": {
+  "prestonhollow": {
+   "marker": "important",
+   "label": "Элизиум",
+   "summary": "",
+   "details": "",
+   "more": "",
+   "notes": ""
+  },
+  "marketcenter": {
+   "marker": "important",
+   "label": "Отель Барона",
+   "summary": "",
+   "details": "",
+   "more": "",
+   "notes": ""
+  },
+  "medical": {
+   "marker": "ally",
+   "label": "Союзник в Паркленде",
+   "summary": "",
+   "details": "",
+   "more": "",
+   "notes": ""
+  }
+ }
+}
