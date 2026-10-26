@@ -1,320 +1,326 @@
-arlington-n	arlington-n	arl-center	Центр Арлингтона и UTA	19.6 км²	секторов: 4
-arlington-n	arlington-n	arl-center-w	Центр Арлингтона и UTA, запад	12.1 км²	секторов: 2
-arlington-n	arlington-n	arl-entertainment	Стадион и Six Flags	21.7 км²	секторов: 4
-arlington-n	arlington-n	arl-entertainment-s	Стадион и Six Flags, юг	19.2 км²	секторов: 4
-arlington-n	arlington-n	arl-north	Северный Арлингтон	19.8 км²	секторов: 4
-arlington-s	arl-airport	arl-airport	Аэропорт Арлингтона	1.3 км²	секторов: 1
-arlington-s	arlington-s.c	arl-south	Южный Арлингтон	20.6 км²	секторов: 4
-arlington-s	arlington-s.c	arl-southwest	Юго-западный Арлингтон	19.6 км²	секторов: 4
-arlington-s	arlington-s.c	c-dalworthington-gardens	Долуэртингтон-Гарденс	15.3 км²	секторов: 3
-arlington-s	arlington-s.c	c-pantego	Пантиго	13.3 км²	секторов: 3
-arlington-s	arlington-s.se	arl-south-e	Южный Арлингтон, восток	20.1 км²	секторов: 4
-arlington-s	arlington-s.se	arl-south-se	Южный Арлингтон, юго-восток	24.6 км²	секторов: 5
-arlington-s	arlington-s.se	arl-southwest-se	Юго-западный Арлингтон, юго-восток	22.1 км²	секторов: 4
-collin-east	collin-east	c-lucas	Лукас	15.0 км²	секторов: 1
-collin-east	collin-east	c-murphy	Мерфи	23.6 км²	секторов: 2
-collin-east	collin-east	c-parker	Паркер	15.8 км²	секторов: 1
-collin-east	collin-east	c-st-paul	Сент-Пол	21.2 км²	секторов: 1
-collin-east	collin-east	c-wylie	Уайли	21.5 км²	секторов: 1
-collin-east	collin-east	c-wylie-se1	Уайли, ближний юго-восток	12.6 км²	секторов: 1
-collin-east	collin-east	c-wylie-se2	Уайли, дальний юго-восток	6.2 км²	секторов: 1
-collin-east	collin-east	rural-collin	Сельский юго-восток округа Коллин	8.0 км²	секторов: 1
-collin-east	lake-lavon	lake-lavon	Озеро Лавон	11.7 км²	секторов: 1
-dal-center	dal-center.n	c-highland-park	Хайленд-Парк	6.5 км²	секторов: 5
-dal-center	dal-center.n	c-university-park	Юниверсити-Парк	7.5 км²	секторов: 5
-dal-center	dal-center.n	knox	Нокс-Хендерсон	3.9 км²	секторов: 3
-dal-center	dal-center.n	medical	Медрайон и Паркленд	6.6 км²	секторов: 5
-dal-center	dal-center.n	oaklawn	Оук-Лоун	5.4 км²	секторов: 4
-dal-center	dal-center.s	cedars	Сидарс	4.8 км²	секторов: 3
-dal-center	dal-center.s	deepellum	Дип-Эллум	2.5 км²	секторов: 2
-dal-center	dal-center.s	downtown	Даунтаун	5.0 км²	секторов: 3
-dal-center	dal-center.s	marketcenter	Market Center и Дизайн-дистрикт	4.3 км²	секторов: 2
-dal-center	dal-center.s	uptown	Аптаун	5.5 км²	секторов: 3
-dal-east	dal-east.c	baylor	Бейлор и Старый Восточный Даллас	3.6 км²	секторов: 1
-dal-east	dal-east.c	buckner	Бакнер и I-30	19.4 км²	секторов: 6
-dal-east	dal-east.c	casalinda	Каса-Линда	12.3 км²	секторов: 4
-dal-east	dal-east.c	eastgrand	Ист-Гранд и Тенисон-Парк	9.7 км²	секторов: 3
-dal-east	dal-east.c	foresthills	Форест-Хиллс	12.2 км²	секторов: 4
-dal-east	dal-east.c	lakewood	Лейквуд	9.9 км²	секторов: 3
-dal-east	dal-east.c	laprada	Восточный край Далласа	21.4 км²	секторов: 7
-dal-east	dal-east.c	lowergreenville	Лоуэр-Гринвилл	3.2 км²	секторов: 1
-dal-east	dal-east.c	mstreets	М-стритс	6.4 км²	секторов: 2
-dal-east	dal-east.c	swiss	Суисс-авеню	5.5 км²	секторов: 2
-dal-east	dal-east.e	laprada-e	Восточный край Далласа, восток	6.5 км²	секторов: 2
-dal-east	lake-whiterock	lake-whiterock	Озеро Уайт-Рок	7.2 км²	секторов: 1
-dal-north	dal-north.c	forestlane	Форест-Лейн	14.4 км²	секторов: 5
-dal-north	dal-north.c	forestlane-ne	Форест-Лейн, северо-восток	17.9 км²	секторов: 6
-dal-north	dal-north.c	galleria	Galleria и Валли-Вью	23.3 км²	секторов: 8
-dal-north	dal-north.c	prestonwood	Престонвуд	16.3 км²	секторов: 5
-dal-north	dal-north.nw	benttree	Бент-Три	10.3 км²	секторов: 3
-dal-north	dal-north.nw	benttree-w	Бент-Три, запад	11.9 км²	секторов: 4
-dal-north	dal-north.nw	farnorth	Дальний Север	13.7 км²	секторов: 5
-dal-north	dal-north.s	northpark	НортПарк	8.1 км²	секторов: 3
-dal-north	dal-north.s	prestonhollow	Престон-Холлоу	12.3 км²	секторов: 4
-dal-north	dal-north.s	vickery	Викери-Медоу	14.2 км²	секторов: 5
-dal-north	dal-north.se	lakehighlands	Лейк-Хайлендс	12.3 км²	секторов: 4
-dal-north	dal-north.se	lakehighlands-se	Лейк-Хайлендс, юго-восток	16.0 км²	секторов: 5
-dal-north	dal-north.se	lakehighlandsn	Северный Лейк-Хайлендс	17.7 км²	секторов: 6
-dal-northwest	dal-northwest.c	bachman	Бахман	12.5 км²	секторов: 4
-dal-northwest	dal-northwest.c	bluffview	Блаффвью	16.3 км²	секторов: 5
-dal-northwest	dal-northwest.c	harryhines	Харри-Хайнс	9.1 км²	секторов: 3
-dal-northwest	dal-northwest.c	koreatown	Ройал-Лейн и Корейский квартал	18.5 км²	секторов: 6
-dal-northwest	dal-northwest.c	koreatown-sw	Ройал-Лейн и Корейский квартал, юго-запад	18.7 км²	секторов: 6
-dal-northwest	dal-northwest.c	stemmons	Стеммонс-коридор	6.8 км²	секторов: 2
-dal-northwest	dal-northwest.nw	koreatown-nw	Ройал-Лейн и Корейский квартал, северо-запад	10.7 км²	секторов: 4
-dal-northwest	lake-north	lake-north	Озеро Норт-Лейк	1.2 км²	секторов: 1
-dal-northwest	lovefield	lovefield	Аэропорт Лав-Филд	4.3 км²	секторов: 1
-dal-oakcliff	dal-oakcliff.c	kiest	Кист-Парк	13.8 км²	секторов: 5
-dal-oakcliff	dal-oakcliff.c	kiest-w	Кист-Парк, запад	25.3 км²	секторов: 8
-dal-oakcliff	dal-oakcliff.c	redbird	Ред-Бёрд	25.9 км²	секторов: 9
-dal-oakcliff	dal-oakcliff.ne	bishoparts	Бишоп-Артс	2.3 км²	секторов: 1
-dal-oakcliff	dal-oakcliff.ne	elmwood	Элмвуд	5.5 км²	секторов: 2
-dal-oakcliff	dal-oakcliff.ne	jefferson	Джефферсон-бульвар	4.4 км²	секторов: 1
-dal-oakcliff	dal-oakcliff.ne	kessler	Кесслер-Парк	6.3 км²	секторов: 2
-dal-oakcliff	dal-oakcliff.ne	lakecliff	Лейк-Клифф	3.2 км²	секторов: 1
-dal-oakcliff	dal-oakcliff.ne	westmoreland	Западный Оук-Клифф	11.3 км²	секторов: 4
-dal-oakcliff	dal-oakcliff.ne	wynnewood	Уиннвуд	6.8 км²	секторов: 2
-dal-oakcliff	dal-oakcliff.ne	zoo	Зоопарк и Марсалис	9.2 км²	секторов: 3
-dal-oakcliff	dal-oakcliff.nw	mountaincreek	Маунтин-Крик	12.6 км²	секторов: 4
-dal-oakcliff	dal-oakcliff.nw	mountaincreek-nw	Маунтин-Крик, северо-запад	10.0 км²	секторов: 3
-dal-oakcliff	dal-oakcliff.sw	mountaincreek-s1	Маунтин-Крик, ближний юг	16.1 км²	секторов: 5
-dal-oakcliff	dal-oakcliff.sw	mountaincreek-s2	Маунтин-Крик, дальний юг	13.9 км²	секторов: 5
-dal-oakcliff	lake-mountaincreek	lake-mountaincreek	Озеро Маунтин-Крик	9.7 км²	секторов: 1
-dal-oakcliff	redbirdairport	redbirdairport	Аэропорт Ред-Бёрд	2.9 км²	секторов: 1
-dal-south	dal-south.c	cedarcrest	Сидар-Крест	13.3 км²	секторов: 4
-dal-south	dal-south.c	cedarcrest-sw	Сидар-Крест, юго-запад	13.8 км²	секторов: 5
-dal-south	dal-south.c	highlandhills	Хайленд-Хиллс	13.9 км²	секторов: 5
-dal-south	dal-south.n	fairpark	Фэр-Парк	6.4 км²	секторов: 2
-dal-south	dal-south.n	fairpark-se	Фэр-Парк, юго-восток	14.8 км²	секторов: 5
-dal-south	dal-south.n	i45	Бонтон и промзона I-45	11.4 км²	секторов: 4
-dal-south	dal-south.n	southdallas	Южный Даллас	6.4 км²	секторов: 2
-dal-south	dal-south.s	highlandhills-se	Хайленд-Хиллс, юго-восток	12.9 км²	секторов: 4
-dal-south	dal-south.s	i20south	Южный пояс I-20	19.5 км²	секторов: 6
-dal-south	dal-south.s	i20south-se	Южный пояс I-20, юго-восток	16.5 км²	секторов: 5
-dal-southeast	dal-southeast.c	lakejune	Лейк-Джун	16.6 км²	секторов: 6
-dal-southeast	dal-southeast.c	lakejune-se	Лейк-Джун, юго-восток	12.7 км²	секторов: 4
-dal-southeast	dal-southeast.c	pleasantgrove	Плезант-Гроув	14.0 км²	секторов: 5
-dal-southeast	dal-southeast.c	pleasantgrove-s	Плезант-Гроув, юг	12.8 км²	секторов: 4
-dal-southeast	dal-southeast.se	kleberg	Клеберг	14.5 км²	секторов: 5
-dal-southeast	dal-southeast.se	kleberg-ne	Клеберг, северо-восток	14.8 км²	секторов: 5
-dal-southeast	dal-southeast.se	kleberg-sw	Клеберг, юго-запад	17.0 км²	секторов: 6
-dal-southeast	dal-southeast.w	trinityforest	Великий Тринити-лес	15.4 км²	секторов: 5
-dal-southeast	dal-southeast.w	trinityforest-se	Великий Тринити-лес, юго-восток	14.0 км²	секторов: 5
-dal-west	dal-west	arcadia	Аркадия-Парк	18.3 км²	секторов: 6
-dal-west	dal-west	eagleford	Иггл-Форд	17.5 км²	секторов: 6
-dal-west	dal-west	irvingblvd	Промзона на Ирвинг-бульваре	5.0 км²	секторов: 2
-dal-west	dal-west	westdallas	Западный Даллас	10.9 км²	секторов: 4
-dal-west	trinity-floodway	trinity-floodway	Пойма Тринити	11.3 км²	секторов: 1
-dfw	dfw	c-grapevine	Грейпвайн	28.6 км²	секторов: 6
-dfw	dfw	c-grapevine-ne	Грейпвайн, северо-восток	24.8 км²	секторов: 5
-dfw	dfw	c-grapevine-nw	Грейпвайн, северо-запад	15.3 км²	секторов: 3
-dfw	dfw	dfw	Аэропорт DFW	26.5 км²	секторов: 1
-dfw	lake-grapevine	lake-grapevine	Озеро Грейпвайн	26.5 км²	секторов: 1
-flowermound	flowermound	c-bartonville	Бартонвилл	24.5 км²	секторов: 2
-flowermound	flowermound	c-copper-canyon	Коппер-Каньон	7.3 км²	секторов: 1
-flowermound	flowermound	c-double-oak	Дабл-Оук	17.5 км²	секторов: 1
-flowermound	flowermound	c-flower-mound	Флауэр-Маунд	44.2 км²	секторов: 3
-flowermound	flowermound	c-highland-village	Хайленд-Виллидж	11.7 км²	секторов: 1
-flowermound	flowermound	rural-denton	Сельский юг округа Дентон	40.9 км²	секторов: 3
-fw-center	fw-center	fw-cultural	Культурный район	4.0 км²	секторов: 3
-fw-center	fw-center	fw-downtown	Даунтаун Форт-Уэрта	6.7 км²	секторов: 5
-fw-center	fw-center	fw-medical	Медрайон (Ниар-Саутсайд)	4.8 км²	секторов: 3
-fw-center	fw-center	fw-samuels	Сэмюэлс-авеню	6.6 км²	секторов: 5
-fw-center	fw-center	fw-trinitypark	Тринити-Парк	5.1 км²	секторов: 4
-fw-east	fw-east.c	fw-handley	Хэндли и озеро Арлингтон	14.7 км²	секторов: 5
-fw-east	fw-east.c	fw-meadowbrook	Медоубрук	13.7 км²	секторов: 5
-fw-east	fw-east.c	fw-meadowbrook-ne	Медоубрук, северо-восток	14.0 км²	секторов: 5
-fw-east	fw-east.ne1	fw-eastchase	Истчейз	16.5 км²	секторов: 6
-fw-east	fw-east.ne1	fw-rivertrails	Ривер-Трейлс	12.3 км²	секторов: 4
-fw-east	fw-east.ne1	fw-rivertrails-e1	Ривер-Трейлс, ближний восток	17.8 км²	секторов: 6
-fw-east	fw-east.ne2	fw-eastchase-ne	Истчейз, северо-восток	10.1 км²	секторов: 3
-fw-east	fw-east.ne2	fw-rivertrails-e2	Ривер-Трейлс, дальний восток	14.7 км²	секторов: 5
-fw-east	fw-east.sw	fw-eastlancaster	Ист-Ланкастер	13.9 км²	секторов: 5
-fw-east	fw-east.sw	fw-poly	Политехник	10.8 км²	секторов: 4
-fw-east	fw-east.sw	fw-poly-s	Политехник, юг	11.6 км²	секторов: 4
-fw-east	fw-east.sw	fw-stopsix	Стоп-Сикс	12.4 км²	секторов: 4
-fw-east	fw-east.sw	fw-stopsix-s	Стоп-Сикс, юг	16.1 км²	секторов: 5
-fw-east	lake-arlington	lake-arlington	Озеро Арлингтон	7.6 км²	секторов: 1
-fw-far-north	fw-alliance	fw-alliance	Аэропорт Альянс	4.1 км²	секторов: 1
-fw-far-north	fw-far-north.c	c-haslet	Хаслет	71.2 км²	секторов: 5
-fw-far-north	fw-far-north.c	c-justin	Джастин	24.7 км²	секторов: 2
-fw-far-north	fw-far-north.c	c-northlake	Нортлейк	29.1 км²	секторов: 2
-fw-far-north	fw-far-north.c	c-roanoke	Роанок	35.9 км²	секторов: 2
-fw-far-north	fw-far-north.c	fw-farnorth	Дальний север Форт-Уэрта	45.0 км²	секторов: 3
-fw-far-north	fw-far-north.s	c-saginaw	Сагино	37.7 км²	секторов: 3
-fw-far-north	fw-far-north.s	fw-fossilcreek	Фоссил-Крик	25.8 км²	секторов: 2
-fw-far-north	fw-far-north.s	fw-summerfields	Саммерфилдс	40.3 км²	секторов: 3
-fw-north	fw-meacham	fw-meacham	Аэропорт Мичем	2.8 км²	секторов: 1
-fw-north	fw-north.nw	fw-jacksboro	Джексборо-хайвей	12.9 км²	секторов: 4
-fw-north	fw-north.nw	fw-jacksboro-n	Джексборо-хайвей, север	35.3 км²	секторов: 12
-fw-north	fw-north.nw	fw-jacksboro-w	Джексборо-хайвей, запад	6.5 км²	секторов: 2
-fw-north	fw-north.se	fw-diamondhill	Даймонд-Хилл	18.8 км²	секторов: 6
-fw-north	fw-north.se	fw-northside	Норт-сайд	6.6 км²	секторов: 2
-fw-north	fw-north.se	fw-riverside	Риверсайд и Оукхерст	11.9 км²	секторов: 4
-fw-north	fw-north.se	fw-rosenheights	Розен-Хайтс	9.4 км²	секторов: 3
-fw-north	fw-north.se	fw-stockyards	Стокъярдс	4.6 км²	секторов: 2
-fw-nw	fw-nw.c	c-aurora	Аврора	49.3 км²	секторов: 3
-fw-nw	fw-nw.c	c-rhome	Роум	85.6 км²	секторов: 6
-fw-nw	fw-nw.c	rural-tarrant-nw	Северо-запад округа Таррант	52.6 км²	секторов: 4
-fw-nw	fw-nw.c	rural-tarrant-nw-e	Северо-запад округа Таррант, восток	78.8 км²	секторов: 5
-fw-nw	fw-nw.sw	c-azle	Азл	21.0 км²	секторов: 1
-fw-nw	fw-nw.sw	c-pelican-bay	Пеликан-Бей	8.1 км²	секторов: 1
-fw-nw	fw-nw.sw	c-reno	Рино	23.8 км²	секторов: 2
-fw-nw	lake-eaglemountain	lake-eaglemountain	Озеро Игл-Маунтин	35.4 км²	секторов: 1
+arlington-n	arlington-n	arl-center	Центр Арлингтона и UTA	17.5 км²	секторов: 4
+arlington-n	arlington-n	arl-center-nw	Центр Арлингтона и UTA, северо-запад	13.6 км²	секторов: 3
+arlington-n	arlington-n	arl-center-se	Центр Арлингтона и UTA, юго-восток	21.3 км²	секторов: 4
+arlington-n	arlington-n	arl-entertainment	Стадион и Six Flags	12.9 км²	секторов: 3
+arlington-n	arlington-n	arl-north	Северный Арлингтон	23.7 км²	секторов: 5
+arlington-n	arlington-n	arl-north-ne	Северный Арлингтон, северо-восток	11.6 км²	секторов: 3
+arlington-s	arl-airport	arl-airport	Аэропорт Арлингтона	0.5 км²	секторов: 1
+arlington-s	arlington-s.c	arl-southwest	Юго-западный Арлингтон	16.0 км²	секторов: 3
+arlington-s	arlington-s.c	arl-southwest-se1	Юго-западный Арлингтон, ближний юго-восток	21.1 км²	секторов: 4
+arlington-s	arlington-s.c	c-dalworthington-gardens	Долуэртингтон-Гарденс	17.5 км²	секторов: 3
+arlington-s	arlington-s.c	c-kennedale	Кеннедейл	26.8 км²	секторов: 5
+arlington-s	arlington-s.c	c-pantego	Пантиго	14.1 км²	секторов: 3
+arlington-s	arlington-s.ne	arl-south	Южный Арлингтон	14.7 км²	секторов: 3
+arlington-s	arlington-s.ne	arl-south-se1	Южный Арлингтон, ближний юго-восток	25.6 км²	секторов: 5
+arlington-s	arlington-s.s	arl-south-se2	Южный Арлингтон, дальний юго-восток	15.6 км²	секторов: 3
+arlington-s	arlington-s.s	arl-southwest-se2	Юго-западный Арлингтон, дальний юго-восток	20.4 км²	секторов: 4
+arlington-s	arlington-s.s	c-mansfield	Мансфилд	20.3 км²	секторов: 4
+collin-east	collin-east.c	c-lucas	Лукас	18.8 км²	секторов: 1
+collin-east	collin-east.c	c-murphy	Мерфи	21.0 км²	секторов: 1
+collin-east	collin-east.c	c-parker	Паркер	17.7 км²	секторов: 1
+collin-east	collin-east.c	c-st-paul	Сент-Пол	11.3 км²	секторов: 1
+collin-east	collin-east.c	c-wylie	Уайли	16.5 км²	секторов: 1
+collin-east	collin-east.c	c-wylie-se	Уайли, юго-восток	28.7 км²	секторов: 2
+collin-east	collin-east.ne	rural-collin	Сельский юго-восток округа Коллин	3.4 км²	секторов: 1
+collin-east	lake-lavon	lake-lavon	Озеро Лавон	14.6 км²	секторов: 1
+dal-center	dal-center.n	c-highland-park	Хайленд-Парк	5.9 км²	секторов: 4
+dal-center	dal-center.n	c-university-park	Юниверсити-Парк	8.2 км²	секторов: 6
+dal-center	dal-center.n	knox	Нокс-Хендерсон	2.0 км²	секторов: 1
+dal-center	dal-center.n	medical	Медрайон и Паркленд	4.0 км²	секторов: 3
+dal-center	dal-center.n	medical-ne	Медрайон и Паркленд, северо-восток	6.3 км²	секторов: 5
+dal-center	dal-center.n	oaklawn	Оук-Лоун	3.8 км²	секторов: 2
+dal-center	dal-center.s	cedars	Сидарс	6.6 км²	секторов: 5
+dal-center	dal-center.s	deepellum	Дип-Эллум	1.4 км²	секторов: 1
+dal-center	dal-center.s	downtown	Даунтаун	5.4 км²	секторов: 3
+dal-center	dal-center.s	marketcenter	Market Center и Дизайн-дистрикт	4.8 км²	секторов: 2
+dal-center	dal-center.s	uptown	Аптаун	4.6 км²	секторов: 3
+dal-east	dal-east.c	baylor	Бейлор и Старый Восточный Даллас	4.3 км²	секторов: 1
+dal-east	dal-east.c	buckner	Бакнер и I-30	26.8 км²	секторов: 9
+dal-east	dal-east.c	eastgrand	Ист-Гранд и Тенисон-Парк	5.5 км²	секторов: 2
+dal-east	dal-east.c	foresthills	Форест-Хиллс	10.9 км²	секторов: 4
+dal-east	dal-east.c	lakewood	Лейквуд	9.4 км²	секторов: 3
+dal-east	dal-east.c	lowergreenville	Лоуэр-Гринвилл	3.9 км²	секторов: 1
+dal-east	dal-east.c	mstreets	М-стритс	5.9 км²	секторов: 2
+dal-east	dal-east.c	swiss	Суисс-авеню	8.3 км²	секторов: 3
+dal-east	dal-east.ne	casalinda	Каса-Линда	11.5 км²	секторов: 4
+dal-east	dal-east.ne	laprada	Восточный край Далласа	24.5 км²	секторов: 8
+dal-east	lake-whiterock	lake-whiterock	Озеро Уайт-Рок	6.6 км²	секторов: 1
+dal-north	dal-north.c	forestlane	Форест-Лейн	17.7 км²	секторов: 6
+dal-north	dal-north.c	forestlane-n	Форест-Лейн, север	12.8 км²	секторов: 4
+dal-north	dal-north.c	galleria	Galleria и Валли-Вью	6.9 км²	секторов: 2
+dal-north	dal-north.c	prestonwood	Престонвуд	12.0 км²	секторов: 4
+dal-north	dal-north.nw	benttree	Бент-Три	7.8 км²	секторов: 3
+dal-north	dal-north.nw	benttree-w	Бент-Три, запад	13.8 км²	секторов: 5
+dal-north	dal-north.nw	farnorth	Дальний Север	12.9 км²	секторов: 4
+dal-north	dal-north.se	lakehighlands	Лейк-Хайлендс	18.5 км²	секторов: 6
+dal-north	dal-north.se	lakehighlands-se	Лейк-Хайлендс, юго-восток	10.9 км²	секторов: 4
+dal-north	dal-north.se	lakehighlandsn	Северный Лейк-Хайлендс	15.5 км²	секторов: 5
+dal-north	dal-north.se	northpark	НортПарк	3.9 км²	секторов: 1
+dal-north	dal-north.se	vickery	Викери-Медоу	18.7 км²	секторов: 6
+dal-north	dal-north.sw	galleria-sw	Galleria и Валли-Вью, юго-запад	16.5 км²	секторов: 5
+dal-north	dal-north.sw	prestonhollow	Престон-Холлоу	9.2 км²	секторов: 3
+dal-northwest	dal-northwest.c	bachman	Бахман	14.9 км²	секторов: 5
+dal-northwest	dal-northwest.c	bluffview	Блаффвью	14.6 км²	секторов: 5
+dal-northwest	dal-northwest.c	harryhines	Харри-Хайнс	8.3 км²	секторов: 3
+dal-northwest	dal-northwest.c	stemmons	Стеммонс-коридор	6.3 км²	секторов: 2
+dal-northwest	dal-northwest.nw	koreatown	Ройал-Лейн и Корейский квартал	16.6 км²	секторов: 6
+dal-northwest	dal-northwest.nw	koreatown-sw	Ройал-Лейн и Корейский квартал, юго-запад	14.8 км²	секторов: 5
+dal-northwest	lovefield	lovefield	Аэропорт Лав-Филд	3.9 км²	секторов: 1
+dal-oakcliff	dal-oakcliff.c	mountaincreek	Маунтин-Крик	10.4 км²	секторов: 4
+dal-oakcliff	dal-oakcliff.c	mountaincreek-se	Маунтин-Крик, юго-восток	32.8 км²	секторов: 11
+dal-oakcliff	dal-oakcliff.ne	bishoparts	Бишоп-Артс	2.4 км²	секторов: 1
+dal-oakcliff	dal-oakcliff.ne	elmwood	Элмвуд	4.2 км²	секторов: 2
+dal-oakcliff	dal-oakcliff.ne	jefferson	Джефферсон-бульвар	5.5 км²	секторов: 2
+dal-oakcliff	dal-oakcliff.ne	kessler	Кесслер-Парк	5.3 км²	секторов: 2
+dal-oakcliff	dal-oakcliff.ne	lakecliff	Лейк-Клифф	4.9 км²	секторов: 2
+dal-oakcliff	dal-oakcliff.ne	westmoreland	Западный Оук-Клифф	12.7 км²	секторов: 4
+dal-oakcliff	dal-oakcliff.ne	wynnewood	Уиннвуд	8.7 км²	секторов: 3
+dal-oakcliff	dal-oakcliff.ne	zoo	Зоопарк и Марсалис	10.0 км²	секторов: 3
+dal-oakcliff	dal-oakcliff.se	kiest	Кист-Парк	10.9 км²	секторов: 4
+dal-oakcliff	dal-oakcliff.se	redbird	Ред-Бёрд	24.6 км²	секторов: 8
+dal-oakcliff	dal-oakcliff.sw	mountaincreek-s	Маунтин-Крик, юг	9.0 км²	секторов: 3
+dal-oakcliff	dal-oakcliff.sw	mountaincreek-sw1	Маунтин-Крик, ближний юго-запад	11.6 км²	секторов: 4
+dal-oakcliff	dal-oakcliff.sw	mountaincreek-sw2	Маунтин-Крик, дальний юго-запад	10.2 км²	секторов: 4
+dal-oakcliff	dallas-nature	dallas-nature	Природный центр Далласа	4.2 км²	секторов: 1
+dal-oakcliff	redbirdairport	redbirdairport	Аэропорт Ред-Бёрд	1.6 км²	секторов: 1
+dal-south	dal-south.c	cedarcrest	Сидар-Крест	17.7 км²	секторов: 6
+dal-south	dal-south.c	cedarcrest-sw	Сидар-Крест, юго-запад	12.9 км²	секторов: 4
+dal-south	dal-south.c	highlandhills	Хайленд-Хиллс	13.3 км²	секторов: 4
+dal-south	dal-south.c	i20south	Южный пояс I-20	15.5 км²	секторов: 5
+dal-south	dal-south.n	fairpark	Фэр-Парк	11.6 км²	секторов: 4
+dal-south	dal-south.n	i45	Бонтон и промзона I-45	9.4 км²	секторов: 3
+dal-south	dal-south.n	southdallas	Южный Даллас	7.7 км²	секторов: 2
+dal-south	dal-south.s	highlandhills-se	Хайленд-Хиллс, юго-восток	9.7 км²	секторов: 3
+dal-south	dal-south.s	i20south-se1	Южный пояс I-20, ближний юго-восток	7.9 км²	секторов: 3
+dal-south	dal-south.s	i20south-se2	Южный пояс I-20, дальний юго-восток	11.0 км²	секторов: 4
+dal-southeast	dal-southeast.e	c-balch-springs	Болч-Спрингс	12.9 км²	секторов: 4
+dal-southeast	dal-southeast.e	kleberg-ne	Клеберг, северо-восток	20.9 км²	секторов: 7
+dal-southeast	dal-southeast.ne	lakejune-e	Лейк-Джун, восток	16.5 км²	секторов: 6
+dal-southeast	dal-southeast.ne	lakejune-se	Лейк-Джун, юго-восток	13.7 км²	секторов: 4
+dal-southeast	dal-southeast.s	kleberg	Клеберг	14.0 км²	секторов: 5
+dal-southeast	dal-southeast.s	kleberg-sw	Клеберг, юго-запад	20.5 км²	секторов: 7
+dal-southeast	dal-southeast.w	lakejune	Лейк-Джун	17.1 км²	секторов: 6
+dal-southeast	dal-southeast.w	pleasantgrove	Плезант-Гроув	27.7 км²	секторов: 9
+dal-southeast	dal-southeast.w	trinityforest	Великий Тринити-лес	7.6 км²	секторов: 3
+dal-southeast	dal-southeast.w	trinityforest-se	Великий Тринити-лес, юго-восток	17.4 км²	секторов: 6
+dal-west	dal-west.c	arcadia	Аркадия-Парк	14.6 км²	секторов: 5
+dal-west	dal-west.c	eagleford	Иггл-Форд	9.8 км²	секторов: 3
+dal-west	dal-west.c	westdallas	Западный Даллас	10.2 км²	секторов: 3
+dal-west	dal-west.n	irvingblvd	Промзона на Ирвинг-бульваре	7.1 км²	секторов: 3
+dal-west	trinity-floodway	trinity-floodway	Пойма Тринити	9.1 км²	секторов: 1
+dfw	dfw	c-grapevine	Грейпвайн	26.6 км²	секторов: 5
+dfw	dfw	c-grapevine-ne	Грейпвайн, северо-восток	19.0 км²	секторов: 4
+dfw	dfw	c-grapevine-s	Грейпвайн, юг	17.1 км²	секторов: 4
+dfw	dfw-airport	dfw-airport	Аэропорт DFW	25.9 км²	секторов: 1
+flowermound	flowermound	c-bartonville	Бартонвилл	31.4 км²	секторов: 2
+flowermound	flowermound	c-copper-canyon	Коппер-Каньон	6.6 км²	секторов: 1
+flowermound	flowermound	c-double-oak	Дабл-Оук	26.4 км²	секторов: 2
+flowermound	flowermound	c-flower-mound	Флауэр-Маунд	36.6 км²	секторов: 2
+flowermound	flowermound	c-highland-village	Хайленд-Виллидж	7.4 км²	секторов: 1
+fw-center	fw-center	fw-cultural	Культурный район	5.1 км²	секторов: 4
+fw-center	fw-center	fw-downtown	Даунтаун Форт-Уэрта	6.0 км²	секторов: 4
+fw-center	fw-center	fw-downtown-se	Даунтаун Форт-Уэрта, юго-восток	4.6 км²	секторов: 4
+fw-center	fw-center	fw-medical	Медрайон (Ниар-Саутсайд)	3.8 км²	секторов: 3
+fw-center	fw-center	fw-samuels	Сэмюэлс-авеню	4.7 км²	секторов: 4
+fw-center	fw-center	fw-trinitypark	Тринити-Парк	3.0 км²	секторов: 2
+fw-east	fw-east.c	fw-eastlancaster	Ист-Ланкастер	9.5 км²	секторов: 3
+fw-east	fw-east.c	fw-meadowbrook	Медоубрук	21.2 км²	секторов: 7
+fw-east	fw-east.ne	fw-eastchase	Истчейз	19.5 км²	секторов: 6
+fw-east	fw-east.ne	fw-handley	Хэндли и озеро Арлингтон	16.4 км²	секторов: 5
+fw-east	fw-east.ne	fw-rivertrails	Ривер-Трейлс	14.6 км²	секторов: 5
+fw-east	fw-east.ne	fw-rivertrails-e	Ривер-Трейлс, восток	10.2 км²	секторов: 3
+fw-east	fw-east.sw	fw-poly	Политехник	11.0 км²	секторов: 4
+fw-east	fw-east.sw	fw-poly-s	Политехник, юг	9.9 км²	секторов: 3
+fw-east	fw-east.sw	fw-stopsix	Стоп-Сикс	11.4 км²	секторов: 4
+fw-east	fw-east.sw	fw-stopsix-s1	Стоп-Сикс, ближний юг	8.2 км²	секторов: 3
+fw-east	fw-east.sw	fw-stopsix-s2	Стоп-Сикс, дальний юг	6.1 км²	секторов: 2
+fw-east	lake-arlington	lake-arlington	Озеро Арлингтон	8.4 км²	секторов: 1
+fw-far-north	fw-alliance	fw-alliance	Аэропорт Альянс	3.5 км²	секторов: 1
+fw-far-north	fw-far-north.n	c-haslet	Хаслет	63.1 км²	секторов: 4
+fw-far-north	fw-far-north.n	c-justin	Джастин	31.8 км²	секторов: 2
+fw-far-north	fw-far-north.n	c-northlake	Нортлейк	21.0 км²	секторов: 1
+fw-far-north	fw-far-north.n	c-roanoke	Роанок	35.3 км²	секторов: 2
+fw-far-north	fw-far-north.n	fw-farnorth	Дальний север Форт-Уэрта	27.2 км²	секторов: 2
+fw-far-north	fw-far-north.s	c-saginaw	Сагино	22.7 км²	секторов: 2
+fw-far-north	fw-far-north.s	fw-fossilcreek	Фоссил-Крик	25.9 км²	секторов: 2
+fw-far-north	fw-far-north.s	fw-summerfields	Саммерфилдс	45.4 км²	секторов: 3
+fw-north	fw-meacham	fw-meacham	Аэропорт Мичем	2.9 км²	секторов: 1
+fw-north	fw-north.nw	fw-jacksboro	Джексборо-хайвей	9.7 км²	секторов: 3
+fw-north	fw-north.nw	fw-jacksboro-n	Джексборо-хайвей, север	30.5 км²	секторов: 10
+fw-north	fw-north.se	fw-diamondhill	Даймонд-Хилл	15.6 км²	секторов: 5
+fw-north	fw-north.se	fw-northside	Норт-сайд	5.9 км²	секторов: 2
+fw-north	fw-north.se	fw-riverside	Риверсайд и Оукхерст	23.1 км²	секторов: 8
+fw-north	fw-north.se	fw-rosenheights	Розен-Хайтс	11.8 км²	секторов: 4
+fw-north	fw-north.se	fw-stockyards	Стокъярдс	4.3 км²	секторов: 1
+fw-nw	fw-nature	fw-nature	Природный заповедник Форт-Уэрта	10.1 км²	секторов: 1
+fw-nw	fw-nw.c	c-rhome-se	Роум, юго-восток	78.9 км²	секторов: 5
+fw-nw	fw-nw.c	rural-denton	Сельский юг округа Дентон	36.4 км²	секторов: 2
+fw-nw	fw-nw.c	rural-tarrant-nw	Северо-запад округа Таррант	57.8 км²	секторов: 4
+fw-nw	fw-nw.nw	c-aurora	Аврора	64.4 км²	секторов: 4
+fw-nw	fw-nw.nw	c-azle	Азл	15.6 км²	секторов: 1
+fw-nw	fw-nw.nw	c-pelican-bay	Пеликан-Бей	4.6 км²	секторов: 1
+fw-nw	fw-nw.nw	c-reno	Рино	42.0 км²	секторов: 3
+fw-nw	fw-nw.nw	c-rhome	Роум	37.5 км²	секторов: 3
+fw-nw	fw-nw.s	rural-tarrant-nw-se	Северо-запад округа Таррант, юго-восток	68.1 км²	секторов: 5
+fw-nw	lake-eaglemountain	lake-eaglemountain	Озеро Игл-Маунтин	31.4 км²	секторов: 1
+fw-south	fw-south.c	c-everman	Эверман	8.4 км²	секторов: 3
+fw-south	fw-south.c	c-forest-hill	Форест-Хилл	5.3 км²	секторов: 2
+fw-south	fw-south.c	fw-southi20	Южный Форт-Уэрт (I-20)	6.5 км²	секторов: 2
+fw-south	fw-south.c	fw-southi20-c	Южный Форт-Уэрт (I-20), окрестности	16.5 км²	секторов: 6
+fw-south	fw-south.c	fw-southi20-e	Южный Форт-Уэрт (I-20), восток	10.2 км²	секторов: 4
+fw-south	fw-south.c	fw-southi20-ne	Южный Форт-Уэрт (I-20), северо-восток	10.6 км²	секторов: 3
+fw-south	fw-south.c	fw-southi20-s	Южный Форт-Уэрт (I-20), юг	18.2 км²	секторов: 6
+fw-south	fw-south.n	c-edgecliff-village	Эджклифф-Виллидж	7.8 км²	секторов: 3
 fw-south	fw-south.n	fw-fairmount	Фэрмаунт	3.3 км²	секторов: 1
-fw-south	fw-south.n	fw-morningside	Морнингсайд	10.1 км²	секторов: 3
-fw-south	fw-south.n	fw-ryanplace	Райан-Плейс	6.7 км²	секторов: 2
-fw-south	fw-south.n	fw-tcu	TCU и Берри-стрит	8.3 км²	секторов: 3
-fw-south	fw-south.ne	fw-seminary	Семинари	12.0 км²	секторов: 4
-fw-south	fw-south.ne	fw-southi20	Южный Форт-Уэрт (I-20)	11.7 км²	секторов: 4
-fw-south	fw-south.ne	fw-southi20-ne	Южный Форт-Уэрт (I-20), северо-восток	14.0 км²	секторов: 5
-fw-south	fw-south.se	fw-southi20-s1	Южный Форт-Уэрт (I-20), ближний юг	10.0 км²	секторов: 3
-fw-south	fw-south.se	fw-southi20-s2	Южный Форт-Уэрт (I-20), дальний юг	17.5 км²	секторов: 6
-fw-south	fw-south.se	fw-southi20-sw	Южный Форт-Уэрт (I-20), юго-запад	13.3 км²	секторов: 4
-fw-south	fw-south.sw	fw-wedgwood	Уэджвуд	14.1 км²	секторов: 5
-fw-south	fw-south.sw	fw-wedgwood-s	Уэджвуд, юг	13.0 км²	секторов: 4
-fw-south	fw-south.sw	fw-wedgwood-sw1	Уэджвуд, ближний юго-запад	12.7 км²	секторов: 4
-fw-south	fw-south.sw	fw-wedgwood-sw2	Уэджвуд, дальний юго-запад	14.5 км²	секторов: 5
-fw-suburbs-s	fw-suburbs-s.e1	c-crowley	Краули	12.6 км²	секторов: 3
-fw-suburbs-s	fw-suburbs-s.e1	c-edgecliff-village	Эджклифф-Виллидж	8.6 км²	секторов: 2
-fw-suburbs-s	fw-suburbs-s.e1	c-everman	Эверман	13.0 км²	секторов: 3
-fw-suburbs-s	fw-suburbs-s.e1	c-forest-hill	Форест-Хилл	11.6 км²	секторов: 2
-fw-suburbs-s	fw-suburbs-s.e1	rural-tarrant-s-e2	Юг округа Таррант, дальний восток	13.6 км²	секторов: 3
-fw-suburbs-s	fw-suburbs-s.e2	c-kennedale	Кеннедейл	26.3 км²	секторов: 5
-fw-suburbs-s	fw-suburbs-s.e2	c-kennedale-s	Кеннедейл, юг	23.1 км²	секторов: 5
-fw-suburbs-s	fw-suburbs-s.e2	c-mansfield	Мансфилд	24.2 км²	секторов: 5
-fw-suburbs-s	fw-suburbs-s.e2	c-mansfield-e	Мансфилд, восток	16.6 км²	секторов: 3
-fw-suburbs-s	fw-suburbs-s.w	rural-tarrant-s	Юг округа Таррант	26.1 км²	секторов: 5
-fw-suburbs-s	fw-suburbs-s.w	rural-tarrant-s-e1	Юг округа Таррант, ближний восток	19.0 км²	секторов: 4
-fw-suburbs-s	fw-suburbs-s.w	rural-tarrant-s-n1	Юг округа Таррант, ближний север	16.7 км²	секторов: 3
-fw-suburbs-s	fw-suburbs-s.w	rural-tarrant-s-n2	Юг округа Таррант, дальний север	26.3 км²	секторов: 5
-fw-suburbs-s	lake-benbrook	lake-benbrook	Озеро Бенбрук	13.6 км²	секторов: 1
-fw-suburbs-w	fw-nature	fw-nature	Природный заповедник Форт-Уэрта	11.7 км²	секторов: 1
-fw-suburbs-w	fw-suburbs-w.n	c-lake-worth	Лейк-Уэрт	10.6 км²	секторов: 2
-fw-suburbs-w	fw-suburbs-w.n	c-lakeside	Лейксайд	10.1 км²	секторов: 2
-fw-suburbs-w	fw-suburbs-w.n	c-lakeside-n	Лейксайд, север	20.2 км²	секторов: 4
-fw-suburbs-w	fw-suburbs-w.n	c-river-oaks	Ривер-Оукс	8.6 км²	секторов: 2
-fw-suburbs-w	fw-suburbs-w.n	c-sansom-park	Сэнсом-Парк	6.7 км²	секторов: 1
-fw-suburbs-w	fw-suburbs-w.n	rural-tarrant-w	Запад округа Таррант	26.7 км²	секторов: 5
-fw-suburbs-w	fw-suburbs-w.s	c-benbrook	Бенбрук	21.8 км²	секторов: 4
-fw-suburbs-w	fw-suburbs-w.s	c-benbrook-nw	Бенбрук, северо-запад	22.6 км²	секторов: 5
-fw-suburbs-w	fw-suburbs-w.s	c-white-settlement	Уайт-Сеттлмент	10.8 км²	секторов: 2
-fw-suburbs-w	lake-worth	lake-worth	Озеро Лейк-Уэрт	13.9 км²	секторов: 1
-fw-west	fw-nasjrb	fw-nasjrb	Авиабаза и Lockheed	7.7 км²	секторов: 1
-fw-west	fw-west.e	c-westover-hills	Уэстовер-Хиллс	6.6 км²	секторов: 2
-fw-west	fw-west.e	c-westworth-village	Уэстуорт-Виллидж	5.9 км²	секторов: 2
-fw-west	fw-west.e	fw-arlingtonheights	Арлингтон-Хайтс	7.4 км²	секторов: 2
-fw-west	fw-west.e	fw-campbowie	Кэмп-Боуи и Ридгли	15.6 км²	секторов: 5
-fw-west	fw-west.e	fw-rivercrest	Риверкрест	6.6 км²	секторов: 2
-fw-west	fw-west.e	fw-tanglewood	Тэнглвуд	10.7 км²	секторов: 4
-fw-west	fw-west.nw	fw-lasvegastrail	Лас-Вегас-Трейл	14.4 км²	секторов: 5
-fw-west	fw-west.nw	fw-lasvegastrail-n	Лас-Вегас-Трейл, север	15.1 км²	секторов: 5
-fw-west	fw-west.nw	fw-lasvegastrail-w	Лас-Вегас-Трейл, запад	25.8 км²	секторов: 9
-fw-west	fw-west.se	fw-hulen	Хьюлен и Сити-Вью	15.9 км²	секторов: 5
-fw-west	fw-west.se	fw-hulen-sw1	Хьюлен и Сити-Вью, ближний юго-запад	12.4 км²	секторов: 4
-fw-west	fw-west.se	fw-hulen-sw2	Хьюлен и Сити-Вью, дальний юго-запад	18.6 км²	секторов: 6
-garland	garland.ne	c-rowlett	Роулетт	29.3 км²	секторов: 6
-garland	garland.ne	c-rowlett-e	Роулетт, восток	16.9 км²	секторов: 3
-garland	garland.ne	c-sachse	Сакси	22.4 км²	секторов: 4
-garland	garland.ne	c-sachse-se	Сакси, юго-восток	22.3 км²	секторов: 4
-garland	garland.nw	garland-center	Центр Гарленда	24.4 км²	секторов: 5
-garland	garland.nw	garland-center-w	Центр Гарленда, запад	19.0 км²	секторов: 4
-garland	garland.nw	garland-north	Северный Гарленд	23.3 км²	секторов: 5
-garland	garland.nw	garland-north-w	Северный Гарленд, запад	25.4 км²	секторов: 5
-garland	garland.s	c-rowlett-s	Роулетт, юг	3.8 км²	секторов: 1
-garland	garland.s	c-rowlett-se	Роулетт, юго-восток	0.5 км²	секторов: 1
-garland	garland.s	garland-south	Южный Гарленд	26.5 км²	секторов: 5
-garland	garland.s	garland-south-se	Южный Гарленд, юго-восток	19.0 км²	секторов: 4
-garland	lake-rayhubbard	lake-rayhubbard	Озеро Рэй-Хаббард	51.2 км²	секторов: 1
-grandprairie	grandprairie.n	gp-center	Центр Гранд-Прери	18.0 км²	секторов: 4
-grandprairie	grandprairie.n	gp-center-ne	Центр Гранд-Прери, северо-восток	17.6 км²	секторов: 4
-grandprairie	grandprairie.n	gp-center-w	Центр Гранд-Прери, запад	21.0 км²	секторов: 4
-grandprairie	grandprairie.n	gp-north	Северный Гранд-Прери	23.4 км²	секторов: 5
-grandprairie	grandprairie.n	gp-south-n	Южный Гранд-Прери, север	21.7 км²	секторов: 4
-grandprairie	grandprairie.s	gp-south	Южный Гранд-Прери	19.6 км²	секторов: 4
-grandprairie	grandprairie.s	gp-south-nw	Южный Гранд-Прери, северо-запад	17.9 км²	секторов: 4
-grandprairie	grandprairie.s	gp-south-sw	Южный Гранд-Прери, юго-запад	20.8 км²	секторов: 4
-grandprairie	lake-joepool	lake-joepool	Озеро Джо-Пул	22.2 км²	секторов: 1
-irving	irving.c	irving-center-w	Центр Ирвинга, запад	20.3 км²	секторов: 4
-irving	irving.c	irving-lascolinas	Лас-Колинас	22.6 км²	секторов: 5
-irving	irving.c	irving-lascolinas-sw	Лас-Колинас, юго-запад	25.7 км²	секторов: 5
-irving	irving.c	irving-valleyranch	Валли-Ранч	10.1 км²	секторов: 2
-irving	irving.c	irving-valleyranch-w	Валли-Ранч, запад	17.4 км²	секторов: 3
-irving	irving.se	irving-center	Центр Ирвинга	22.3 км²	секторов: 4
-irving	irving.se	irving-center-sw	Центр Ирвинга, юго-запад	19.4 км²	секторов: 4
-irving	irving.se	irving-stadium	Texas Stadium	21.1 км²	секторов: 4
-lewisville	lake-lewisville	lake-lewisville	Озеро Льюисвилл	8.7 км²	секторов: 1
-lewisville	lewisville	c-hebron	Хеброн	16.4 км²	секторов: 3
-lewisville	lewisville	c-lewisville	Льюисвилл	26.8 км²	секторов: 5
-lewisville	lewisville	c-lewisville-e	Льюисвилл, восток	19.7 км²	секторов: 4
-lewisville	lewisville	c-lewisville-nw	Льюисвилл, северо-запад	21.9 км²	секторов: 4
-lewisville	lewisville	c-the-colony	Зе-Колони	16.5 км²	секторов: 3
-lewisville	llela	llela	Заповедник у озера Льюисвилл	13.6 км²	секторов: 1
-mesquite	mesquite.e	c-sunnyvale-se	Саннивейл, юго-восток	16.8 км²	секторов: 3
-mesquite	mesquite.e	mesquite-center-e	Центр Меските, восток	17.6 км²	секторов: 4
-mesquite	mesquite.nw	c-sunnyvale	Саннивейл	25.4 км²	секторов: 5
-mesquite	mesquite.nw	mesquite-center	Центр Меските	23.9 км²	секторов: 5
-mesquite	mesquite.nw	mesquite-center-nw	Центр Меските, северо-запад	22.1 км²	секторов: 4
-mesquite	mesquite.nw	mesquite-towneast	Таун-Ист	23.3 км²	секторов: 5
-mesquite	mesquite.se	mesquite-center-s	Центр Меските, юг	16.6 км²	секторов: 3
-mesquite	mesquite.se	mesquite-center-se	Центр Меските, юго-восток	33.6 км²	секторов: 7
-midcities	midcities.c	c-hurst	Херст	20.0 км²	секторов: 4
-midcities	midcities.c	c-north-richland-hills	Норт-Ричленд-Хиллс	19.8 км²	секторов: 4
-midcities	midcities.c	c-north-richland-hills-ne	Норт-Ричленд-Хиллс, северо-восток	20.5 км²	секторов: 4
-midcities	midcities.c	c-watauga	Уотога	20.0 км²	секторов: 4
-midcities	midcities.e	c-bedford	Бедфорд	22.3 км²	секторов: 4
-midcities	midcities.e	c-bedford-se	Бедфорд, юго-восток	20.2 км²	секторов: 4
-midcities	midcities.e	c-euless	Юлесс	28.8 км²	секторов: 6
-midcities	midcities.sw	c-haltom-city	Холтом-Сити	19.3 км²	секторов: 4
-midcities	midcities.sw	c-haltom-city-n	Холтом-Сити, север	20.8 км²	секторов: 4
-midcities	midcities.sw	c-richland-hills	Ричленд-Хиллс	18.5 км²	секторов: 4
-ne-tarrant	ne-tarrant.n	c-southlake-n	Саутлейк, север	15.5 км²	секторов: 3
-ne-tarrant	ne-tarrant.n	c-trophy-club	Трофи-Клаб	23.0 км²	секторов: 5
-ne-tarrant	ne-tarrant.n	c-westlake	Уэстлейк	16.4 км²	секторов: 3
-ne-tarrant	ne-tarrant.se	c-colleyville	Колливилл	22.4 км²	секторов: 4
-ne-tarrant	ne-tarrant.se	c-colleyville-se	Колливилл, юго-восток	19.3 км²	секторов: 4
-ne-tarrant	ne-tarrant.se	c-southlake	Саутлейк	28.7 км²	секторов: 6
-ne-tarrant	ne-tarrant.w	c-keller	Келлер	32.8 км²	секторов: 7
-ne-tarrant	ne-tarrant.w	c-keller-n	Келлер, север	26.2 км²	секторов: 5
-nw-suburbs	nw-suburbs.c	c-addison	Аддисон	13.1 км²	секторов: 3
-nw-suburbs	nw-suburbs.c	c-carrollton	Карролтон	18.2 км²	секторов: 4
-nw-suburbs	nw-suburbs.c	c-carrollton-e	Карролтон, восток	14.9 км²	секторов: 3
-nw-suburbs	nw-suburbs.c	c-carrollton-ne	Карролтон, северо-восток	17.9 км²	секторов: 4
-nw-suburbs	nw-suburbs.c	c-carrollton-s	Карролтон, юг	16.4 км²	секторов: 3
-nw-suburbs	nw-suburbs.c	c-farmers-branch	Фармерс-Бранч	19.8 км²	секторов: 4
-nw-suburbs	nw-suburbs.w	c-carrollton-nw	Карролтон, северо-запад	17.7 км²	секторов: 4
-nw-suburbs	nw-suburbs.w	c-carrollton-sw	Карролтон, юго-запад	9.4 км²	секторов: 2
-nw-suburbs	nw-suburbs.w	c-carrollton-w	Карролтон, запад	17.9 км²	секторов: 4
-nw-suburbs	nw-suburbs.w	c-coppell	Коппелл	22.3 км²	секторов: 4
-plano	plano.c	plano-center	Центральный Плано	21.2 км²	секторов: 4
-plano	plano.c	plano-east	Восточный Плано	18.5 км²	секторов: 4
-plano	plano.c	plano-east-n	Восточный Плано, север	21.8 км²	секторов: 4
-plano	plano.c	rich-center	Ричардсон	21.8 км²	секторов: 4
-plano	plano.c	rich-telecom	Телеком-коридор	19.0 км²	секторов: 4
-plano	plano.c	rich-telecom-w	Телеком-коридор, запад	18.8 км²	секторов: 4
-plano	plano.e	c-allen	Аллен	9.5 км²	секторов: 2
-plano	plano.e	plano-east-ne	Восточный Плано, северо-восток	17.2 км²	секторов: 3
-plano	plano.e	plano-east-se	Восточный Плано, юго-восток	21.9 км²	секторов: 4
-plano	plano.nw	plano-center-n	Центральный Плано, север	17.1 км²	секторов: 3
-plano	plano.nw	plano-west	Западный Плано и Legacy	20.6 км²	секторов: 4
-plano	plano.nw	plano-west-s	Западный Плано и Legacy, юг	19.9 км²	секторов: 4
-s-suburbs	s-suburbs.e	c-hutchins-e	Хатчинс, восток	16.1 км²	секторов: 3
-s-suburbs	s-suburbs.e	c-wilmer	Уилмер	15.7 км²	секторов: 3
-s-suburbs	s-suburbs.e	rural-dallas-s	Сельский юг округа Даллас	11.7 км²	секторов: 2
-s-suburbs	s-suburbs.e	rural-dallas-s-ne	Сельский юг округа Даллас, северо-восток	32.4 км²	секторов: 6
-s-suburbs	s-suburbs.w	c-hutchins	Хатчинс	13.8 км²	секторов: 3
-s-suburbs	s-suburbs.w	c-lancaster	Ланкастер	22.8 км²	секторов: 5
-s-suburbs	s-suburbs.w	c-lancaster-e	Ланкастер, восток	19.5 км²	секторов: 4
-se-suburbs	se-suburbs	c-balch-springs	Болч-Спрингс	18.0 км²	секторов: 1
-se-suburbs	se-suburbs	c-combine	Комбайн	31.4 км²	секторов: 2
-se-suburbs	se-suburbs	c-seagoville	Сиговилл	37.8 км²	секторов: 3
-se-suburbs	se-suburbs	c-seagoville-w	Сиговилл, запад	12.6 км²	секторов: 1
-se-suburbs	se-suburbs	rural-dallas-se	Сельский юго-восток округа Даллас	29.9 км²	секторов: 2
-sw-suburbs	cedarhill-sp	cedarhill-sp	Парк штата Сидар-Хилл	7.4 км²	секторов: 1
-sw-suburbs	dallas-nature	dallas-nature	Природный центр Далласа	3.4 км²	секторов: 1
-sw-suburbs	sw-suburbs.c	c-desoto	Де-Сото	26.9 км²	секторов: 5
-sw-suburbs	sw-suburbs.c	c-desoto-e	Де-Сото, восток	19.5 км²	секторов: 4
-sw-suburbs	sw-suburbs.c	c-duncanville	Данканвилл	28.9 км²	секторов: 6
-sw-suburbs	sw-suburbs.w	c-cedar-hill	Сидар-Хилл	21.1 км²	секторов: 4
-sw-suburbs	sw-suburbs.w	c-cedar-hill-nw	Сидар-Хилл, северо-запад	10.1 км²	секторов: 2
-sw-suburbs	sw-suburbs.w	c-cedar-hill-w	Сидар-Хилл, запад	11.9 км²	секторов: 2
+fw-south	fw-south.n	fw-morningside	Морнингсайд	9.0 км²	секторов: 3
+fw-south	fw-south.n	fw-morningside-s	Морнингсайд, юг	6.6 км²	секторов: 2
+fw-south	fw-south.n	fw-ryanplace	Райан-Плейс	6.5 км²	секторов: 2
+fw-south	fw-south.n	fw-seminary	Семинари	15.8 км²	секторов: 5
+fw-south	fw-south.n	fw-tcu	TCU и Берри-стрит	9.2 км²	секторов: 3
+fw-south	fw-south.n	fw-wedgwood	Уэджвуд	11.8 км²	секторов: 4
+fw-south	fw-south.se	fw-southi20-se	Южный Форт-Уэрт (I-20), юго-восток	32.0 км²	секторов: 11
+fw-south	fw-south.sw1	fw-wedgwood-se	Уэджвуд, юго-восток	19.2 км²	секторов: 6
+fw-south	fw-south.sw2	c-crowley	Краули	13.4 км²	секторов: 5
+fw-south	fw-south.sw2	fw-wedgwood-s	Уэджвуд, юг	9.2 км²	секторов: 3
+fw-south	fw-south.sw2	fw-wedgwood-sw1	Уэджвуд, ближний юго-запад	13.1 км²	секторов: 5
+fw-south	fw-south.sw2	fw-wedgwood-sw2	Уэджвуд, дальний юго-запад	9.8 км²	секторов: 3
+fw-suburbs-s	fw-suburbs-s.c	c-benbrook	Бенбрук	15.6 км²	секторов: 3
+fw-suburbs-s	fw-suburbs-s.c	rural-tarrant-s	Юг округа Таррант	24.8 км²	секторов: 5
+fw-suburbs-s	fw-suburbs-s.c	rural-tarrant-s-e	Юг округа Таррант, восток	19.4 км²	секторов: 4
+fw-suburbs-s	fw-suburbs-s.c	rural-tarrant-s-n1	Юг округа Таррант, ближний север	36.4 км²	секторов: 7
+fw-suburbs-s	fw-suburbs-s.n	rural-tarrant-s-n2	Юг округа Таррант, дальний север	29.2 км²	секторов: 6
+fw-suburbs-s	lake-benbrook	lake-benbrook	Озеро Бенбрук	13.5 км²	секторов: 1
+fw-suburbs-w	fw-suburbs-w.e	c-lake-worth	Лейк-Уэрт	15.2 км²	секторов: 3
+fw-suburbs-w	fw-suburbs-w.e	c-lakeside-e	Лейксайд, восток	5.8 км²	секторов: 1
+fw-suburbs-w	fw-suburbs-w.e	c-river-oaks	Ривер-Оукс	9.9 км²	секторов: 2
+fw-suburbs-w	fw-suburbs-w.e	c-sansom-park	Сэнсом-Парк	7.5 км²	секторов: 1
+fw-suburbs-w	fw-suburbs-w.w	c-lakeside	Лейксайд	22.5 км²	секторов: 5
+fw-suburbs-w	fw-suburbs-w.w	c-white-settlement-w	Уайт-Сеттлмент, запад	23.2 км²	секторов: 5
+fw-suburbs-w	fw-suburbs-w.w	rural-tarrant-w	Запад округа Таррант	27.9 км²	секторов: 5
+fw-west	fw-nasjrb	fw-nasjrb	Авиабаза и Lockheed	6.5 км²	секторов: 1
+fw-west	fw-west.c	c-westover-hills	Уэстовер-Хиллс	7.4 км²	секторов: 3
+fw-west	fw-west.c	fw-arlingtonheights	Арлингтон-Хайтс	5.5 км²	секторов: 2
+fw-west	fw-west.c	fw-campbowie	Кэмп-Боуи и Ридгли	16.6 км²	секторов: 6
+fw-west	fw-west.c	fw-lasvegastrail-s	Лас-Вегас-Трейл, юг	17.5 км²	секторов: 6
+fw-west	fw-west.c	fw-rivercrest	Риверкрест	4.5 км²	секторов: 2
+fw-west	fw-west.c	fw-tanglewood	Тэнглвуд	13.1 км²	секторов: 5
+fw-west	fw-west.n	c-westworth-village-nw	Уэстуорт-Виллидж, северо-запад	6.6 км²	секторов: 2
+fw-west	fw-west.nw	c-westworth-village	Уэстуорт-Виллидж	5.1 км²	секторов: 2
+fw-west	fw-west.nw	c-white-settlement	Уайт-Сеттлмент	16.2 км²	секторов: 6
+fw-west	fw-west.nw	fw-lasvegastrail	Лас-Вегас-Трейл	13.3 км²	секторов: 5
+fw-west	fw-west.nw	fw-lasvegastrail-nw	Лас-Вегас-Трейл, северо-запад	26.7 км²	секторов: 9
+fw-west	fw-west.s	fw-hulen	Хьюлен и Сити-Вью	10.1 км²	секторов: 3
+fw-west	fw-west.s	fw-hulen-sw	Хьюлен и Сити-Вью, юго-запад	14.1 км²	секторов: 4
+fw-west	lake-worth	lake-worth	Озеро Лейк-Уэрт	11.0 км²	секторов: 1
+garland	garland.c	c-rowlett	Роулетт	31.8 км²	секторов: 6
+garland	garland.c	c-rowlett-ne	Роулетт, северо-восток	20.7 км²	секторов: 4
+garland	garland.c	c-rowlett-se	Роулетт, юго-восток	7.0 км²	секторов: 2
+garland	garland.c	c-sachse	Сакси	20.3 км²	секторов: 4
+garland	garland.c	c-sachse-nw	Сакси, северо-запад	15.5 км²	секторов: 3
+garland	garland.c	c-sachse-se	Сакси, юго-восток	20.7 км²	секторов: 4
+garland	garland.s	garland-south	Южный Гарленд	33.4 км²	секторов: 7
+garland	garland.s	garland-south-se	Южный Гарленд, юго-восток	16.6 км²	секторов: 3
+garland	garland.w	garland-center	Центр Гарленда	19.0 км²	секторов: 4
+garland	garland.w	garland-center-w	Центр Гарленда, запад	21.6 км²	секторов: 4
+garland	garland.w	garland-north	Северный Гарленд	12.2 км²	секторов: 2
+garland	garland.w	garland-north-w	Северный Гарленд, запад	22.8 км²	секторов: 5
+garland	lake-rayhubbard	lake-rayhubbard	Озеро Рэй-Хаббард	44.9 км²	секторов: 1
+grandprairie	cedarhill-sp	cedarhill-sp	Парк штата Сидар-Хилл	4.8 км²	секторов: 1
+grandprairie	grandprairie.c	gp-center-s	Центр Гранд-Прери, юг	21.9 км²	секторов: 4
+grandprairie	grandprairie.c	gp-center-sw	Центр Гранд-Прери, юго-запад	28.7 км²	секторов: 6
+grandprairie	grandprairie.n	gp-center	Центр Гранд-Прери	19.8 км²	секторов: 4
+grandprairie	grandprairie.n	gp-center-e	Центр Гранд-Прери, восток	21.0 км²	секторов: 4
+grandprairie	grandprairie.n	gp-center-ne	Центр Гранд-Прери, северо-восток	8.7 км²	секторов: 2
+grandprairie	grandprairie.n	gp-north	Северный Гранд-Прери	14.5 км²	секторов: 3
+grandprairie	grandprairie.n	gp-north-sw	Северный Гранд-Прери, юго-запад	23.0 км²	секторов: 4
+grandprairie	grandprairie.s	gp-south	Южный Гранд-Прери	25.7 км²	секторов: 5
+grandprairie	grandprairie.s	gp-south-sw1	Южный Гранд-Прери, ближний юго-запад	12.7 км²	секторов: 2
+grandprairie	grandprairie.s	gp-south-sw2	Южный Гранд-Прери, дальний юго-запад	16.7 км²	секторов: 3
+grandprairie	lake-joepool	lake-joepool	Озеро Джо-Пул	21.3 км²	секторов: 1
+grandprairie	lake-mountaincreek	lake-mountaincreek	Озеро Маунтин-Крик	8.9 км²	секторов: 1
+irving	irving.c	irving-center-w	Центр Ирвинга, запад	17.2 км²	секторов: 3
+irving	irving.c	irving-lascolinas	Лас-Колинас	14.0 км²	секторов: 3
+irving	irving.c	irving-lascolinas-s	Лас-Колинас, юг	33.7 км²	секторов: 6
+irving	irving.c	irving-lascolinas-sw	Лас-Колинас, юго-запад	20.4 км²	секторов: 4
+irving	irving.n	irving-valleyranch	Валли-Ранч	14.5 км²	секторов: 3
+irving	irving.n	irving-valleyranch-se	Валли-Ранч, юго-восток	0.7 км²	секторов: 1
+irving	irving.n	irving-valleyranch-w1	Валли-Ранч, ближний запад	9.9 км²	секторов: 2
+irving	irving.n	irving-valleyranch-w2	Валли-Ранч, дальний запад	21.3 км²	секторов: 4
+irving	irving.se	irving-center	Центр Ирвинга	30.7 км²	секторов: 6
+irving	irving.se	irving-center-sw	Центр Ирвинга, юго-запад	22.2 км²	секторов: 4
+irving	irving.se	irving-stadium	Texas Stadium	15.8 км²	секторов: 3
+irving	lake-north	lake-north	Озеро Норт-Лейк	1.1 км²	секторов: 1
+lewisville	lake-lewisville	lake-lewisville	Озеро Льюисвилл	9.0 км²	секторов: 1
+lewisville	lewisville	c-hebron	Хеброн	21.0 км²	секторов: 4
+lewisville	lewisville	c-lewisville	Льюисвилл	23.9 км²	секторов: 5
+lewisville	lewisville	c-lewisville-c	Льюисвилл, окрестности	28.8 км²	секторов: 6
+lewisville	lewisville	c-lewisville-nw	Льюисвилл, северо-запад	19.1 км²	секторов: 4
+lewisville	lewisville	c-the-colony	Зе-Колони	10.7 км²	секторов: 2
+lewisville	llela	llela	Заповедник у озера Льюисвилл	14.6 км²	секторов: 1
+mesquite	mesquite.nw	c-sunnyvale	Саннивейл	25.0 км²	секторов: 5
+mesquite	mesquite.nw	mesquite-center	Центр Меските	17.2 км²	секторов: 3
+mesquite	mesquite.nw	mesquite-towneast	Таун-Ист	22.4 км²	секторов: 5
+mesquite	mesquite.nw	mesquite-towneast-sw	Таун-Ист, юго-запад	19.0 км²	секторов: 4
+mesquite	mesquite.se	c-sunnyvale-se1	Саннивейл, ближний юго-восток	12.8 км²	секторов: 3
+mesquite	mesquite.se	c-sunnyvale-se2	Саннивейл, дальний юго-восток	15.2 км²	секторов: 3
+mesquite	mesquite.se	mesquite-center-se1	Центр Меските, юго-восток 1	21.1 км²	секторов: 4
+mesquite	mesquite.se	mesquite-center-se2	Центр Меските, юго-восток 2	15.1 км²	секторов: 3
+mesquite	mesquite.se	mesquite-center-se3	Центр Меските, юго-восток 3	20.2 км²	секторов: 4
+midcities	midcities.c	c-hurst	Херст	15.5 км²	секторов: 3
+midcities	midcities.c	c-north-richland-hills	Норт-Ричленд-Хиллс	22.9 км²	секторов: 5
+midcities	midcities.c	c-north-richland-hills-ne	Норт-Ричленд-Хиллс, северо-восток	16.1 км²	секторов: 3
+midcities	midcities.c	c-watauga	Уотога	22.1 км²	секторов: 4
+midcities	midcities.e	c-bedford	Бедфорд	23.9 км²	секторов: 5
+midcities	midcities.e	c-bedford-se	Бедфорд, юго-восток	13.0 км²	секторов: 3
+midcities	midcities.e	c-euless	Юлесс	23.6 км²	секторов: 5
+midcities	midcities.e	c-euless-s	Юлесс, юг	9.5 км²	секторов: 2
+midcities	midcities.e	c-hurst-e	Херст, восток	14.3 км²	секторов: 3
+midcities	midcities.sw	c-haltom-city	Холтом-Сити	29.3 км²	секторов: 6
+midcities	midcities.sw	c-richland-hills	Ричленд-Хиллс	16.3 км²	секторов: 3
+ne-tarrant	lake-grapevine	lake-grapevine	Озеро Грейпвайн	23.8 км²	секторов: 1
+ne-tarrant	ne-tarrant.e	c-southlake	Саутлейк	22.5 км²	секторов: 4
+ne-tarrant	ne-tarrant.e	c-southlake-ne	Саутлейк, северо-восток	25.3 км²	секторов: 5
+ne-tarrant	ne-tarrant.nw	c-trophy-club	Трофи-Клаб	27.9 км²	секторов: 5
+ne-tarrant	ne-tarrant.nw	c-westlake	Уэстлейк	14.7 км²	секторов: 3
+ne-tarrant	ne-tarrant.nw	c-westlake-w	Уэстлейк, запад	22.1 км²	секторов: 4
+ne-tarrant	ne-tarrant.s	c-colleyville	Колливилл	36.3 км²	секторов: 7
+ne-tarrant	ne-tarrant.s	c-keller	Келлер	19.3 км²	секторов: 4
+ne-tarrant	ne-tarrant.s	c-keller-sw	Келлер, юго-запад	10.3 км²	секторов: 2
+ne-tarrant	ne-tarrant.s	c-southlake-sw	Саутлейк, юго-запад	18.4 км²	секторов: 4
+nw-suburbs	nw-suburbs.c	c-addison	Аддисон	16.7 км²	секторов: 3
+nw-suburbs	nw-suburbs.c	c-carrollton	Карролтон	13.2 км²	секторов: 3
+nw-suburbs	nw-suburbs.c	c-carrollton-ne	Карролтон, северо-восток	23.4 км²	секторов: 5
+nw-suburbs	nw-suburbs.c	c-carrollton-nw	Карролтон, северо-запад	23.7 км²	секторов: 5
+nw-suburbs	nw-suburbs.c	c-farmers-branch	Фармерс-Бранч	30.7 км²	секторов: 6
+nw-suburbs	nw-suburbs.c	c-farmers-branch-w	Фармерс-Бранч, запад	18.0 км²	секторов: 4
+nw-suburbs	nw-suburbs.w	c-coppell	Коппелл	20.8 км²	секторов: 4
+nw-suburbs	nw-suburbs.w	c-coppell-e	Коппелл, восток	18.3 км²	секторов: 4
+plano	plano.e	c-allen	Аллен	6.3 км²	секторов: 1
+plano	plano.e	plano-east	Восточный Плано	7.6 км²	секторов: 1
+plano	plano.e	plano-east-ne	Восточный Плано, северо-восток	22.1 км²	секторов: 5
+plano	plano.e	plano-east-se	Восточный Плано, юго-восток	21.8 км²	секторов: 4
+plano	plano.nw	plano-center	Центральный Плано	37.3 км²	секторов: 8
+plano	plano.nw	plano-center-ne	Центральный Плано, северо-восток	28.7 км²	секторов: 6
+plano	plano.nw	plano-west	Западный Плано и Legacy	26.1 км²	секторов: 5
+plano	plano.nw	plano-west-s	Западный Плано и Legacy, юг	21.1 км²	секторов: 4
+plano	plano.s	rich-center	Ричардсон	20.1 км²	секторов: 4
+plano	plano.s	rich-center-nw	Ричардсон, северо-запад	15.6 км²	секторов: 3
+plano	plano.s	rich-telecom	Телеком-коридор	8.0 км²	секторов: 2
+plano	plano.s	rich-telecom-se	Телеком-коридор, юго-восток	11.7 км²	секторов: 2
+plano	plano.s	rich-telecom-w	Телеком-коридор, запад	11.6 км²	секторов: 2
+s-suburbs	s-suburbs.e	c-hutchins	Хатчинс	11.8 км²	секторов: 2
+s-suburbs	s-suburbs.e	c-hutchins-e	Хатчинс, восток	8.7 км²	секторов: 2
+s-suburbs	s-suburbs.e	c-wilmer	Уилмер	11.8 км²	секторов: 2
+s-suburbs	s-suburbs.e	rural-dallas-s	Сельский юг округа Даллас	18.9 км²	секторов: 4
+s-suburbs	s-suburbs.e	rural-dallas-s-ne	Сельский юг округа Даллас, северо-восток	36.9 км²	секторов: 7
+s-suburbs	s-suburbs.w	c-lancaster	Ланкастер	33.9 км²	секторов: 7
+s-suburbs	s-suburbs.w	c-wilmer-w	Уилмер, запад	17.4 км²	секторов: 4
+se-suburbs	se-suburbs	c-combine	Комбайн	37.9 км²	секторов: 3
+se-suburbs	se-suburbs	c-seagoville	Сиговилл	34.4 км²	секторов: 2
+se-suburbs	se-suburbs	rural-dallas-se	Сельский юго-восток округа Даллас	41.7 км²	секторов: 3
+sw-suburbs	sw-suburbs.e	c-desoto	Де-Сото	31.4 км²	секторов: 6
+sw-suburbs	sw-suburbs.e	c-desoto-w	Де-Сото, запад	24.0 км²	секторов: 5
+sw-suburbs	sw-suburbs.w	c-cedar-hill	Сидар-Хилл	10.8 км²	секторов: 2
+sw-suburbs	sw-suburbs.w	c-cedar-hill-w1	Сидар-Хилл, ближний запад	17.5 км²	секторов: 3
+sw-suburbs	sw-suburbs.w	c-cedar-hill-w2	Сидар-Хилл, дальний запад	8.7 км²	секторов: 2
+sw-suburbs	sw-suburbs.w	c-duncanville	Данканвилл	22.3 км²	секторов: 4

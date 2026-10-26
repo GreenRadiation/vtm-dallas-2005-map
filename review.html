@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Список регионов · Даллас 2005</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+.wrap h1{font-family:var(--display);font-size:24px;margin:0 0 6px}
+.wrap p{color:var(--muted);margin:0 0 14px;max-width:75ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.bar input{padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;background:var(--paper);min-width:220px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);position:sticky;top:0;background:var(--bg)}
+td.id{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.src-auto{color:var(--imp)}
+.tablewrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Список регионов</h1>
+  <p>Все регионы карты на четырёх масштабах: название, откуда оно взялось, родитель и ссылка на это место в Google Maps (по точке подписи). «Автоматически» значит, что название придумано программой по ближайшему району и стороне света. Неудачное название или принадлежность можно поправить в <code>data/overrides.tsv</code>.</p>
+  <div class="bar">
+    <input id="q" type="search" placeholder="Фильтр по названию или id">
+    <select id="lv"><option value="">Все масштабы</option><option value="1">Крупный · области</option><option value="2">Средний · части областей</option><option value="3" selected>Мелкий · районы</option><option value="4">Детальный · секторы</option></select>
+    <span id="count" class="status"></span>
+    <a href="./">← к карте</a>
+  </div>
+  <div class="tablewrap"><table><thead><tr><th>Название</th><th>id</th><th>Родитель</th><th>км²</th><th>Откуда название</th><th>Где</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+<script>
+(function () {
+  var rows = document.getElementById("rows"), q = document.getElementById("q"), lv = document.getElementById("lv"), data = [], names = {};
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]; }); }
+  function render() {
+    var v = q.value.trim().toLowerCase(), l = lv.value;
+    var list = data.filter(function (r) { return (!l || String(r.level) === l) && (!v || (r.name + " " + r.id).toLowerCase().indexOf(v) >= 0); });
+    document.getElementById("count").textContent = "показано: " + list.length;
+    rows.innerHTML = list.slice(0, 1500).map(function (r) {
+      var link = "https://www.google.com/maps/@" + r.lat + "," + r.lon + "," + (r.level === 1 ? 11 : r.level === 2 ? 12 : r.level === 3 ? 13 : 14) + "z";
+      var hash = "#" + ({1: "a", 2: "z", 3: "d", 4: "s"})[r.level] + "/" + r.id;
+      return "<tr><td><a href=\"./" + hash + "\">" + esc(r.name) + "</a></td><td class=\"id\">" + esc(r.id) + "</td><td>" + esc(names[r.parent] || r.parent) +
+        "</td><td>" + r.km2 + "</td><td class=\"" + (r.source === "автоматически" ? "src-auto" : "") + "\">" + esc(r.source) + "</td><td><a href=\"" + link + "\" target=\"_blank\" rel=\"noopener\">Google Maps</a></td></tr>";
+    }).join("");
+  }
+  fetch("data/geo/review.json").then(function (r) { return r.json(); }).then(function (d) {
+    data = d.sort(function (a, b) { return a.level - b.level || a.name.localeCompare(b.name, "ru"); });
+    data.forEach(function (r) { names[r.id] = r.name; });
+    render();
+  });
+  q.addEventListener("input", render); lv.addEventListener("change", render);
+})();
+</script>
+</body>
+</html>

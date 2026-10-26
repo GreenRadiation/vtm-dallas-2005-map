@@ -74,7 +74,7 @@ irving-center	irving	Irving	32.8150	-96.9500	Центр Ирвинга	Irving, T
 irving-stadium	irving	Irving	32.8400	-96.9110	Texas Stadium	Texas Stadium, Irving
 irving-lascolinas	irving	Irving	32.8907	-96.9619	Лас-Колинас	Las Colinas, Irving
 irving-valleyranch	irving	Irving	32.9300	-96.9550	Валли-Ранч	Valley Ranch, Irving
-dfw	dfw	@aero:Dallas/Fort Worth	32.8990	-97.0400	Аэропорт DFW	Dallas/Fort Worth International Airport
+dfw-airport	dfw	@aero:Dallas/Fort Worth	32.8990	-97.0400	Аэропорт DFW	Dallas/Fort Worth International Airport
 arl-center	arlington-n	Arlington	32.7300	-97.1150	Центр Арлингтона и UTA	University of Texas at Arlington
 arl-entertainment	arlington-n	Arlington	32.7550	-97.0750	Стадион и Six Flags	Six Flags Over Texas
 arl-north	arlington-n	Arlington	32.7820	-97.1050	Северный Арлингтон	North Arlington, Texas

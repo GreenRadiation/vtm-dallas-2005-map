@@ -245,56 +245,58 @@ def drop_small(g, min_part):
     return unary_union(parts) if parts else Polygon()
 
 
+# ================================================================ РЕГИОНЫ (см. docs/REGIONS.md)
+from scipy.spatial import cKDTree
+from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import dijkstra
+
+FORCE = "--force" in sys.argv  # записать результат, даже если проверки не прошли (для отладки)
+SMOOTH = 0.6  # км: насколько сглаживать границы (coverage_simplify, Висвалингам)
+
+
 def smooth_simple(g, r, tol, min_part):
-    """Простая гладкая форма: закругляем рваный край, убираем острова и мелочь, оставляем мало вершин."""
+    """Простая гладкая форма: закругляем рваный край, убираем острова и мелочь."""
     g = g.buffer(r, 4).buffer(-2 * r, 4).buffer(r, 4)
     g = drop_small(fill_holes(g, 3.0), min_part)
     return drop_small(g.simplify(tol).buffer(0), min_part)
 
 
-# Готовые регионы: озёра, парки (data/natural.tsv) и аэропорты (точки «@aero:» в seeds.tsv)
+# Озёра и парки (data/natural.tsv) и аэропорты (точки «@aero:» в seeds.tsv) — заготовки готовых регионов.
 FIXED, fixed_info, taken = {}, {}, Polygon()
 for n in natural:
     parts = [g for g, t in water_polys + green_polys if t.get("name") in n["names"]]
     if not parts:
         log("ВНИМАНИЕ: не найден природный регион", n["id"], n["names"]); continue
-    g = smooth_simple(unary_union(parts).intersection(FRAME), 0.15, 0.12, 0.3).difference(taken)
-    g = drop_small(g.buffer(0), 0.3)
-    if g.is_empty:
-        continue
-    FIXED[n["id"]] = g; fixed_info[n["id"]] = {"name": n["name"], "kind": n["kind"]}
-    taken = taken.union(g)
+    g = drop_small(smooth_simple(unary_union(parts).intersection(FRAME), 0.15, 0.12, 0.3).difference(taken).buffer(0), 0.3)
+    if not g.is_empty:
+        FIXED[n["id"]] = g; fixed_info[n["id"]] = {"name": n["name"], "kind": n["kind"]}; taken = taken.union(g)
 for s in seeds:
     if s["city"].startswith("@aero:") and s["id"] not in FIXED:
         key = s["city"][6:].lower()
         cand = [g for g, t in aero if key in t.get("name", "").lower()]
         if not cand:
             sys.exit("не найден аэродром для " + s["id"] + ": " + key)
-        g = smooth_simple(max(cand, key=lambda g: g.area).intersection(FRAME), 0.2, 0.1, 0.3).difference(taken)
-        FIXED[s["id"]] = drop_small(g.buffer(0), 0.3)
-        fixed_info[s["id"]] = {"name": s["name"], "kind": "airport", "area": s["area"]}
-        taken = taken.union(FIXED[s["id"]])
-DOMAIN = FRAME.difference(taken)
+        g = drop_small(smooth_simple(max(cand, key=lambda g: g.area).intersection(FRAME), 0.2, 0.1, 0.3).difference(taken).buffer(0), 0.3)
+        FIXED[s["id"]] = g; fixed_info[s["id"]] = {"name": s["name"], "kind": "airport", "area": s["area"]}
+        taken = taken.union(g)
 
-# ---------------------------------------------------------------- к какой области относится точка
-# Город точки — по сглаженной городской черте 2000 года. Область: у Далласа, Форт-Уэрта и других городов
-# со своими районами — область ближайшего района того же города; у остальных городов — из cities.tsv;
-# вне городов — область ближайшего сельского района или просто ближайшего района.
-log("области по точкам")
-named = {}  # id → первая строка района (с названием)
+# ---------------------------------------------------------------- подсказка области по точке
+# Город — по сглаженной городской черте 2000 года. Область: у городов со своими районами — область ближайшего
+# района того же города; у остальных — из cities.tsv; вне городов — ближайшего сельского района или любого.
+# Это только подсказка: на карте области потом обязаны быть сплошными.
+named = {}
 for s in seeds:
     if s["id"] not in named and not s["city"].startswith("@"):
-        named[s["id"]] = s
-for c, g in cities.items():  # города без своих районов: один район в центре города
+        named[s["id"]] = dict(s, source="seed")
+for c, g in cities.items():  # город без своих районов — точка в его центре
     slug = "c-" + re.sub(r"[^a-z]+", "-", c.lower()).strip("-")
-    if c in cities_tsv and not any(s["city"] == c for s in named.values()) and g.intersection(DOMAIN).area > 1.5:
-        p = g.intersection(DOMAIN)
+    if c in cities_tsv and not any(s["city"] == c for s in named.values()) and g.difference(taken).area > 1.5:
+        p = g.difference(taken)
         p = max(getattr(p, "geoms", [p]), key=lambda q: q.area)
         lp = polylabel(p, 0.05)
         lon, lat = inv(lp.x, lp.y)
-        named[slug] = {"id": slug, "area": cities_tsv[c]["area"], "city": c, "lat": lat, "lon": lon, "name": cities_tsv[c]["ru"]}
+        named[slug] = {"id": slug, "area": cities_tsv[c]["area"], "city": c, "lat": lat, "lon": lon, "name": cities_tsv[c]["ru"], "source": "city"}
 seed_xy = {k: np.array(fwd(s["lon"], s["lat"])) for k, s in named.items()}
-
 city_list = list(cities)
 
 
@@ -305,32 +307,26 @@ def city_at(xs, ys):
     return out
 
 
-def nearest(ids, xs, ys):
-    """Индекс ближайшей точки из ids для каждой (x, y)."""
-    P = np.array([seed_xy[k] for k in ids])
-    d = (xs[:, None] - P[None, :, 0]) ** 2 + (ys[:, None] - P[None, :, 1]) ** 2
-    return np.argmin(d, axis=1), np.min(d, axis=1)
-
-
 def area_at(xs, ys):
     cid = city_at(xs, ys)
     res = np.empty(len(xs), dtype=object)
     by_city = collections.defaultdict(list)
     for k, s in named.items():
         by_city[s["city"]].append(k)
+    allids = list(named)
+    alltree = cKDTree(np.array([seed_xy[k] for k in allids]))
     for ci in np.unique(cid):
         m = cid == ci
         c = city_list[ci] if ci >= 0 else "-"
         ids = by_city.get(c) or (by_city["-"] if ci < 0 else None)
         if ci >= 0 and not ids:
             res[m] = cities_tsv.get(c, {}).get("area", "dal-center"); continue
-        j, d = nearest(ids, xs[m], ys[m])
+        d, j = cKDTree(np.array([seed_xy[k] for k in ids])).query(np.column_stack([xs[m], ys[m]]))
         a = np.array([named[ids[q]]["area"] for q in j], dtype=object)
         if ci < 0:  # вне городов дальше 15 км от сельских точек — по ближайшему району вообще
-            far = d > 225
+            far = d > 15
             if far.any():
-                allids = list(named)
-                j2, _ = nearest(allids, xs[m][far], ys[m][far])
+                _, j2 = alltree.query(np.column_stack([xs[m][far], ys[m][far]]))
                 a[far] = [named[allids[q]]["area"] for q in j2]
         res[m] = a
     return res
@@ -345,148 +341,327 @@ def area_class(aid):
     return "core" if aid in CORE else "urban" if aid in URBAN else "rural" if aid in RURALISH else "suburb"
 
 
-# размеры ячеек (км²) по типу области: районы, части областей, секторы
+T_ATOM = {"core": 0.25, "urban": 0.6, "suburb": 1.0, "rural": 2.0}
 T_DISTRICT = {"core": 5, "urban": 11, "suburb": 20, "rural": 45}
 T_ZONE = {"core": 25, "urban": 45, "suburb": 70, "rural": 160}
 T_SECTOR = {"core": 1.4, "urban": 3, "suburb": 5, "rural": 15}
 
-# равномерная сетка точек по суше: по ней считаются площади и центры ячеек
-STEP = 0.25
+# ---------------------------------------------------------------- 1. атомы
+log("атомы")
+STEP = 0.2
 x0, y0, x1, y1 = FRAME.bounds
 GX, GY = np.meshgrid(np.arange(x0 + STEP / 2, x1, STEP), np.arange(y0 + STEP / 2, y1, STEP))
 GX, GY = GX.ravel(), GY.ravel()
-on = shapely.contains_xy(DOMAIN, GX, GY)
-GX, GY = GX[on], GY[on]
 GA = area_at(GX, GY)
-log("точек сетки:", len(GX))
+GW = np.array([1.0 / T_ATOM[area_class(a)] for a in GA])  # плотность атомов
+rng = np.random.default_rng(11)
+n_atoms = int(round((GW * STEP * STEP).sum()))
+pick = rng.choice(len(GX), n_atoms, replace=False, p=GW / GW.sum())
+PTS = np.column_stack([GX[pick], GY[pick]]) + rng.uniform(-STEP / 2, STEP / 2, (n_atoms, 2))
+G = np.column_stack([GX, GY])
+for _ in range(12):  # Ллойд с весом плотности: атомы становятся ровнее
+    _, own_ = cKDTree(PTS).query(G)
+    sw = np.bincount(own_, weights=GW, minlength=n_atoms)
+    sx = np.bincount(own_, weights=GW * GX, minlength=n_atoms)
+    sy = np.bincount(own_, weights=GW * GY, minlength=n_atoms)
+    ok = sw > 0
+    PTS[ok] = np.column_stack([sx[ok] / sw[ok], sy[ok] / sw[ok]])
+vor = voronoi_polygons(MultiPoint([Point(p) for p in PTS]), extend_to=FRAME, ordered=True)
+AP = [c.intersection(FRAME) for c in vor.geoms]
+AP = [max(getattr(c, "geoms", [c]), key=lambda q: q.area) if c.geom_type != "Polygon" else c for c in AP]
+NA = len(AP)
+AA = np.array([p.area for p in AP])
+AC = np.array([[p.centroid.x, p.centroid.y] for p in AP])
+HINT = area_at(AC[:, 0], AC[:, 1])
+log("атомов:", NA, "средняя площадь %.2f км²" % AA.mean())
+
+# соседство атомов и цена перехода
+atree = STRtree(AP)
+pairs = set()
+for i, p in enumerate(AP):
+    for j in atree.query(p.buffer(1e-6)):
+        if j > i and p.boundary.intersection(AP[j].boundary).length > 1e-4:
+            pairs.add((i, j))
+pairs = sorted(pairs)
+barriers = [(STRtree(roads["motorway"] + roads["trunk"]), roads["motorway"] + roads["trunk"], 4.0),
+            (STRtree(river_main), river_main, 6.0), (STRtree(rail), rail, 2.0)]
+EI, EJ, EW = [], [], []
+for i, j in pairs:
+    seg = LineString([AC[i], AC[j]])
+    w = float(np.hypot(*(AC[i] - AC[j])))
+    for tree, lines, f in barriers:
+        if any(lines[k].intersects(seg) for k in tree.query(seg)):
+            w *= f
+    if HINT[i] != HINT[j]:
+        w *= 2.0
+    EI.append(i); EJ.append(j); EW.append(w)
+EI, EJ, EW = np.array(EI), np.array(EJ), np.array(EW)
+NB = [dict() for _ in range(NA)]
+for i, j in pairs:
+    l = AP[i].boundary.intersection(AP[j].boundary).length
+    NB[i][j] = l; NB[j][i] = l
+log("рёбер:", len(EI))
 
 
-def lloyd(P, fixed_pts, k_free, iters=35, seed=7):
-    """k-средних по точкам P: фиксированные центры стоят на месте, свободные двигаются к центрам своих точек."""
+def graph(nodes):
+    """Разреженная матрица графа на подмножестве атомов (индексы — позиции в nodes)."""
+    pos = {a: k for k, a in enumerate(nodes)}
+    m = np.array([(a in pos) and (b in pos) for a, b in zip(EI, EJ)], dtype=bool)
+    r = np.array([pos[a] for a in EI[m]]); c = np.array([pos[b] for b in EJ[m]])
+    return coo_matrix((EW[m], (r, c)), shape=(len(nodes), len(nodes))).tocsr(), pos
+
+
+def grow(nodes, seed_nodes, fixed_n, iters=4):
+    """Многоисточниковый Дейкстра: каждый атом — ближайшему по графу центру; свободные центры (после fixed_n)
+    несколько раз сдвигаются в середину своей области. Возвращает метку (номер центра) для каждого узла."""
+    M, pos = graph(nodes)
+    sp = [pos[s] for s in seed_nodes]
+    W = AA[nodes]; C = AC[nodes]
+    for it in range(iters + 1):
+        dist, _, src = dijkstra(M, directed=False, indices=sp, min_only=True, return_predecessors=True)
+        lab = np.array([sp.index(s) if s >= 0 else -1 for s in src])
+        if it == iters:
+            break
+        moved = False
+        for k in range(fixed_n, len(sp)):
+            mk = lab == k
+            if not mk.any():
+                continue
+            cen = (C[mk] * W[mk, None]).sum(0) / W[mk].sum()
+            cand = np.where(mk)[0]
+            best = cand[np.argmin(((C[cand] - cen) ** 2).sum(1))]
+            if best != sp[k] and best not in sp:
+                sp[k] = best; moved = True
+        if not moved:
+            break
+    # недостижимые (остров, отрезанный озером) — к ближайшему по прямой размеченному
+    bad = np.where(lab < 0)[0]
+    if len(bad):
+        good = np.where(lab >= 0)[0]
+        _, j = cKDTree(C[good]).query(C[bad])
+        lab[bad] = lab[good[j]]
+    return lab, [nodes[s] for s in sp]
+
+
+def kmeans_pts(P, W, fixed_pts, k_free, iters=30):
+    """Свободные центры для k-средних по точкам P с весами W; фиксированные стоят на месте."""
     if k_free <= 0:
         return np.zeros((0, 2))
-    rng = np.random.default_rng(seed)
     F = np.array(fixed_pts).reshape(-1, 2)
     C = []
-    for _ in range(k_free):  # начальные центры — самые далёкие от уже стоящих
-        allc = np.vstack([F] + ([np.array(C)] if C else [])) if len(F) or C else None
+    for _ in range(k_free):
+        allc = np.vstack([F] + ([np.array(C)] if C else [])) if (len(F) or C) else None
         if allc is None or not len(allc):
-            C.append(P[rng.integers(len(P))]); continue
-        d = np.min(((P[:, None, :] - allc[None, :, :]) ** 2).sum(-1), axis=1)
-        C.append(P[int(np.argmax(d))])
+            C.append(P[np.argmax(W)]); continue
+        d = cKDTree(allc).query(P)[0]
+        C.append(P[int(np.argmax(d * W))])
     C = np.array(C, dtype=float)
     for _ in range(iters):
         allc = np.vstack([F, C]) if len(F) else C
-        a = np.argmin(((P[:, None, :] - allc[None, :, :]) ** 2).sum(-1), axis=1) - len(F)
+        a = cKDTree(allc).query(P)[1] - len(F)
         for j in range(len(C)):
-            if np.any(a == j):
-                C[j] = P[a == j].mean(axis=0)
+            m = a == j
+            if m.any():
+                C[j] = (P[m] * W[m, None]).sum(0) / W[m].sum()
     return C
 
 
-def voronoi_cells(points, clip):
-    """Ячейки Вороного вокруг точек, обрезанные областью clip; порядок как у points."""
-    if len(points) == 1:
-        return [clip]
-    mp = MultiPoint([Point(p) for p in points])
-    cells = list(voronoi_polygons(mp, extend_to=clip).geoms)
-    out = [None] * len(points)
-    for c in cells:
-        j = min(range(len(points)), key=lambda i: (points[i][0] - c.centroid.x) ** 2 + (points[i][1] - c.centroid.y) ** 2) \
-            if not any(c.contains(Point(p)) for p in points) else next(i for i, p in enumerate(points) if c.contains(Point(p)))
-        out[j] = c.intersection(clip)
-    return [o if o is not None else Polygon() for o in out]
+# ---------------------------------------------------------------- 2. готовые регионы из атомов
+ATOM_FIX = np.full(NA, None, dtype=object)
+for fid, g in FIXED.items():
+    best, bestv = None, 0
+    for i in atree.query(g):
+        v = AP[i].intersection(g).area
+        if v > 0.5 * AA[i]:
+            ATOM_FIX[i] = fid
+        if v > bestv:
+            best, bestv = i, v
+    if not (ATOM_FIX == fid).any():
+        if best is not None and bestv > 0.25 * AA[best]:
+            ATOM_FIX[best] = fid
+        else:
+            log("ВНИМАНИЕ: природный регион слишком мелкий для атомов, пропущен:", fid); fixed_info.pop(fid, None)
+for fid in list(fixed_info):  # готовый регион — один кусок; отрывки отдаём окружению
+    idx = set(np.where(ATOM_FIX == fid)[0])
+    comps = []
+    while idx:
+        st = [idx.pop()]; comp = []
+        while st:
+            q = st.pop(); comp.append(q)
+            for o in NB[q]:
+                if o in idx:
+                    idx.remove(o); st.append(o)
+        comps.append(comp)
+    comps.sort(key=lambda c: -AA[c].sum())
+    for comp in comps[1:]:
+        for q in comp:
+            ATOM_FIX[q] = None
+free = [i for i in range(NA) if ATOM_FIX[i] is None]
+log("атомов под озёрами, парками и аэропортами:", NA - len(free))
 
-
-def tidy(cells, ids):
-    """Ячейка, разрезанная озером или краем, оставляет себе большую часть; мелкие куски — соседям."""
-    main, loose = {}, []
-    for k, g in zip(ids, cells):
-        parts = sorted([p for p in getattr(g, "geoms", [g]) if p.geom_type == "Polygon" and p.area > 1e-6], key=lambda p: -p.area)
-        if not parts:
-            continue
-        main[k] = parts[0]
-        loose += parts[1:]
-    for p in sorted(loose, key=lambda p: -p.area):
-        best, bl = None, 0
-        for k, g in main.items():
-            if g.distance(p) < 1e-6:
-                l = g.boundary.intersection(p.boundary).length
-                if l > bl:
-                    best, bl = k, l
-        if best:
-            main[best] = unary_union([main[best], p]).buffer(0)
-    return main
-
-
-# ---------------------------------------------------------------- районы (мелкий масштаб, d)
+# ---------------------------------------------------------------- 3. районы
 log("районы")
-fixed_pts_by_area = collections.defaultdict(list)
+ftree = cKDTree(AC)
+free_set = set(free)
+seed_atoms, seed_ids = [], []
 for k, s in named.items():
-    fixed_pts_by_area[s["area"]].append(seed_xy[k])
-dist_pts, dist_ids = [], []
-for k in named:
-    dist_pts.append(seed_xy[k]); dist_ids.append(k)
+    _, cand = ftree.query(seed_xy[k], k=8)
+    a = next((c for c in cand if c in free_set and c not in seed_atoms), None)
+    if a is None:
+        log("ВНИМАНИЕ: точка района %s под водой или занята, пропущена" % k); continue
+    seed_atoms.append(int(a)); seed_ids.append(k)
+fixed_n = len(seed_atoms)
 for aid in areas:
-    m = GA == aid
+    m = np.array([HINT[i] == aid for i in free])
     if not m.any():
         continue
-    P = np.column_stack([GX[m], GY[m]])
-    total = m.sum() * STEP * STEP
-    k_free = max(0, round(total / T_DISTRICT[area_class(aid)]) - len(fixed_pts_by_area[aid]))
-    C = lloyd(P, fixed_pts_by_area[aid], k_free)
-    for j, c in enumerate(C):
-        dist_pts.append(c); dist_ids.append("%s~%d" % (aid, j))
-cells = tidy(voronoi_cells(dist_pts, DOMAIN), dist_ids)
-log("ячеек районов:", len(cells))
-
-D = {}  # id → {geom, name, area, kind, named}
-area_of_auto = {}
-for k, g in cells.items():
-    if "~" in k:
-        D[k] = {"geom": g, "area": k.split("~")[0], "kind": "", "named": False}
-    else:
-        s = named[k]
-        D[k] = {"geom": g, "area": s["area"], "kind": "rural" if s["city"] == "-" else "", "named": True, "name": s["name"]}
-# ячейка может оказаться в основном на земле другой области (точка у края) — переносим по большинству
-for k, d in D.items():
-    c = d["geom"].representative_point()
-for k, d in D.items():
-    if d["named"]:
+    nodes = np.array(free)[m]
+    total = AA[nodes].sum()
+    have = [seed_xy[k] for k in seed_ids if k in named and named[k]["area"] == aid]
+    k_free = max(0, round(total / T_DISTRICT[area_class(aid)]) - len(have))
+    for j, c in enumerate(kmeans_pts(AC[nodes], AA[nodes], have, k_free)):
+        a = int(nodes[np.argmin(((AC[nodes] - c) ** 2).sum(1))])
+        if a not in seed_atoms:
+            seed_atoms.append(a); seed_ids.append("%s~%d" % (aid, j))
+lab, seed_atoms = grow(free, seed_atoms, fixed_n)
+DIST = {}  # id района → {atoms, area, kind, name, source}
+for k, sid in enumerate(seed_ids):
+    atoms_k = [free[i] for i in np.where(lab == k)[0]]
+    if not atoms_k:
         continue
-    g = d["geom"]
-    m = shapely.contains_xy(g, GX, GY)
-    if m.any():
-        vals, cnt = np.unique(GA[m], return_counts=True)
-        d["area"] = vals[np.argmax(cnt)]
+    if "~" in sid:
+        vals = collections.Counter()
+        for a in atoms_k:
+            vals[HINT[a]] += AA[a]
+        DIST[sid] = {"atoms": atoms_k, "area": vals.most_common(1)[0][0], "kind": "", "auto": True, "seed": seed_atoms[k]}
+    else:
+        s = named[sid]
+        DIST[sid] = {"atoms": atoms_k, "area": s["area"], "kind": "rural" if s["city"] == "-" else "", "auto": False,
+                     "name": s["name"], "source": s["source"], "seed": seed_atoms[k]}
+for fid, info in fixed_info.items():
+    atoms_f = list(np.where(ATOM_FIX == fid)[0])
+    if atoms_f:
+        DIST[fid] = {"atoms": atoms_f, "area": info.get("area"), "kind": info["kind"], "auto": False, "name": info["name"],
+                     "source": "airport" if info["kind"] == "airport" else "natural"}
+def region_adjacency(atom_label):
+    """Соседство регионов по меткам атомов: {регион: {сосед: длина общей границы}}."""
+    out = collections.defaultdict(collections.Counter)
+    for i, j in pairs:
+        a, b = atom_label[i], atom_label[j]
+        if a != b:
+            out[a][b] += NB[i][j]; out[b][a] += NB[i][j]
+    return out
 
 
-def direction(pt, centre, scale):
-    dx, dy = pt.x - centre.x, pt.y - centre.y
+def relabel():
+    lab_ = np.empty(NA, dtype=object)
+    for d, v in DIST.items():
+        for a in v["atoms"]:
+            lab_[a] = d
+    return lab_
+
+
+ATOM_D = relabel()
+adjD = region_adjacency(ATOM_D)
+# автоматический район, зажатый соседями (меньше трети целевой площади), — к соседу той же области
+for d in sorted([d for d, v in DIST.items() if v["auto"]], key=lambda d: AA[DIST[d]["atoms"]].sum()):
+    v = DIST[d]
+    if AA[v["atoms"]].sum() >= T_DISTRICT[area_class(v["area"])] / 3:
+        continue
+    tally = collections.Counter({o: l for o, l in adjD[d].items() if o in DIST and DIST[o]["area"] == v["area"] and DIST[o]["kind"] in ("", "rural")})
+    if tally:
+        o = tally.most_common(1)[0][0]
+        DIST[o]["atoms"] += v["atoms"]; del DIST[d]
+        ATOM_D = relabel(); adjD = region_adjacency(ATOM_D)
+
+# именованный район, зажатый автоматическими соседями (меньше четверти цели), забирает себе самого большого из них
+for d in [d for d, v in DIST.items() if not v["auto"] and v["kind"] in ("", "rural")]:
+    v = DIST.get(d)
+    if not v or AA[v["atoms"]].sum() >= T_DISTRICT[area_class(v["area"])] / 4:
+        continue
+    tally = collections.Counter({o: l for o, l in adjD[d].items() if o in DIST and DIST[o]["auto"] and DIST[o]["area"] == v["area"]})
+    if tally:
+        o = tally.most_common(1)[0][0]
+        v["atoms"] += DIST[o]["atoms"]; del DIST[o]
+        ATOM_D = relabel(); adjD = region_adjacency(ATOM_D)
+
+# ---------------------------------------------------------------- 4. области: сплошные, без анклавов
+overrides = collections.defaultdict(dict)
+ov_path = pathlib.Path("data/overrides.tsv")
+if ov_path.exists():
+    for line in ov_path.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            c = [x.strip() for x in line.split("\t")]
+            if len(c) >= 3:
+                overrides[c[0]][c[1]] = c[2]
+for d, v in DIST.items():
+    if v["area"] is None:  # озеро или парк — в область соседа с самой длинной границей
+        tally = collections.Counter()
+        for o, l in adjD[d].items():
+            if DIST[o]["area"]:
+                tally[DIST[o]["area"]] += l
+        v["area"] = tally.most_common(1)[0][0] if tally else "dal-center"
+for d, a in overrides["area"].items():
+    if d in DIST:
+        DIST[d]["area"] = a; DIST[d]["pinned"] = True
+    else:
+        log("ВНИМАНИЕ: overrides.tsv: нет района", d)
+for _ in range(10):
+    changed = False
+    for aid in areas:
+        members = [d for d, v in DIST.items() if v["area"] == aid]
+        rest = set(members); comps = []
+        while rest:
+            st = [rest.pop()]; comp = []
+            while st:
+                q = st.pop(); comp.append(q)
+                for o in adjD[q]:
+                    if o in rest:
+                        rest.remove(o); st.append(o)
+            comps.append(comp)
+        if len(comps) < 2:
+            continue
+        comps.sort(key=lambda c: -sum(AA[DIST[q]["atoms"]].sum() for q in c))
+        for comp in comps[1:]:
+            for q in comp:
+                if DIST[q].get("pinned"):
+                    continue
+                tally = collections.Counter()
+                for o, l in adjD[q].items():
+                    if DIST[o]["area"] != aid:
+                        tally[DIST[o]["area"]] += l
+                if tally:
+                    DIST[q]["area"] = tally.most_common(1)[0][0]; changed = True
+    if not changed:
+        break
+
+# ---------------------------------------------------------------- названия районов без своей точки
+DIRS = ["восток", "северо-восток", "север", "северо-запад", "запад", "юго-запад", "юг", "юго-восток"]
+DIR_ID = dict(zip(DIRS + ["центр"], ["e", "ne", "n", "nw", "w", "sw", "s", "se", "c"]))
+
+
+def dir_of(p, centre, scale):
+    dx, dy = p[0] - centre[0], p[1] - centre[1]
     if math.hypot(dx, dy) < 0.28 * scale:
         return "центр"
     return DIRS[int(((math.degrees(math.atan2(dy, dx)) + 22.5) % 360) // 45)]
 
 
-DIRS = ["восток", "северо-восток", "север", "северо-запад", "запад", "юго-запад", "юг", "юго-восток"]
-DIR_ID = dict(zip(DIRS + ["центр"], ["e", "ne", "n", "nw", "w", "sw", "s", "se", "c"]))
-
-
-def compass_names(geoms, centre, scale):
+def compass_names(cents, centre, scale):
     """Названия по сторонам света; одинаковые различаем «ближний/дальний» или номером."""
-    names = {k: direction(g.representative_point() if not g.centroid.within(g) else g.centroid, centre, scale) for k, g in geoms.items()}
-    if list(names.values()).count("центр") > 1:  # «центр» только у ближайшей
-        cs = sorted([k for k, n in names.items() if n == "центр"], key=lambda k: geoms[k].centroid.distance(centre))
-        for k in cs[1:]:
-            c = geoms[k].centroid
-            names[k] = DIRS[int(((math.degrees(math.atan2(c.y - centre.y, c.x - centre.x)) + 22.5) % 360) // 45)]
+    names = {k: dir_of(c, centre, scale) for k, c in cents.items()}
+    dist_ = {k: math.hypot(c[0] - centre[0], c[1] - centre[1]) for k, c in cents.items()}
+    cs = sorted([k for k, n in names.items() if n == "центр"], key=lambda k: dist_[k])
+    for k in cs[1:]:
+        c = cents[k]
+        names[k] = DIRS[int(((math.degrees(math.atan2(c[1] - centre[1], c[0] - centre[0])) + 22.5) % 360) // 45)]
     by = collections.defaultdict(list)
     for k, n in names.items():
         by[n].append(k)
     for n, ks in by.items():
         if len(ks) < 2:
             continue
-        ks.sort(key=lambda k: geoms[k].centroid.distance(centre))
+        ks.sort(key=lambda k: dist_[k])
         for i, k in enumerate(ks):
             names[k] = (("ближний " if i == 0 else "дальний ") + n) if len(ks) == 2 else n + " " + str(i + 1)
     return names
@@ -499,200 +674,243 @@ def code(n):
     return DIR_ID.get(base, "x") + pre + (p[-1] if p[-1].isdigit() else "")
 
 
-# Названия ячеек без своей точки: по городу (если в городе нет своих районов) или по ближайшему району той же области.
-auto = [k for k, d in D.items() if not d["named"]]
-groups = collections.defaultdict(list)
-for k in auto:
-    g = D[k]["geom"]; c = g.representative_point()
-    ci = city_at(np.array([c.x]), np.array([c.y]))[0]
-    cname = city_list[ci] if ci >= 0 else None
-    cand = [n for n in named if named[n]["area"] == D[k]["area"] and (cname is None or named[n]["city"] in (cname, "-") or named[n]["city"] == cname)]
-    cand = cand or [n for n in named if named[n]["area"] == D[k]["area"]] or list(named)
-    host = min(cand, key=lambda n: ((seed_xy[n] - np.array([c.x, c.y])) ** 2).sum())
-    groups[host].append(k)
-renamed = {}
-for host, ks in groups.items():
-    hg = D[host]["geom"] if host in D else None
-    centre = Point(seed_xy[host]); scale = math.sqrt(sum(D[k]["geom"].area for k in ks) + (hg.area if hg else 0))
-    names = compass_names({k: D[k]["geom"] for k in ks}, centre, scale)
-    for k in ks:
-        nm = names[k] if names[k] != "центр" else "окрестности"
-        D[k]["name"] = named[host]["name"] + ", " + nm
-        renamed[k] = host + "-" + code(nm if nm != "окрестности" else "центр")
-D = {renamed.get(k, k): v for k, v in D.items()}
-for k, g in FIXED.items():
-    info = fixed_info[k]
-    D[k] = {"geom": g, "area": info.get("area"), "kind": info["kind"], "named": True, "name": info["name"]}
+def centroid(atoms_):
+    w = AA[atoms_]
+    return (AC[atoms_] * w[:, None]).sum(0) / w.sum()
 
 
-def adjacency_map(geoms):
-    keys = list(geoms)
-    tree = STRtree([geoms[k] for k in keys])
-    nb = {k: {} for k in keys}
-    for i, k in enumerate(keys):
-        for j in tree.query(geoms[k].buffer(1e-6)):
-            if j <= i:
-                continue
-            l = geoms[k].boundary.intersection(geoms[keys[j]].boundary).length
-            if l > 1e-4:
-                nb[k][keys[j]] = l; nb[keys[j]][k] = l
-    return nb
-
-
-# клочки суши, не доставшиеся ни одной ячейке (у края рамки), — соседу с самой длинной общей границей
-rest = FRAME.difference(unary_union([d["geom"] for d in D.values()]))
-for part in getattr(rest, "geoms", [rest]):
-    if part.geom_type != "Polygon" or part.area < 1e-6:
+hosts = collections.defaultdict(list)
+for d, v in DIST.items():
+    if not v["auto"]:
         continue
-    best = max(D, key=lambda k: D[k]["geom"].boundary.intersection(part.boundary).length if D[k]["geom"].distance(part) < 1e-6 else -1)
-    D[best]["geom"] = unary_union([D[best]["geom"], part]).buffer(0)
-    if best in FIXED:
-        FIXED[best] = D[best]["geom"]
+    c = centroid(v["atoms"])
+    cand = [k for k in named if named[k]["area"] == v["area"] and k in DIST] or [k for k in named if k in DIST]
+    host = min(cand, key=lambda k: ((seed_xy[k] - c) ** 2).sum())
+    hosts[host].append(d)
+rename = {}
+for host, ds in hosts.items():
+    allat = DIST[host]["atoms"] + [a for d in ds for a in DIST[d]["atoms"]]
+    nm = compass_names({d: centroid(DIST[d]["atoms"]) for d in ds}, seed_xy[host], math.sqrt(AA[allat].sum()))
+    for d in ds:
+        n = nm[d] if nm[d] != "центр" else "окрестности"
+        DIST[d]["name"] = named[host]["name"] + ", " + n
+        DIST[d]["source"] = "auto"
+        rename[d] = host + "-" + code(nm[d])
+DIST = {rename.get(k, k): v for k, v in DIST.items()}
+for d, nm in overrides["name"].items():
+    if d in DIST:
+        DIST[d]["name"] = nm; DIST[d]["source"] = "override"
+ATOM_D = np.empty(NA, dtype=object)
+for d, v in DIST.items():
+    for a in v["atoms"]:
+        ATOM_D[a] = d
+adjD = region_adjacency(ATOM_D)
+log("районов:", len(DIST))
 
-nbD = adjacency_map({k: d["geom"] for k, d in D.items()})
-for k, d in D.items():  # озёра и парки — в ту область, с которой у них самая длинная граница
-    if d["area"] is None:
-        tally = collections.Counter()
-        for o, l in nbD[k].items():
-            if D[o]["area"]:
-                tally[D[o]["area"]] += l
-        d["area"] = tally.most_common(1)[0][0] if tally else "dal-center"
-log("районов:", len(D))
-
-# ---------------------------------------------------------------- части областей (средний масштаб, z)
+# ---------------------------------------------------------------- 5. части областей
 log("части областей")
-Z = {}
-for aid in areas:
-    members = [k for k, d in D.items() if d["area"] == aid and d["kind"] not in ("water", "green", "airport")]
-    if not members:
-        continue
-    tot = sum(D[k]["geom"].area for k in members)
-    k2 = max(1, round(tot / T_ZONE[area_class(aid)]))
-    P = np.array([[D[k]["geom"].centroid.x, D[k]["geom"].centroid.y] for k in members])
-    W = np.array([D[k]["geom"].area for k in members])
-    if k2 == 1 or len(members) <= k2:
-        lab = np.zeros(len(members), dtype=int) if k2 == 1 else np.arange(len(members))
+def zone_groups(aid, members):
+    """Делит связный набор районов одной области на части примерно равной площади, ростом по графу соседства."""
+    tot = sum(AA[DIST[d]["atoms"]].sum() for d in members)
+    k2 = max(1, min(len(members), round(tot / T_ZONE[area_class(aid)])))
+    if k2 == 1:
+        groups = {0: members}
     else:
-        rng = np.random.default_rng(3)
-        C = [P[np.argmax(W)]]
-        for _ in range(1, k2):
-            d = np.min(((P[:, None, :] - np.array(C)[None]) ** 2).sum(-1), axis=1)
-            C.append(P[int(np.argmax(d))])
-        C = np.array(C, dtype=float)
-        for _ in range(40):
-            lab = np.argmin(((P[:, None, :] - C[None]) ** 2).sum(-1), axis=1)
-            for j in range(k2):
-                if np.any(lab == j):
-                    C[j] = (P[lab == j] * W[lab == j, None]).sum(0) / W[lab == j].sum()
-        # связность: оторванные куски — к соседней части
-        for _ in range(4):
-            changed = False
-            for j in range(k2):
-                idx = [members[i] for i in range(len(members)) if lab[i] == j]
-                if len(idx) < 2:
-                    continue
-                s = set(idx); comps = []
-                while s:
-                    st = [s.pop()]; comp = []
-                    while st:
-                        q = st.pop(); comp.append(q)
-                        for o in nbD[q]:
-                            if o in s:
-                                s.remove(o); st.append(o)
-                    comps.append(comp)
-                comps.sort(key=lambda c: -sum(D[q]["geom"].area for q in c))
-                for comp in comps[1:]:
-                    for q in comp:
-                        tally = collections.Counter()
-                        for o, l in nbD[q].items():
-                            if o in members and lab[members.index(o)] != j:
-                                tally[lab[members.index(o)]] += l
-                        if tally:
-                            lab[members.index(q)] = tally.most_common(1)[0][0]; changed = True
-            if not changed:
+        P = np.array([centroid(DIST[d]["atoms"]) for d in members]); Wd = np.array([AA[DIST[d]["atoms"]].sum() for d in members])
+        cs = kmeans_pts(P, Wd, [], k2)
+        sd = []
+        for c in cs:
+            order = np.argsort(((P - c) ** 2).sum(1))
+            sd.append(next(int(o) for o in order if int(o) not in sd))
+        # рост по графу соседства районов от центров (связность гарантирована)
+        pos = {d: k for k, d in enumerate(members)}
+        r, cc, w = [], [], []
+        for d in members:
+            for o in adjD[d]:
+                if o in pos:
+                    r.append(pos[d]); cc.append(pos[o]); w.append(float(np.hypot(*(P[pos[d]] - P[pos[o]]))))
+        M = coo_matrix((w, (r, cc)), shape=(len(members), len(members))).tocsr()
+        for it in range(5):
+            _, _, src = dijkstra(M, directed=False, indices=sd, min_only=True, return_predecessors=True)
+            lab2 = np.array([sd.index(s) if s >= 0 else 0 for s in src])
+            new = []
+            for j in range(len(sd)):
+                mk = np.where(lab2 == j)[0]
+                cen = (P[mk] * Wd[mk, None]).sum(0) / Wd[mk].sum()
+                b = int(mk[np.argmin(((P[mk] - cen) ** 2).sum(1))])
+                new.append(b if b not in new else sd[j])
+            if new == sd:
                 break
-    parts = collections.defaultdict(list)
-    for i, k in enumerate(members):
-        parts[int(lab[i])].append(k)
-    whole = unary_union([D[k]["geom"] for k in members])
-    names_dir = compass_names({j: unary_union([D[k]["geom"] for k in ks]) for j, ks in parts.items()}, whole.centroid, math.sqrt(whole.area))
-    for j, ks in parts.items():
-        big = sorted([k for k in ks if D[k]["named"] and "," not in D[k]["name"]], key=lambda k: -D[k]["geom"].area)
-        if len(parts) == 1:
+            sd = new
+        groups = collections.defaultdict(list)
+        for i, d in enumerate(members):
+            groups[int(lab2[i])].append(d)
+    return groups
+
+
+ZONE = {}
+for aid in areas:
+    all_members = [d for d, v in DIST.items() if v["area"] == aid and v["kind"] not in ("water", "green", "airport")]
+    # районы, связанные только через озеро или парк, — разные куски; каждый кусок делится отдельно
+    rest = set(all_members); pieces = []
+    while rest:
+        st = [rest.pop()]; comp = []
+        while st:
+            q = st.pop(); comp.append(q)
+            for o in adjD[q]:
+                if o in rest:
+                    rest.remove(o); st.append(o)
+        pieces.append(comp)
+    groups = {}
+    for members in pieces:
+        groups.update({len(groups) + j: g for j, g in zone_groups(aid, members).items()})
+    if not groups:
+        continue
+    members = all_members
+    allat = [a for d in members for a in DIST[d]["atoms"]]
+    cz = centroid(allat)
+    nmd = compass_names({j: centroid([a for d in ds for a in DIST[d]["atoms"]]) for j, ds in groups.items()}, cz, math.sqrt(AA[allat].sum()))
+    for j, ds in groups.items():
+        big = sorted([d for d in ds if not DIST[d]["auto"]], key=lambda d: -AA[DIST[d]["atoms"]].sum())
+        if len(groups) == 1:
             nm = areas[aid]
         elif len(big) >= 2:
-            nm = D[big[0]]["name"] + " и " + D[big[1]]["name"]
+            nm = DIST[big[0]]["name"] + " и " + DIST[big[1]]["name"]
         elif len(big) == 1:
-            nm = D[big[0]]["name"] + " и окрестности"
+            nm = DIST[big[0]]["name"] + " и окрестности"
         else:
-            nm = areas[aid] + ", " + names_dir[j]
-        zid = aid + "." + code(names_dir[j]) if len(parts) > 1 else aid
-        Z[zid] = {"geom": unary_union([D[k]["geom"] for k in ks]), "area": aid, "name": nm, "members": ks}
-        for k in ks:
-            D[k]["zone"] = zid
-for k, d in D.items():  # озёра, парки, аэропорты — сами себе часть области
-    if "zone" not in d:
-        Z[k] = {"geom": d["geom"], "area": d["area"], "name": d["name"], "members": [k], "kind": d["kind"]}
-        d["zone"] = k
-log("частей областей:", len(Z))
+            nm = areas[aid] + ", " + nmd[j]
+        zid = aid if len(groups) == 1 else aid + "." + code(nmd[j])
+        ZONE[zid] = {"area": aid, "name": nm, "members": ds}
+        for d in ds:
+            DIST[d]["zone"] = zid
 
-# ---------------------------------------------------------------- секторы (детальный масштаб, s)
+
+for d, v in DIST.items():
+    if "zone" not in v:  # озёра, парки, аэропорты — сами себе часть области
+        ZONE[d] = {"area": v["area"], "name": v["name"], "members": [d], "kind": v["kind"]}
+        v["zone"] = d
+log("частей областей:", len(ZONE))
+
+# ---------------------------------------------------------------- 6. секторы
 log("секторы")
 seeds3 = collections.defaultdict(list)
 for s in read_seeds3():
     seeds3[s["parent"]].append(s)
-S = {}
-for k, d in D.items():
-    g = d["geom"]
-    if d["kind"] in ("water", "green", "airport"):
-        S[k] = {"geom": g, "name": d["name"], "parent": k}; continue
-    manual = [s for s in seeds3.get(k, []) if g.contains(Point(fwd(s["lon"], s["lat"])))]
-    n = len(manual) if manual else max(1, round(g.area / T_SECTOR[area_class(d["area"])]))
-    if n == 1:
-        S[k] = {"geom": g, "name": d["name"], "parent": k}; continue
+SECT = {}
+for d, v in DIST.items():
+    at = v["atoms"]
+    if v["kind"] in ("water", "green", "airport"):
+        SECT[d] = {"atoms": at, "name": v["name"], "parent": d}; continue
+    manual = []
+    for s in seeds3.get(d, []):
+        _, a = cKDTree(AC[at]).query(fwd(s["lon"], s["lat"]))
+        if at[a] not in [m[1] for m in manual]:
+            manual.append((s, at[a]))
+    k = len(manual) if manual else max(1, min(len(at) // 2, round(AA[at].sum() / T_SECTOR[area_class(v["area"])])))
+    if k <= 1:
+        SECT[d] = {"atoms": at, "name": v["name"], "parent": d}; continue
     if manual:
-        pts = [np.array(fwd(s["lon"], s["lat"])) for s in manual]
+        sp = [m[1] for m in manual]; fixed_k = len(sp)
     else:
-        m = shapely.contains_xy(g, GX, GY)
-        P = np.column_stack([GX[m], GY[m]])
-        if len(P) < n * 3:  # мелкий район — сетка гуще
-            st = math.sqrt(g.area / (n * 40))
-            bx0, by0, bx1, by1 = g.bounds
-            xs, ys = np.meshgrid(np.arange(bx0, bx1, st), np.arange(by0, by1, st))
-            xs, ys = xs.ravel(), ys.ravel()
-            ins = shapely.contains_xy(g, xs, ys)
-            P = np.column_stack([xs[ins], ys[ins]])
-        pts = list(lloyd(P, [], n))
-    sub = tidy(voronoi_cells(pts, g), list(range(len(pts))))
+        sp = []
+        for c in kmeans_pts(AC[at], AA[at], [], k):
+            order = np.argsort(((AC[at] - c) ** 2).sum(1))
+            sp.append(next(at[o] for o in order if at[o] not in sp))
+        fixed_k = 0
+    lab3, _ = grow(at, sp, fixed_k, iters=3)
+    parts = {j: [at[i] for i in np.where(lab3 == j)[0]] for j in range(len(sp))}
+    parts = {j: p for j, p in parts.items() if p}
     if manual:
-        for j, sg in sub.items():
-            S[manual[j]["id"]] = {"geom": sg, "name": manual[j]["name"], "parent": k}
+        for j, p in parts.items():
+            SECT[manual[j][0]["id"]] = {"atoms": p, "name": manual[j][0]["name"], "parent": d}
     else:
-        nm = compass_names(sub, g.centroid, math.sqrt(g.area))
-        for j, sg in sub.items():
-            S[k + "." + code(nm[j])] = {"geom": sg, "name": d["name"] + " — " + nm[j], "parent": k}
+        nm = compass_names({j: centroid(p) for j, p in parts.items()}, centroid(at), math.sqrt(AA[at].sum()))
+        for j, p in parts.items():
+            SECT[d + "." + code(nm[j])] = {"atoms": p, "name": v["name"] + " — " + nm[j], "parent": d}
 for p, ss in seeds3.items():
     for sd in ss:
-        if sd["id"] not in S:
+        if sd["id"] not in SECT:
             log("ВНИМАНИЕ: ручной сектор %s (район %s) не применился" % (sd["id"], p))
-log("секторов:", len(S))
+log("секторов:", len(SECT))
 
-# ---------------------------------------------------------------- области (крупный масштаб, a)
-A = {}
-for aid in areas:
-    parts = [d["geom"] for d in D.values() if d["area"] == aid]
-    if parts:
-        A[aid] = {"geom": unary_union(parts), "name": areas[aid]}
-    else:
-        log("ВНИМАНИЕ: у области нет районов:", aid)
+# ---------------------------------------------------------------- 7. геометрия: секторы → упрощённое покрытие → всё остальное
+log("геометрия")
+sids = list(SECT)
+raw = [unary_union([AP[a] for a in SECT[s]["atoms"]]) for s in sids]
+smooth = shapely.coverage_simplify(raw, SMOOTH, simplify_boundary=False)
+for s, g in zip(sids, smooth):
+    SECT[s]["geom"] = g if g.is_valid else g.buffer(0)
+for d, v in DIST.items():
+    v["geom"] = unary_union([SECT[s]["geom"] for s in sids if SECT[s]["parent"] == d])
+for z, v in ZONE.items():
+    v["geom"] = unary_union([DIST[d]["geom"] for d in v["members"]])
+A = {aid: {"geom": unary_union([v["geom"] for v in DIST.values() if v["area"] == aid]), "name": areas[aid]}
+     for aid in areas if any(v["area"] == aid for v in DIST.values())}
 l1_geom = {a: v["geom"] for a, v in A.items()}
-gap = FRAME.difference(unary_union([d["geom"] for d in D.values()]))
-for part in getattr(gap, "geoms", [gap]):
-    if part.area > 0.05:
-        rp = part.representative_point()
-        log("ВНИМАНИЕ: дыра %.2f км² у %.4f %.4f" % (part.area, inv(rp.x, rp.y)[1], inv(rp.x, rp.y)[0]))
+D, Z, S = DIST, ZONE, SECT  # короткие имена для выгрузки ниже
+
+# ---------------------------------------------------------------- проверки
+log("проверки")
+errors, warns = [], []
+fixed_union = unary_union([D[d]["geom"] for d in D if D[d]["kind"] in ("water", "green", "airport")])
 
 
+def check_level(name, items, parent_of=None, parents=None):
+    geoms = [v["geom"] for v in items.values()]
+    if not shapely.coverage_is_valid(geoms):
+        errors.append("%s: наложения или щели между регионами" % name)
+    if abs(unary_union(geoms).area - FRAME.area) > 0.01:
+        errors.append("%s: покрыто %.2f км² из %.2f" % (name, unary_union(geoms).area, FRAME.area))
+    for k, v in items.items():
+        g = v["geom"]
+        if g.geom_type != "Polygon":
+            errors.append("%s %s («%s»): %d кусков" % (name, k, v["name"], len(getattr(g, "geoms", [g]))))
+            continue
+        for ring in g.interiors:
+            hole = Polygon(ring)
+            if hole.intersection(fixed_union).area < 0.9 * hole.area:
+                errors.append("%s %s («%s»): дыра %.2f км² не из озёр и парков" % (name, k, v["name"], hole.area))
+        if parent_of:
+            par = parents[parent_of(k)]["geom"]
+            if g.difference(par.buffer(1e-6)).area > 1e-4:
+                errors.append("%s %s вылезает из родителя" % (name, k))
+
+
+check_level("сектор", S, lambda k: S[k]["parent"], D)
+check_level("район", D, lambda k: D[k]["zone"], Z)
+check_level("часть области", Z, lambda k: Z[k]["area"], A)
+check_level("область", A)
+adjA = collections.defaultdict(set)
+for i, j in pairs:
+    a, b = D[ATOM_D[i]]["area"], D[ATOM_D[j]]["area"]
+    if a != b:
+        adjA[a].add(b); adjA[b].add(a)
+for aid, v in A.items():
+    touches_edge = v["geom"].boundary.intersection(FRAME.boundary).length > 0
+    if len(adjA[aid]) == 1 and not touches_edge:
+        errors.append("область %s — анклав внутри %s" % (aid, list(adjA[aid])[0]))
+for d, v in D.items():
+    if v["kind"] in ("water", "green", "airport"):
+        continue
+    g = v["geom"]
+    pp = 4 * math.pi * g.area / (g.length ** 2)
+    if pp < 0.2:
+        errors.append("район %s («%s»): слишком вытянутый или изрезанный (компактность %.2f)" % (d, v["name"], pp))
+    t = T_DISTRICT[area_class(v["area"])]
+    if not 0.25 * t <= g.area <= 4 * t:
+        warns.append("район %s («%s»): %.1f км² при цели %d" % (d, v["name"], g.area, t))
+for k in named:
+    if k in D and not D[k]["geom"].contains(Point(seed_xy[k])) and not fixed_union.contains(Point(seed_xy[k])):
+        warns.append("точка района %s лежит не в нём" % k)
+for w in warns:
+    log("предупреждение:", w)
+for e in errors:
+    log("ОШИБКА:", e)
+if errors and not FORCE:
+    sys.exit("проверки не прошли (%d), карта не записана; для отладки: python tools/build.py --force" % len(errors))
+
+# ---------------------------------------------------------------- выгрузка
 def colour(items, ncol, group=lambda k: None):
     """Жадная раскраска: соседи (в той же группе) разного цвета."""
     keys = sorted(items, key=lambda k: -items[k].area)
@@ -712,31 +930,39 @@ shadeS = colour({k: v["geom"] for k, v in S.items()}, 3, lambda k: S[k]["parent"
 
 def label_point(g, prec):
     big = max(getattr(g, "geoms", [g]), key=lambda p: p.area)
-    return mapping(lonlat_round(unproj(polylabel(big, prec))))
+    return polylabel(big, prec)
 
 
-labels, out = [], {"l1": [], "l2": [], "l3": [], "l4": []}
+labels, out, review = [], {"l1": [], "l2": [], "l3": [], "l4": []}, []
 
 
-def emit(level, file, rid, g, props, prec):
+def emit(level, file, rid, g, props, prec, source=""):
     props = dict(id=rid, km2=round(g.area, 1), **props)
     out[file].append(feature(g, props, 0))
+    lp = label_point(g, prec)
+    lon, lat = inv(lp.x, lp.y)
     labels.append({"type": "Feature", "properties": {"id": rid, "name": props["name"], "km2": props["km2"], "level": level, "kind": props.get("kind", "")},
-                   "geometry": label_point(g, prec)})
+                   "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]}})
+    review.append({"level": level, "id": rid, "name": props["name"], "parent": props.get("parent") or props.get("zone") or props.get("area") or "",
+                   "km2": props["km2"], "source": source, "lat": round(lat, 5), "lon": round(lon, 5)})
 
 
 for aid, v in A.items():
-    emit(1, "l1", aid, v["geom"], {"name": v["name"], "tone": tone[aid]}, 0.05)
+    emit(1, "l1", aid, v["geom"], {"name": v["name"], "tone": tone[aid]}, 0.05, "список областей")
 for zid, v in Z.items():
-    emit(2, "l2", zid, v["geom"], {"name": v["name"], "area": v["area"], "kind": v.get("kind", ""), "tone": tone.get(v["area"], 0), "shade": shadeZ[zid]}, 0.03)
+    emit(2, "l2", zid, v["geom"], {"name": v["name"], "area": v["area"], "kind": v.get("kind", ""), "tone": tone.get(v["area"], 0), "shade": shadeZ[zid]}, 0.03,
+         "по районам внутри" if not v.get("kind") else "озеро, парк или аэропорт")
 for did, d in D.items():
-    emit(3, "l3", did, d["geom"], {"name": d["name"], "area": d["area"], "zone": d["zone"], "kind": d["kind"], "tone": tone.get(d["area"], 0), "shade": shadeD[did]}, 0.02)
+    emit(3, "l3", did, d["geom"], {"name": d["name"], "area": d["area"], "zone": d["zone"], "kind": d["kind"], "tone": tone.get(d["area"], 0), "shade": shadeD[did]}, 0.02,
+         {"seed": "опорная точка", "city": "город", "auto": "автоматически", "natural": "озеро или парк", "airport": "аэропорт", "override": "ручная правка"}.get(d.get("source", ""), ""))
 for sid, s in S.items():
     p = D[s["parent"]]
-    emit(4, "l4", sid, s["geom"], {"name": s["name"], "parent": s["parent"], "area": p["area"], "kind": p["kind"], "tone": tone.get(p["area"], 0), "shade": shadeS[sid]}, 0.01)
+    emit(4, "l4", sid, s["geom"], {"name": s["name"], "parent": s["parent"], "area": p["area"], "kind": p["kind"], "tone": tone.get(p["area"], 0), "shade": shadeS[sid]}, 0.01,
+         "ручная точка" if sid in {x["id"] for xs in seeds3.values() for x in xs} else "автоматически")
 for f in ("l1", "l2", "l3", "l4"):
     write(f, out[f])
 write("labels", labels)
+(OUT / "review.json").write_text(json.dumps(review, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
 
 def merge_lines(g):
