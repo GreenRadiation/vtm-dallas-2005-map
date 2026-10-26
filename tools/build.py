@@ -3,24 +3,29 @@
 Запуск из корня репозитория: python tools/build.py   (сначала python tools/fetch.py)
 
 Что делает:
-1. Подложка: дороги, вода, железные дороги, парки, городская черта 2000 года. Всё, что появилось
-   после 2005 года и известно нам, вырезается (списки ANACHRONISM_*).
-2. Районы: территория режется крупными дорогами, рекой и железной дорогой на куски. Каждый кусок
-   достаётся ближайшей опорной точке района из data/seeds.tsv в том же городе. Город без своих районов
-   становится одним районом. Мелкие куски на развязках прилипают к соседям, пригородная территория
-   вне городов — к ближайшему району через соседей.
-3. Области (крупный масштаб) = объединение их районов.
+1. Подложка: дороги, вода, железные дороги, парки. Всё, что появилось после 2005 года и известно нам,
+   вырезается (списки ANACHRONISM_*).
+2. Средний масштаб (районы, l2): территория режется крупными дорогами, рекой и железной дорогой на куски.
+   Кусок достаётся опорной точке района из data/seeds.tsv в том же городе (город — по большинству площади).
+   Город без своих районов становится одним районом, озёра и парки из data/natural.tsv и аэропорты —
+   отдельными районами. Слишком большие районы делятся на части примерно равной площади.
+   Границы сглаживаются согласованно (shapely.coverage_simplify).
+3. Мелкий масштаб (секторы, l3): каждый район делится на куски примерно равной площади по улицам
+   (или по точкам из data/seeds3.tsv).
+4. Крупный масштаб (области, l1) = объединение районов.
 
 Геометрия считается в плоских километрах вокруг центра карты, на выходе снова широта и долгота.
 """
 import warnings; warnings.filterwarnings("ignore", category=DeprecationWarning)
 import json, math, pathlib, re, sys, collections, time
+import numpy as np
+import shapely
 import shapefile
 from shapely.geometry import (LineString, MultiLineString, Polygon, MultiPolygon, Point, box, shape, mapping)
 from shapely.ops import unary_union, polygonize, linemerge, transform, polylabel
 from shapely import STRtree, voronoi_polygons
 from shapely.geometry import MultiPoint
-from seeds import read_areas, read_cities, read_seeds
+from seeds import read_areas, read_cities, read_seeds, read_natural, read_seeds3
 from build_common import fwd, inv, proj, unproj
 
 T0 = time.time()
@@ -128,6 +133,13 @@ for sr in shapefile.Reader(str(RAW / "places2000" / "tl_2010_48_place00.shp")).i
         g = g.buffer(0)
     if g.intersects(FRAME):
         cities[rec["NAME00"]] = g.intersection(FRAME)
+# Сглаживаем городскую черту как единое покрытие (города + земля вне городов): общие границы упрощаются
+# согласованно, без щелей. Мелкие зубцы и выступы пропадают — для игры точная черта не нужна.
+_rest = FRAME.difference(unary_union(list(cities.values())))
+_names = list(cities) + [None] * len(getattr(_rest, "geoms", [_rest]))
+_smooth = shapely.coverage_simplify(list(cities.values()) + list(getattr(_rest, "geoms", [_rest])), 0.4, simplify_boundary=False)
+city_lines = [g.boundary for g in _smooth]
+cities = {n: (g if g.is_valid else g.buffer(0)) for n, g in zip(_names, _smooth) if n}
 missing = [c for c in cities if c not in cities_tsv]
 if missing:
     log("ВНИМАНИЕ: нет в cities.tsv:", missing)
@@ -210,9 +222,45 @@ green = [(g, t) for g, t in area_polys(osm("green")) if not ANACHRONISM_PARKS.se
 green = [(g.intersection(FRAME), t) for g, t in green if g.area > 0.15]
 aero = [(g, t) for g, t in area_polys(osm("aero")) if g.area > 0.3]
 
-# ---------------------------------------------------------------- нарезка на куски
+# ---------------------------------------------------------------- природные регионы
+log("природные регионы")
 seeds = read_seeds()
 areas = read_areas()
+natural = read_natural()
+water_polys = area_polys(water_el, lambda t: t.get("natural") == "water")
+green_polys = area_polys(osm("green"))
+
+
+def fill_holes(g, min_hole):
+    """Убирает дырки (острова и т. п.) меньше min_hole км²."""
+    out = []
+    for p in getattr(g, "geoms", [g]):
+        if p.geom_type != "Polygon":
+            continue
+        out.append(Polygon(p.exterior, [r for r in p.interiors if Polygon(r).area >= min_hole]))
+    return unary_union(out)
+
+
+def drop_small(g, min_part):
+    parts = [p for p in getattr(g, "geoms", [g]) if p.geom_type == "Polygon" and p.area >= min_part]
+    return unary_union(parts) if parts else Polygon()
+
+
+nat_geom, nat_info, taken = {}, {}, Polygon()
+for n in natural:
+    parts = [g for g, t in water_polys + green_polys if t.get("name") in n["names"]]
+    if not parts:
+        log("ВНИМАНИЕ: не найден природный регион", n["id"], n["names"]); continue
+    g = unary_union(parts).intersection(FRAME)
+    g = g.buffer(0.12, 4).buffer(-0.12, 4)  # сглаживаем рваные берега и сливаем соседние куски
+    g = drop_small(fill_holes(g, 1.0), 0.15).difference(taken).simplify(0.03)
+    g = drop_small(g.buffer(0), 0.15)
+    if g.is_empty:
+        continue
+    nat_geom[n["id"]] = g; nat_info[n["id"]] = n
+    taken = taken.union(g)
+
+# ---------------------------------------------------------------- нарезка на куски
 aero_seed = {}  # id района → полигон аэродрома
 for s in seeds:
     if s["city"].startswith("@aero:"):
@@ -220,21 +268,42 @@ for s in seeds:
         cand = [g for g, t in aero if key in t.get("name", "").lower()]
         if not cand:
             sys.exit("не найден аэродром для " + s["id"] + ": " + key)
-        aero_seed[s["id"]] = max(cand, key=lambda g: g.area).intersection(FRAME)
+        aero_seed[s["id"]] = max(cand, key=lambda g: g.area).intersection(FRAME).difference(taken).buffer(0.05).buffer(-0.05)
+FIXED = dict(aero_seed, **nat_geom)  # районы, заданные готовым полигоном
 
 log("куски")
-cut = roads["motorway"] + roads["trunk"] + roads["primary"] + rail + river_main + [FRAME.exterior]
-cut += [g.exterior for a in aero_seed.values() for g in getattr(a, "geoms", [a])]
-cut += [g.exterior for g in getattr(lakes, "geoms", [lakes]) if g.area > 1.0]
-# городская черта 2000 года — тоже линия разреза: районы разных городов не смешиваются
-cut += [c.boundary.simplify(0.03) for c in cities.values()]
-faces = [f for f in polygonize(unary_union(cut)) if f.area > 1e-6]
-# polygonize иногда не замыкает контур (вырожденные кольца) — что не попало ни в один кусок, добавляем отдельными кусками
-rest = FRAME.difference(unary_union(faces))
-faces += [g for g in getattr(rest, "geoms", [rest]) if g.geom_type == "Polygon" and g.area > 1e-4]
+# Режут: фривеи и главные улицы, магистральные железные дороги, русло Тринити, аэродромы, природные регионы
+# и сглаженная городская черта.
+cut = roads["motorway"] + roads["trunk"] + roads["primary"] + rail + river_main + [FRAME.exterior] + city_lines
+cut += [r for g in FIXED.values() for p in getattr(g, "geoms", [g]) for r in [p.exterior] + list(p.interiors)]
+
+
+def polygonize_all(lines, frame):
+    """polygonize + то, что он потерял (вырожденные кольца), отдельными кусками."""
+    fs = [f for f in polygonize(unary_union(lines)) if f.area > 1e-6 and frame.contains(f.representative_point())]
+    rest = frame.difference(unary_union(fs)) if fs else frame
+    fs += [g for g in getattr(rest, "geoms", [rest]) if g.geom_type == "Polygon" and g.area > 1e-4]
+    return fs
+
+
+def chunk_thin(fs, step=0.6):
+    """Длинные узкие полоски (между параллельными дорогами) режем на короткие куски,
+    чтобы каждый кусок прилип к своему соседу, а не тянулся хвостом за одним регионом."""
+    out = []
+    for f in fs:
+        if not (f.area / max(f.length, 1e-9) < 0.12 and f.length > 2 * step):
+            out.append(f); continue
+        x0, y0, x1, y1 = f.bounds
+        for gx in np.arange(x0, x1, step):
+            for gy in np.arange(y0, y1, step):
+                piece = f.intersection(box(gx, gy, gx + step, gy + step))
+                out += [p for p in getattr(piece, "geoms", [piece]) if p.geom_type == "Polygon" and p.area > 1e-6]
+    return out
+
+
+faces = chunk_thin(polygonize_all(cut, FRAME))
 log("кусков:", len(faces))
 
-# Куски, в которые попали опорные точки двух разных районов, режем ещё и улицами второго уровня.
 seed_pts = [(Point(fwd(s["lon"], s["lat"])), s) for s in seeds]
 sec_tree = STRtree(roads["secondary"])
 
@@ -255,35 +324,32 @@ refined = []
 for f in faces:
     ids = {s["id"] for p, s in seed_pts if f.contains(p) and not s["city"].startswith("@")}
     if len(ids) > 1:
-        lines = [roads["secondary"][i] for i in sec_tree.query(f)]
-        sub = [g for g in polygonize(unary_union([f.boundary] + [l.intersection(f) for l in lines]))
-               if f.contains(g.representative_point())]
-        if sub:  # то, что polygonize потерял, — отдельными кусками
-            rest = f.difference(unary_union(sub))
-            sub += [g for g in getattr(rest, "geoms", [rest]) if g.geom_type == "Polygon" and g.area > 1e-4]
-        for g in (sub if sub else [f]):
+        lines = [roads["secondary"][i].intersection(f) for i in sec_tree.query(f)]
+        for g in polygonize_all([f.boundary] + lines, f):
             refined += split_by_seeds(g)
     else:
         refined.append(f)
 faces = refined
 log("после доразрезки:", len(faces))
 
-# Город каждого куска: где больше площади.
+# Город каждого куска: тот, которому принадлежит больше площади (если земли вне городов не больше).
 city_names = list(cities)
 city_tree = STRtree([cities[c] for c in city_names])
 
 
 def city_of(f):
-    best, ba = None, 0.0
+    shares = {}
     for i in city_tree.query(f):
         a = cities[city_names[i]].intersection(f).area
-        if a > ba:
-            best, ba = city_names[i], a
-    return best if ba > 0.5 * f.area else None
+        if a > 0:
+            shares[city_names[i]] = a
+    if not shares:
+        return None
+    best = max(shares, key=shares.get)
+    return best if shares[best] >= f.area - sum(shares.values()) else None
 
 
 face_city = [city_of(f) for f in faces]
-
 by_city = collections.defaultdict(list)
 for s in seeds:
     by_city[s["city"]].append((fwd(s["lon"], s["lat"]), s["id"]))
@@ -292,7 +358,7 @@ label = [None] * len(faces)
 seed_face = set()
 for i, f in enumerate(faces):
     rp = f.representative_point()
-    for did, ag in aero_seed.items():
+    for did, ag in FIXED.items():
         if ag.contains(rp):
             label[i] = did; break
     if label[i]:
@@ -310,39 +376,83 @@ for i, f in enumerate(faces):
         cand = inside
         seed_face.add(i)
     if cand:
-        cx, cy = rp.x, rp.y
-        label[i] = min(cand, key=lambda q: (q[0][0] - cx) ** 2 + (q[0][1] - cy) ** 2)[1]
+        label[i] = min(cand, key=lambda q: (q[0][0] - rp.x) ** 2 + (q[0][1] - rp.y) ** 2)[1]
     else:
         label[i] = "c-" + re.sub(r"[^a-z]+", "-", c.lower()).strip("-")
 log("размечено:", sum(1 for x in label if x), "из", len(faces))
 
-# Соседство кусков и длина общей границы.
+
+def adjacency(polys, min_len=0.005):
+    tree = STRtree(polys)
+    nb = [dict() for _ in polys]
+    for i, f in enumerate(polys):
+        for j in tree.query(f):
+            if j <= i:
+                continue
+            l = f.boundary.intersection(polys[j].boundary).length
+            if l > min_len:
+                nb[i][j] = l; nb[j][i] = l
+    return nb
+
+
 log("соседство")
 ftree = STRtree(faces)
-nbr = [dict() for _ in faces]
-for i, f in enumerate(faces):
-    for j in ftree.query(f):
-        if j <= i:
-            continue
-        l = f.boundary.intersection(faces[j].boundary).length
-        if l > 0.005:
-            nbr[i][j] = l; nbr[j][i] = l
-
+nbr = adjacency(faces)
 SLIVER = 0.04  # км², куски на развязках и между проезжими частями
 
 
-def best_neighbour(i, ok):
+def best_neighbour(lab, nb, i, ok):
     tally = collections.Counter()
-    for j, l in nbr[i].items():
-        if ok(j) and label[j]:
-            tally[label[j]] += l
+    for j, l in nb[i].items():
+        if ok(j) and lab[j]:
+            tally[lab[j]] += l
     return tally.most_common(1)[0][0] if tally else None
 
 
+def components(idx, nb):
+    s = set(idx); comps = []
+    while s:
+        st = [s.pop()]; comp = []
+        while st:
+            k = st.pop(); comp.append(k)
+            for j in nb[k]:
+                if j in s:
+                    s.remove(j); st.append(j)
+        comps.append(comp)
+    return comps
+
+
+def fix_detached(lab, nb, area, keep=lambda k: False, frac=1 / 3, rounds=3):
+    """Оторванные кусочки района (меньше frac главной части) — к соседям."""
+    for _ in range(rounds):
+        changed = 0
+        groups = collections.defaultdict(list)
+        for i, l in enumerate(lab):
+            groups[l].append(i)
+        for l, idx in groups.items():
+            comps = components(idx, nb)
+            if len(comps) < 2:
+                continue
+            comps.sort(key=lambda c: (not any(keep(k) for k in c), -sum(area(k) for k in c)))
+            main = sum(area(k) for k in comps[0])
+            for c in comps[1:]:
+                if sum(area(k) for k in c) < main * frac and not any(keep(k) for k in c):
+                    for k in c:
+                        b = best_neighbour(lab, nb, k, lambda j: lab[j] != l)
+                        if b:
+                            lab[k] = b; changed += 1
+        if not changed:
+            break
+
+
 # мелочь на развязках — к соседу с самой длинной общей границей
+def thin(f):  # узкая полоска: средняя ширина меньше ~250 м
+    return f.area / max(f.length, 1e-9) < 0.12 and f.area < 1.5
+
+
 for i in sorted(range(len(faces)), key=lambda k: faces[k].area):
-    if faces[i].area < SLIVER and label[i] not in aero_seed and i not in seed_face:
-        b = best_neighbour(i, lambda j: faces[j].area >= SLIVER)
+    if (faces[i].area < SLIVER or thin(faces[i])) and label[i] not in FIXED and i not in seed_face:
+        b = best_neighbour(label, nbr, i, lambda j: faces[j].area >= SLIVER)
         if b:
             label[i] = b
 # территория вне городов — растёт от соседей слоями
@@ -350,48 +460,13 @@ for _ in range(400):
     todo = [i for i in range(len(faces)) if not label[i]]
     if not todo:
         break
-    upd = {}
-    for i in todo:
-        b = best_neighbour(i, lambda j: True)
-        if b:
-            upd[i] = b
+    upd = {i: b for i in todo for b in [best_neighbour(label, nbr, i, lambda j: True)] if b}
     if not upd:
         break
     for i, b in upd.items():
         label[i] = b
-unincorporated = [face_city[i] is None for i in range(len(faces))]
+fix_detached(label, nbr, lambda k: faces[k].area, keep=lambda k: k in seed_face or label[k] in FIXED)
 
-# оторванные кусочки района (меньше трети главной части) — к соседям
-for _ in range(3):
-    changed = 0
-    groups = collections.defaultdict(list)
-    for i, l in enumerate(label):
-        groups[l].append(i)
-    for l, idx in groups.items():
-        s = set(idx); comps = []
-        while s:
-            st = [s.pop()]; comp = []
-            while st:
-                k = st.pop(); comp.append(k)
-                for j in nbr[k]:
-                    if j in s:
-                        s.remove(j); st.append(j)
-            comps.append(comp)
-        if len(comps) < 2:
-            continue
-        # главная часть — та, где стоит опорная точка, иначе самая большая
-        comps.sort(key=lambda c: (not any(k in seed_face for k in c), -sum(faces[k].area for k in c)))
-        main = sum(faces[k].area for k in comps[0])
-        for c in comps[1:]:
-            if sum(faces[k].area for k in c) < main / 3 and not any(k in seed_face for k in c):
-                for k in c:
-                    b = best_neighbour(k, lambda j: label[j] != l)
-                    if b:
-                        label[k] = b; changed += 1
-    if not changed:
-        break
-
-# проверка: опорная точка должна лежать в своём районе
 for pt, sd in seed_pts:
     if sd["city"].startswith("@") or sd["city"] == "-":
         continue
@@ -399,81 +474,305 @@ for pt, sd in seed_pts:
         if faces[i].contains(pt) and label[i] != sd["id"]:
             log("ВНИМАНИЕ: точка %s (%s) лежит в куске района %s; город куска %s, площадь %.3f" % (sd["id"], sd["city"], label[i], face_city[i], faces[i].area))
 
-# ---------------------------------------------------------------- районы и области
+# ---------------------------------------------------------------- средний масштаб: районы
 log("районы")
 seed_info = {}
 for s in seeds:
     if s["id"] not in seed_info:
         seed_info[s["id"]] = s
+city_by_slug = {"c-" + re.sub(r"[^a-z]+", "-", c.lower()).strip("-"): c for c in cities}
 groups = collections.defaultdict(list)
 for i, l in enumerate(label):
     if l:
         groups[l].append(i)
-city_by_slug = {"c-" + re.sub(r"[^a-z]+", "-", c.lower()).strip("-"): c for c in cities}
 
-water_cut = unary_union([g for g in getattr(lakes, "geoms", [lakes]) if g.area > 0.3])
-districts = {}
+l2 = {}  # id → {geom, name, area, kind, city, faces}
 for did, idx in groups.items():
-    g = unary_union([faces[i] for i in idx]).buffer(0.002).buffer(-0.002).difference(water_cut)
-    if g.is_empty:
-        continue
-    if did in seed_info:
+    if did in nat_info:
+        n = nat_info[did]
+        l2[did] = {"name": n["name"], "area": None, "kind": n["kind"], "city": None}
+    elif did in seed_info:
         s = seed_info[did]
-        name, area = s["name"], s["area"]
-        city = None if s["city"].startswith("@") or s["city"] == "-" else s["city"]
+        l2[did] = {"name": s["name"], "area": s["area"], "city": None if s["city"][:1] in "@-" else s["city"],
+                   "kind": "airport" if did in aero_seed else "rural" if s["city"] == "-" else ""}
     else:
-        city = city_by_slug[did]
-        name, area = cities_tsv[city]["ru"], cities_tsv[city]["area"]
-    rural = sum(faces[i].area for i in idx if unincorporated[i])
-    districts[did] = {"geom": g, "name": name, "area": area, "city": city,
-                      "kind": "airport" if did in aero_seed else "rural" if seed_info.get(did, {}).get("city") == "-" else "",
-                      "rural": round(rural / g.area, 2) if g.area else 0}
-for s in seed_info:
-    if s not in districts:
+        c = city_by_slug[did]
+        l2[did] = {"name": cities_tsv[c]["ru"], "area": cities_tsv[c]["area"], "kind": "", "city": c}
+    l2[did]["faces"] = idx
+for s in list(seed_info) + list(nat_geom):
+    if s not in l2:
         log("ВНИМАНИЕ: району не досталось территории:", s)
-# проверка: вся суша внутри рамки должна быть поделена между районами
-covered = unary_union([d["geom"] for d in districts.values()])
-gap = FRAME.difference(covered).difference(lakes.buffer(0.05))
-for part in getattr(gap, "geoms", [gap]):
-    if part.area > 0.3:
-        rp = part.representative_point()
-        who = [(label[i], face_city[i], round(faces[i].area, 2)) for i in ftree.query(rp) if faces[i].contains(rp)]
-        log("ВНИМАНИЕ: дыра %.1f км² у %.4f %.4f, кусок: %s" % (part.area, inv(rp.x, rp.y)[1], inv(rp.x, rp.y)[0], who))
 
-area_geom = {}
+# Природные регионы — в ту крупную область, с которой у них самая длинная общая граница.
+for did, d in l2.items():
+    if d["area"] is None:
+        tally = collections.Counter()
+        for i in d["faces"]:
+            for j, l in nbr[i].items():
+                o = label[j]
+                if o != did and l2.get(o, {}).get("area"):
+                    tally[l2[o]["area"]] += l
+        d["area"] = tally.most_common(1)[0][0] if tally else "dal-center"
+
+# Крупная область — какого она типа: от этого зависят размеры районов и секторов.
+CORE = {"dal-center", "fw-center"}
+URBAN = {a for a in areas if a.startswith("dal-") or a in ("fw-north", "fw-west", "fw-south", "fw-east")} - CORE
+RURALISH = {"fw-nw", "fw-far-north", "flowermound", "collin-east", "se-suburbs"}
+
+
+def area_class(aid, kind):
+    if kind in ("water", "green", "airport"):
+        return "fixed"
+    if kind == "rural":
+        return "rural"
+    return "core" if aid in CORE else "urban" if aid in URBAN else "rural" if aid in RURALISH else "suburb"
+
+
+L2_MAX = {"core": 10, "urban": 16, "suburb": 28, "rural": 70}      # км²: больше — режем
+L3_TARGET = {"core": 1.4, "urban": 3, "suburb": 5, "rural": 15}    # км²: размер сектора
+
+DIRS = ["восток", "северо-восток", "север", "северо-запад", "запад", "юго-запад", "юг", "юго-восток"]
+DIR_ID = ["e", "ne", "n", "nw", "w", "sw", "s", "se"]
+
+
+def direction(pt, centre, scale):
+    dx, dy = pt.x - centre.x, pt.y - centre.y
+    if math.hypot(dx, dy) < 0.28 * scale:
+        return "центр", "c"
+    k = int(((math.degrees(math.atan2(dy, dx)) + 22.5) % 360) // 45)
+    return DIRS[k], DIR_ID[k]
+
+
+def cvt_centres(poly, k, iters=40):
+    """Центры k кусков примерно равной площади: k-средних по равномерной сетке точек внутри многоугольника."""
+    x0, y0, x1, y1 = poly.bounds
+    step = math.sqrt(poly.area / max(400, 80 * k))
+    xs, ys = np.meshgrid(np.arange(x0 + step / 2, x1, step), np.arange(y0 + step / 2, y1, step))
+    xs, ys = xs.ravel(), ys.ravel()
+    inside = shapely.contains_xy(poly, xs, ys)
+    P = np.column_stack([xs[inside], ys[inside]])
+    if len(P) < k:
+        P = np.array([[p.x, p.y] for p in [poly.representative_point()] * k])
+    rng = np.random.default_rng(7)
+    C = [P[rng.integers(len(P))]]
+    for _ in range(1, k):  # дальние точки как начальные центры
+        d = np.min(((P[:, None, :] - np.array(C)[None, :, :]) ** 2).sum(-1), axis=1)
+        C.append(P[int(np.argmax(d))])
+    C = np.array(C, dtype=float)
+    for _ in range(iters):
+        a = np.argmin(((P[:, None, :] - C[None, :, :]) ** 2).sum(-1), axis=1)
+        for j in range(k):
+            if np.any(a == j):
+                C[j] = P[a == j].mean(axis=0)
+    return [Point(c) for c in C]
+
+
+def major_faces(poly):
+    """Куски многоугольника между фривеями, главными улицами, железной дорогой и рекой."""
+    lines = [poly.boundary]
+    for ls in (roads["motorway"], roads["trunk"], roads["primary"], rail, river_main):
+        lines += [l.intersection(poly) for l in ls if l.intersects(poly)]
+    return polygonize_all(lines, poly)
+
+
+def split_region(poly, centres, target):
+    """Делит многоугольник между центрами. Небольшие куски между крупными дорогами отдаются целиком
+    ближайшему центру (граница идёт по дороге), большие режутся прямой посередине между центрами."""
+    cells = list(voronoi_polygons(MultiPoint(centres), extend_to=poly).geoms)
+    cell_of = [min(range(len(centres)), key=lambda j: centres[j].distance(c.representative_point())) for c in cells]
+    fs, lab = [], []
+    for f in chunk_thin(major_faces(poly)):
+        if f.area < 0.45 * target and not thin(f):
+            fs.append(f); lab.append(min(range(len(centres)), key=lambda j: centres[j].distance(f.representative_point())))
+            continue
+        for c, j in zip(cells, cell_of):
+            piece = c.intersection(f)
+            for p in getattr(piece, "geoms", [piece]):
+                if p.geom_type == "Polygon" and p.area > 1e-5:
+                    fs.append(p); lab.append(j)
+    nb = adjacency(fs, 0.002)
+    for i in sorted(range(len(fs)), key=lambda k: fs[k].area):  # мелочь и полоски — к соседям
+        if fs[i].area < 0.03 or thin(fs[i]):
+            b = best_neighbour(lab, nb, i, lambda j: fs[j].area >= 0.03 and not thin(fs[j]))
+            if b is not None:
+                lab[i] = b
+    fix_detached(lab, nb, lambda k: fs[k].area, frac=1.0, rounds=4)
+    parts = collections.defaultdict(list)
+    for i, l in enumerate(lab):
+        parts[l].append(fs[i])
+    return {j: unary_union(v) for j, v in parts.items()}
+
+
+def compass_names(geoms, whole):
+    """Названия частей по сторонам света относительно целого: «север», «центр», «дальний юг»…"""
+    centre, scale = whole.centroid, math.sqrt(whole.area)
+    info = {}
+    for k, g in geoms.items():
+        c = g.representative_point() if not g.centroid.within(g) else g.centroid
+        info[k] = (math.hypot(c.x - centre.x, c.y - centre.y), direction(c, centre, scale)[0] if math.hypot(c.x - centre.x, c.y - centre.y) >= 1e-9 else "центр")
+    names = {}
+    order = sorted(info, key=lambda k: info[k][0])
+    if order and info[order[0]][0] < 0.28 * scale:
+        names[order[0]] = "центр"
+    for k in order:
+        if k in names:
+            continue
+        d = info[k][1]
+        if d == "центр":  # второй «центр» — по направлению
+            c = geoms[k].representative_point()
+            k8 = int(((math.degrees(math.atan2(c.y - centre.y, c.x - centre.x)) + 22.5) % 360) // 45)
+            d = DIRS[k8]
+        names[k] = d
+    # одинаковые направления: ближний / дальний, дальше номера
+    by = collections.defaultdict(list)
+    for k, n in names.items():
+        by[n].append(k)
+    for n, ks in by.items():
+        if len(ks) < 2:
+            continue
+        ks.sort(key=lambda k: info[k][0])
+        for i, k in enumerate(ks):
+            names[k] = ("ближний " if i == 0 else "дальний ") + n if len(ks) == 2 else n + " " + str(i + 1)
+    return names
+
+
+DIR_CODE = dict(zip(DIRS, DIR_ID), **{"центр": "c"})
+
+
+def code_of(name):
+    parts = name.split()
+    pre = {"ближний": "1", "дальний": "2"}.get(parts[0], "")
+    base = parts[-1] if pre else parts[0]
+    num = parts[-1] if parts[-1].isdigit() else ""
+    return DIR_CODE.get(base, "x") + pre + num
+
+
+# Слишком большие районы режем на части примерно равной площади.
+for did in list(l2):
+    d = l2[did]
+    d["geom"] = unary_union([faces[i] for i in d["faces"]])
+    cls = area_class(d["area"], d["kind"])
+    d["cls"] = cls
+    if cls == "fixed" or d["geom"].area <= L2_MAX[cls] * 1.25:
+        continue
+    k = math.ceil(d["geom"].area / L2_MAX[cls])
+    parts = split_region(d["geom"], cvt_centres(d["geom"], k), L2_MAX[cls])
+    if len(parts) < 2:
+        continue
+    names = compass_names(parts, d["geom"])
+    for j, g in parts.items():
+        l2[did + "-" + code_of(names[j])] = dict(d, geom=g, name=d["name"] + ", " + names[j], split_of=did, base_name=d["name"])
+    del l2[did]
+log("районов после деления крупных:", len(l2))
+
+# Сглаживание: общие границы упрощаются согласованно, без щелей и наложений.
+ids2 = list(l2)
+smooth = shapely.coverage_simplify([l2[i]["geom"] for i in ids2], 0.3, simplify_boundary=False)
+for i, g in zip(ids2, smooth):
+    l2[i]["geom"] = g if g.is_valid else g.buffer(0)
+
+# ---------------------------------------------------------------- мелкий масштаб: секторы
+log("секторы")
+seeds3 = collections.defaultdict(list)
+for s in read_seeds3():
+    seeds3[s["parent"]].append(s)
+l3 = {}
+auto3 = collections.defaultdict(dict)  # исходный район → {id сектора: геометрия}, чтобы назвать по сторонам света от него
+for did, d in l2.items():
+    P = d["geom"]
+    orig = d.get("split_of", did)
+    if d["cls"] == "fixed":
+        l3[did] = {"geom": P, "name": d["name"], "parent": did}; continue
+    manual = [s for s in seeds3.get(orig, []) if P.contains(Point(fwd(s["lon"], s["lat"])))]
+    target = L3_TARGET[d["cls"]]
+    k = len(manual) if manual else max(1, round(P.area / target))
+    if k == 1:
+        l3[did] = {"geom": P, "name": d["name"], "parent": did}; continue
+    centres = [Point(fwd(s["lon"], s["lat"])) for s in manual] if manual else cvt_centres(P, k)
+    parts = split_region(P, centres, target)
+    ids = list(parts)
+    sm = shapely.coverage_simplify([parts[j] for j in ids], 0.15, simplify_boundary=False)
+    for j, g in zip(ids, sm):
+        g = g if g.is_valid else g.buffer(0)
+        if manual:
+            l3[manual[j]["id"]] = {"geom": g, "name": manual[j]["name"], "parent": did}
+        else:
+            auto3[orig][(did, j)] = g
+for orig, parts in auto3.items():
+    whole = unary_union(list(parts.values()))
+    base = next(d.get("base_name", d["name"]) for k, d in l2.items() if d.get("split_of", k) == orig)
+    names = compass_names(parts, whole)
+    for (did, j), g in parts.items():
+        l3[orig + "." + code_of(names[(did, j)])] = {"geom": g, "name": base + ", " + names[(did, j)], "parent": did}
+for p, ss in seeds3.items():
+    for sd in ss:
+        if sd["id"] not in l3:
+            log("ВНИМАНИЕ: ручной сектор %s (район %s) не применился" % (sd["id"], p))
+log("секторов:", len(l3))
+
+# ---------------------------------------------------------------- крупный масштаб: области
+l1 = {}
 for aid in areas:
-    parts = [d["geom"] for d in districts.values() if d["area"] == aid]
+    parts = [d["geom"] for d in l2.values() if d["area"] == aid]
     if not parts:
         log("ВНИМАНИЕ: у области нет районов:", aid); continue
-    area_geom[aid] = unary_union(parts).buffer(0.01).buffer(-0.01)
+    l1[aid] = {"geom": unary_union(parts), "name": areas[aid]}
+l1_geom = {a: v["geom"] for a, v in l1.items()}
 
-# Цвет области: соседние области разного цвета (жадная раскраска, 6 тонов). Районы берут цвет своей области.
-tone = {}
-grown = {a: g.buffer(0.05, 2) for a, g in area_geom.items()}
-for aid in sorted(area_geom, key=lambda a: -area_geom[a].area):
-    near = {tone[b] for b in tone if grown[b].intersects(area_geom[aid])}
-    tone[aid] = next(t for t in range(12) if t not in near) % 6
+covered = unary_union([d["geom"] for d in l2.values()])
+gap = FRAME.difference(covered)
+for part in getattr(gap, "geoms", [gap]):
+    if part.area > 0.2:
+        rp = part.representative_point()
+        log("ВНИМАНИЕ: дыра %.1f км² у %.4f %.4f" % (part.area, inv(rp.x, rp.y)[1], inv(rp.x, rp.y)[0]))
 
-feats, labels = [], []
-for did, d in sorted(districts.items()):
+
+def colour(items, ncol, group=lambda k: None):
+    """Жадная раскраска: соседи (в той же группе) разного цвета."""
+    keys = sorted(items, key=lambda k: -items[k].area)
+    tree = STRtree([items[k] for k in keys])
+    grown = {k: items[k].buffer(0.03, 2) for k in keys}
+    col = {}
+    for k in keys:
+        near = {col[keys[j]] for j in tree.query(grown[k]) if keys[j] in col and group(keys[j]) == group(k)}
+        col[k] = next(c for c in range(ncol * 3) if c not in near) % ncol
+    return col
+
+
+tone = colour(l1_geom, 6)
+shade2 = colour({k: v["geom"] for k, v in l2.items()}, 3, lambda k: l2[k]["area"])
+shade3 = colour({k: v["geom"] for k, v in l3.items()}, 3, lambda k: l3[k]["parent"])
+
+
+def label_point(g, prec):
+    big = max(getattr(g, "geoms", [g]), key=lambda p: p.area)
+    return mapping(lonlat_round(unproj(polylabel(big, prec))))
+
+
+labels, f1, f2, f3 = [], [], [], []
+for aid, v in l1.items():
+    g = v["geom"]
+    f1.append(feature(g, {"id": aid, "name": v["name"], "km2": round(g.area), "tone": tone[aid]}, 0.03))
+    labels.append({"type": "Feature", "properties": {"id": aid, "name": v["name"], "km2": round(g.area), "level": 1, "kind": ""},
+                   "geometry": label_point(g, 0.05)})
+for did, d in sorted(l2.items()):
     g = d["geom"]
-    big = max(getattr(g, "geoms", [g]), key=lambda p: p.area)
-    lp = polylabel(big, 0.02)
-    props = {"id": did, "name": d["name"], "area": d["area"], "city": cities_tsv.get(d["city"], {}).get("ru", "") if d["city"] else "",
-             "kind": d["kind"], "km2": round(g.area, 1), "rural": d["rural"], "tone": tone.get(d["area"], 0)}
-    feats.append(feature(g, props, 0.012))
-    labels.append({"type": "Feature", "properties": {"id": did, "name": d["name"], "km2": round(g.area, 1), "level": "district"},
-                   "geometry": mapping(lonlat_round(unproj(lp)))})
-write("districts", feats)
-
-afeats = []
-for aid, g in area_geom.items():
-    big = max(getattr(g, "geoms", [g]), key=lambda p: p.area)
-    afeats.append(feature(g, {"id": aid, "name": areas[aid], "km2": round(g.area), "tone": tone[aid]}, 0.03))
-    labels.append({"type": "Feature", "properties": {"id": aid, "name": areas[aid], "km2": round(g.area), "level": "area"},
-                   "geometry": mapping(lonlat_round(unproj(polylabel(big, 0.05))))})
-write("areas", afeats)
+    f2.append(feature(g, {"id": did, "name": d["name"], "area": d["area"], "kind": d["kind"],
+                          "city": cities_tsv.get(d["city"], {}).get("ru", "") if d["city"] else "",
+                          "km2": round(g.area, 1), "tone": tone.get(d["area"], 0), "shade": shade2[did]}, 0.01))
+    labels.append({"type": "Feature", "properties": {"id": did, "name": d["name"], "km2": round(g.area, 1), "level": 2, "kind": d["kind"]},
+                   "geometry": label_point(g, 0.02)})
+for sid, s in sorted(l3.items()):
+    g = s["geom"]; p = l2[s["parent"]]
+    f3.append(feature(g, {"id": sid, "name": s["name"], "parent": s["parent"], "area": p["area"], "kind": p["kind"],
+                          "km2": round(g.area, 1), "tone": tone.get(p["area"], 0), "shade": shade3[sid]}, 0.01))
+    labels.append({"type": "Feature", "properties": {"id": sid, "name": s["name"], "km2": round(g.area, 1), "level": 3, "kind": p["kind"]},
+                   "geometry": label_point(g, 0.01)})
+write("l1", f1)
+write("l2", f2)
+write("l3", f3)
 write("labels", labels)
+
 
 def merge_lines(g):
     return linemerge(g) if g.geom_type == "MultiLineString" else g
@@ -512,8 +811,8 @@ def road_features():
         key = (ref if big and ref else norm_name(t.get("name"))) or ""
         c = "motorway" if big else cls
         groups[(c, key)].append((ln, t))
-    area_tree_ids = list(area_geom)
-    area_tree = STRtree([area_geom[a] for a in area_tree_ids])
+    area_tree_ids = list(l1_geom)
+    area_tree = STRtree([l1_geom[a] for a in area_tree_ids])
     feats, used_ids = [], collections.Counter()
     for (cls, key), items in groups.items():
         if not key:  # безымянные съезды и куски — одной линией без карточки
@@ -559,7 +858,7 @@ def road_features():
                 continue
             crossed = []
             for i in area_tree.query(geom):
-                l = area_geom[area_tree_ids[i]].intersection(geom).length
+                l = l1_geom[area_tree_ids[i]].intersection(geom).length
                 if l > 0.5:
                     crossed.append((l, area_tree_ids[i]))
             rid = re.sub(r"[^a-z0-9]+", "-", (cls[0] + "-" + key).lower()).strip("-")
@@ -594,10 +893,9 @@ write("water", [feature(lakes, {"cls": "lake"}, 0.02),
                 lines_feature(river_main, {"cls": "river"}, 0.02),
                 lines_feature(creeks, {"cls": "creek"}, 0.03)])
 write("rail", [lines_feature(rail, {"cls": "rail"}, 0.02), lines_feature(dart, {"cls": "dart"}, 0.015)])
-write("green", [feature(unary_union([g for g, t in green]), {"cls": "park"}, 0.02),
+write("green", [feature(unary_union([g for g, t in green]).difference(taken), {"cls": "park"}, 0.02),
                 feature(unary_union([g for g, t in aero]).intersection(FRAME), {"cls": "airport"}, 0.02)])
-write("cities", [feature(g.boundary, {"name": cities_tsv.get(c, {}).get("ru", c)}, 0.02) for c, g in cities.items()])
 
-summary = sorted(((d["area"], did, d["name"], round(d["geom"].area, 1)) for did, d in districts.items()))
-(OUT / "districts.txt").write_text("\n".join("%s\t%s\t%s\t%.1f км²" % r for r in summary) + "\n", encoding="utf-8")
-log("готово: районов", len(districts), "областей", len(afeats))
+summary = sorted(((d["area"], did, d["name"], round(d["geom"].area, 1), sum(1 for v in l3.values() if v["parent"] == did)) for did, d in l2.items()))
+(OUT / "regions.txt").write_text("\n".join("%s\t%s\t%s\t%.1f км²\tсекторов: %d" % r for r in summary) + "\n", encoding="utf-8")
+log("готово: областей", len(l1), "районов", len(l2), "секторов", len(l3))

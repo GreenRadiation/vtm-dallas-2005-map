@@ -16,8 +16,11 @@
   <header class="top">
     <div class="brand"><div class="eyebrow">Vampire: The Masquerade · 2005</div><h1>Даллас 2005</h1></div>
     <div class="search"><input id="q" type="search" placeholder="Найти район или город" autocomplete="off" aria-label="Поиск по районам"><div class="results" id="results" hidden></div></div>
-    <div class="seg" role="group" aria-label="Масштаб"><button type="button" id="lv-a">Области</button><button type="button" id="lv-d">Районы</button></div>
-    <label class="tog"><input type="checkbox" id="grid-tog"> Старая сетка</label>
+    <div class="ctl">
+      <div class="seg" id="md" role="group" aria-label="Режим карты"><button type="button" data-m="regions">Районы</button><button type="button" data-m="roads">Дороги</button></div>
+      <div class="seg" id="lv" role="group" aria-label="Масштаб регионов"><button type="button" data-l="auto">Авто</button><button type="button" data-l="1">Крупный</button><button type="button" data-l="2">Средний</button><button type="button" data-l="3">Мелкий</button></div>
+      <label class="tog"><input type="checkbox" id="grid-tog"> Старая сетка</label>
+    </div>
   </header>
   <main class="main">
     <div class="mapbox"><div id="map" aria-label="Карта районов"></div><p class="loading" id="loading">Загружаю карту…</p></div>
@@ -29,13 +32,11 @@
       <span><i class="sw" style="background:var(--ally-bg);box-shadow:inset 0 0 0 2px var(--ally)"></i>союзники</span>
       <span><i class="sw" style="background:var(--hostile-bg);box-shadow:inset 0 0 0 2px var(--hostile)"></i>враждебность</span>
       <span><i class="sw" style="background:var(--imp-bg);box-shadow:inset 0 0 0 2px var(--imp)"></i>важное место</span>
-      <span><i class="ln" style="border-top:3px solid var(--r-motorway)"></i>фривей</span>
-      <span><i class="ln" style="border-top:2px dashed var(--rail)"></i>железная дорога</span>
-      <span><i class="ln" style="border-top:3px solid var(--dart)"></i>DART</span>
-      <span><i class="ln" style="border-top:1.5px dashed var(--limit)"></i>черта города</span>
+      <span><i class="sw" style="background:var(--water)"></i>озеро</span>
+      <span><i class="sw" style="background:var(--park-strong)"></i>природная зона</span>
     </div>
     <div class="tools" id="tools"></div>
-    <p>Подложка нарисована по данным OpenStreetMap и переписи США 2000 года. Что появилось после весны 2005 года, мы стараемся с карты убирать. Районы нарезаны по настоящим улицам, но их границы условные: это игровое деление, а не официальное.</p>
+    <p>Подложка нарисована по данным OpenStreetMap и переписи США 2000 года. Что появилось после весны 2005 года, мы стараемся с карты убирать. Границы регионов игровые: они примерно идут по крупным дорогам и городской черте, но сглажены для удобства.</p>
   </footer>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>

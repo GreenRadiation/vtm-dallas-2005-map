@@ -1,0 +1,21 @@
+# Природные регионы: крупные озёра и парки становятся отдельными кликабельными регионами на среднем и мелком масштабе.
+# Крупная область подбирается сама — по самой длинной общей границе.
+# id	вид (water/green)	названия в OSM через |	название
+lake-rayhubbard	water	Lake Ray Hubbard	Озеро Рэй-Хаббард
+lake-eaglemountain	water	Eagle Mountain Lake	Озеро Игл-Маунтин
+lake-grapevine	water	Grapevine Lake	Озеро Грейпвайн
+lake-joepool	water	Joe Pool Lake	Озеро Джо-Пул
+lake-benbrook	water	Benbrook Lake	Озеро Бенбрук
+lake-worth	water	Lake Worth	Озеро Лейк-Уэрт
+lake-lavon	water	Lavon Lake	Озеро Лавон
+lake-mountaincreek	water	Mountain Creek Lake	Озеро Маунтин-Крик
+lake-lewisville	water	Lewisville Lake	Озеро Льюисвилл
+lake-arlington	water	Lake Arlington	Озеро Арлингтон
+lake-whiterock	water	White Rock Lake|White Rock Lake Park	Озеро Уайт-Рок
+lake-north	water	North Lake	Озеро Норт-Лейк
+lake-bachman	water	Bachman Lake	Озеро Бахман
+fw-nature	green	Fort Worth Nature Center & Refuge	Природный заповедник Форт-Уэрта
+llela	green	Lewisville Lake Environmental Learning Area	Заповедник у озера Льюисвилл
+trinity-floodway	green	Trinity River Floodway	Пойма Тринити
+cedarhill-sp	green	Cedar Hill State Park	Парк штата Сидар-Хилл
+dallas-nature	green	Cedar Ridge Preserve	Природный центр Далласа

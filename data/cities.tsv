@@ -2,88 +2,88 @@
 # имя в переписи	русское название	область
 Dallas	Даллас	dal-center
 Fort Worth	Форт-Уэрт	fw-center
-Arlington	Арлингтон	arlington
+Arlington	Арлингтон	arlington-n
 Grand Prairie	Гранд-Прери	grandprairie
 Irving	Ирвинг	irving
-Plano	Плано	n-suburbs
+Plano	Плано	plano
 Garland	Гарленд	garland
-Mesquite	Меските	e-suburbs
-Flower Mound	Флауэр-Маунд	denton
-Lewisville	Льюисвилл	denton
+Mesquite	Меските	mesquite
+Flower Mound	Флауэр-Маунд	flowermound
+Lewisville	Льюисвилл	lewisville
 Carrollton	Карролтон	nw-suburbs
-Grapevine	Грейпвайн	ne-tarrant
-Richardson	Ричардсон	n-suburbs
+Grapevine	Грейпвайн	dfw
+Richardson	Ричардсон	plano
 Southlake	Саутлейк	ne-tarrant
 Lancaster	Ланкастер	s-suburbs
-Wylie	Уайли	n-suburbs
+Wylie	Уайли	collin-east
 Rowlett	Роулетт	garland
 Keller	Келлер	ne-tarrant
 North Richland Hills	Норт-Ричленд-Хиллс	midcities
-Cedar Hill	Сидар-Хилл	s-suburbs
-DeSoto	Де-Сото	s-suburbs
-Sunnyvale	Саннивейл	e-suburbs
+Cedar Hill	Сидар-Хилл	sw-suburbs
+DeSoto	Де-Сото	sw-suburbs
+Sunnyvale	Саннивейл	mesquite
 Euless	Юлесс	midcities
-Seagoville	Сиговилл	e-suburbs
+Seagoville	Сиговилл	se-suburbs
 Coppell	Коппелл	nw-suburbs
 Colleyville	Колливилл	ne-tarrant
 Mansfield	Мансфилд	fw-suburbs-s
 Haltom City	Холтом-Сити	midcities
 Farmers Branch	Фармерс-Бранч	nw-suburbs
 Benbrook	Бенбрук	fw-suburbs-w
-Duncanville	Данканвилл	s-suburbs
+Duncanville	Данканвилл	sw-suburbs
 Sachse	Сакси	garland
 Bedford	Бедфорд	midcities
 Hurst	Херст	midcities
 Northlake	Нортлейк	fw-far-north
 Hutchins	Хатчинс	s-suburbs
-Balch Springs	Болч-Спрингс	e-suburbs
+Balch Springs	Болч-Спрингс	se-suburbs
 Haslet	Хаслет	fw-far-north
 Saginaw	Сагино	fw-far-north
 Westlake	Уэстлейк	ne-tarrant
-Azle	Азл	fw-suburbs-w
+Azle	Азл	fw-nw
 Roanoke	Роанок	fw-far-north
 Kennedale	Кеннедейл	fw-suburbs-s
 Wilmer	Уилмер	s-suburbs
-Murphy	Мерфи	n-suburbs
+Murphy	Мерфи	collin-east
 White Settlement	Уайт-Сеттлмент	fw-suburbs-w
-Parker	Паркер	n-suburbs
-Combine	Комбайн	e-suburbs
-The Colony	Зе-Колони	denton
+Parker	Паркер	collin-east
+Combine	Комбайн	se-suburbs
+The Colony	Зе-Колони	lewisville
 Addison	Аддисон	nw-suburbs
 Forest Hill	Форест-Хилл	fw-suburbs-s
-Hebron	Хеброн	denton
+Hebron	Хеброн	lewisville
 Watauga	Уотога	midcities
 Trophy Club	Трофи-Клаб	ne-tarrant
-University Park	Юниверсити-Парк	parks
-Aurora	Аврора	fw-far-north
+University Park	Юниверсити-Парк	dal-center
+Aurora	Аврора	fw-nw
 Richland Hills	Ричленд-Хиллс	midcities
 Crowley	Краули	fw-suburbs-s
-Bartonville	Бартонвилл	denton
+Bartonville	Бартонвилл	flowermound
 Lake Worth	Лейк-Уэрт	fw-suburbs-w
-Highland Park	Хайленд-Парк	parks
-Double Oak	Дабл-Оук	denton
+Highland Park	Хайленд-Парк	dal-center
+Double Oak	Дабл-Оук	flowermound
 Westworth Village	Уэстуорт-Виллидж	fw-west
 River Oaks	Ривер-Оукс	fw-suburbs-w
 Everman	Эверман	fw-suburbs-s
-Dalworthington Gardens	Долуэртингтон-Гарденс	arlington
-Rhome	Роум	fw-far-north
+Dalworthington Gardens	Долуэртингтон-Гарденс	arlington-s
+Rhome	Роум	fw-nw
 Lakeside	Лейксайд	fw-suburbs-w
-St. Paul	Сент-Пол	n-suburbs
-Lucas	Лукас	n-suburbs
-Allen	Аллен	n-suburbs
-Highland Village	Хайленд-Виллидж	denton
+St. Paul	Сент-Пол	collin-east
+Lucas	Лукас	collin-east
+Allen	Аллен	plano
+Highland Village	Хайленд-Виллидж	flowermound
 Sansom Park	Сэнсом-Парк	fw-suburbs-w
 Edgecliff Village	Эджклифф-Виллидж	fw-suburbs-s
-Reno	Рино	fw-suburbs-w
-Pantego	Пантиго	arlington
-Newark	Ньюарк	fw-far-north
+Reno	Рино	fw-nw
+Pantego	Пантиго	arlington-s
+Newark	Ньюарк	fw-nw
 Westover Hills	Уэстовер-Хиллс	fw-west
-Pelican Bay	Пеликан-Бей	fw-suburbs-w
-Copper Canyon	Коппер-Каньон	denton
+Pelican Bay	Пеликан-Бей	fw-nw
+Copper Canyon	Коппер-Каньон	flowermound
 Justin	Джастин	fw-far-north
 Cockrell Hill	Кокрелл-Хилл	dal-oakcliff
 Blue Mound	Блу-Маунд	fw-far-north
 Heath	Хит	garland
-New Fairview	Нью-Фэрвью	fw-far-north
-Boyd	Бойд	fw-far-north
-Marshall Creek	Маршалл-Крик	denton
+New Fairview	Нью-Фэрвью	fw-nw
+Boyd	Бойд	fw-nw
+Marshall Creek	Маршалл-Крик	flowermound
