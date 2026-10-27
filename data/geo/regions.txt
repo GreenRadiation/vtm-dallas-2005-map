@@ -44,7 +44,7 @@ dallas	Даллас	city:Dallas	907.2 км²
     prestonroyal	Престон-Ройал	-	10.3 км²
   dal-north	Северный Даллас	-	36.5 км²
     northpark	НортПарк	-	4.8 км²
-    vickery	Вики-Медоу	-	21.0 км²
+    vickery	Викери-Медоу	-	21.0 км²
     forestlane	Форест-Лейн	-	10.8 км²
   dal-farnorth	Дальний север	-	64.9 км²
     galleria	Галерея	-	4.8 км²
