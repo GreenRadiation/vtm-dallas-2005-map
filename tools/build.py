@@ -3,7 +3,7 @@
 Запуск из корня репозитория: python tools/build.py   (сначала python tools/fetch.py)
 
 Что делает:
-1. Подложка: дороги, вода, железные дороги, парки. Всё, что появилось после 2005 года и известно нам,
+1. Подложка: вода и парки; дороги и железные дороги — только барьеры для нарезки. Всё, что появилось после 2005 года и известно нам,
    вырезается (списки ANACHRONISM_*).
 2. Регионы — дерево из data/tree.tsv (docs/TREE.md): карта режется на мелкие атомы, дети делят землю
    родителя — города, аэродромы и знаковые места по готовым контурам, остальное растёт от опорных точек
@@ -138,8 +138,8 @@ cities = {n: (g if g.is_valid else g.buffer(0)) for n, g in zip(_names, _smooth)
 
 # ---------------------------------------------------------------- дороги
 log("дороги")
+# Дороги и железные дороги на карту не выводятся: это барьеры для нарезки регионов.
 roads = {"motorway": [], "trunk": [], "primary": [], "secondary": []}
-road_ways = []  # (класс, линия, теги) — для выгрузки дорог с названиями
 dropped = collections.Counter()
 for e in osm("roads"):
     t = e.get("tags", {})
@@ -155,7 +155,6 @@ for e in osm("roads"):
     if ln is None:
         continue
     roads[t["highway"]].append(ln)
-    road_ways.append((t["highway"], ln, t))
 log("вырезано как анахронизм:", dict(dropped))
 
 # ---------------------------------------------------------------- вода
@@ -183,7 +182,7 @@ for ln, nm in creeks:
     creek_len[nm] += ln.length
 creeks = [ln for ln, nm in creeks if creek_len[nm] > 4.0]
 
-# ---------------------------------------------------------------- железные дороги
+# ---------------------------------------------------------------- железные дороги (только барьеры для нарезки)
 log("железные дороги")
 rail = []
 for e in osm("rail"):
@@ -191,22 +190,6 @@ for e in osm("rail"):
     if t.get("railway") == "rail" and t.get("usage") in ("main", "branch", None) and t.get("service") is None:
         ln = way_line(e)
         if ln is not None: rail.append(ln)
-# DART в 2005 году: только Красная и Синяя линии. Синяя тогда шла от Ledbetter до Downtown Garland.
-dart = []
-for e in osm("dart"):
-    t = e.get("tags", {})
-    nm = (t.get("name", "") + " " + t.get("ref", "") + " " + t.get("colour", "")).lower()
-    if "red" not in nm and "blue" not in nm:
-        continue
-    blue = "blue" in nm
-    for m in e.get("members", []):
-        if m.get("type") != "way" or not m.get("geometry") or m.get("role") not in ("", None):
-            continue
-        pts = [(p["lon"], p["lat"]) for p in m["geometry"] if p]
-        if blue and any(lon > -96.636 or lat < 32.668 for lon, lat in pts):
-            continue
-        if len(pts) > 1:
-            dart.append(LineString([fwd(*p) for p in pts]))
 
 # ---------------------------------------------------------------- зелень и аэропорты
 log("парки и аэропорты")
@@ -738,107 +721,6 @@ def merge_lines(g):
     return linemerge(g) if g.geom_type == "MultiLineString" else g
 
 
-# ---------------------------------------------------------------- дороги с названиями
-# Названия, которых в 2005 году ещё не было (их пропускаем и берём другое название той же дороги)
-LATER_NAMES = re.compile(r"Sam Rayburn Tollway|Ronald Reagan Memorial|Margaret McDermott|Ralph Hall", re.I)
-
-
-def norm_ref(ref):
-    r = (ref or "").split(";")[0].strip()
-    r = {"SRT": "SH 121"}.get(r, r)  # Sam Rayburn Tollway — название 2008 года, в 2005 это SH 121
-    r = re.sub(r" (HOV|North|South|East|West)$", "", r)
-    r = re.sub(r"^TX ", "SH ", r)
-    return re.sub(r"^I ", "I-", r)
-
-
-def norm_name(n):
-    n = (n or "").strip()
-    if "Frontage" in n or "Service Road" in n or re.match(r"^(I|US|SH) \d+ HOV$", n):
-        return ""
-    short = re.sub(r"^(North|South|East|West|N|S|E|W)\.? ", "", n)
-    if len(short.split()) >= 2:  # «North Freeway» оставляем, «North Stemmons Freeway» → «Stemmons Freeway»
-        n = short
-    n = re.sub(r"\b(\w)\.(\w)\. ", r"\1 \2 ", n)  # «S.G. Alexander» → «S G Alexander»
-    return re.sub(r"\b(\w)\. ", r"\1 ", n)  # «John W. Carpenter» → «John W Carpenter»
-
-
-def road_features():
-    """Дороги, сгруппированные по номеру (фривеи) или по названию (улицы) и разбитые на связные куски."""
-    groups = collections.defaultdict(list)
-    for cls, ln, t in road_ways:
-        big = cls in ("motorway", "trunk")
-        ref = norm_ref(t.get("ref"))
-        key = (ref if big and ref else norm_name(t.get("name"))) or ""
-        c = "motorway" if big else cls
-        groups[(c, key)].append((ln, t))
-    area_tree_ids = list(l1_geom)
-    area_tree = STRtree([l1_geom[a] for a in area_tree_ids])
-    feats, used_ids = [], collections.Counter()
-    for (cls, key), items in groups.items():
-        if not key:  # безымянные съезды и куски — одной линией без карточки
-            feats.append(lines_feature([ln for ln, t in items], {"cls": cls, "id": ""}, 0.015 if cls != "secondary" else 0.025))
-            continue
-        # связные куски: одноимённые улицы в разных городах — разные дороги
-        if cls == "motorway":
-            comps = [items]
-        else:
-            blobs = unary_union([ln.buffer(0.3, 2) for ln, t in items])
-            blobs = list(getattr(blobs, "geoms", [blobs]))
-            comps = [[] for _ in blobs]
-            for ln, t in items:
-                mid = ln.interpolate(0.5, normalized=True)
-                k = next((i for i, b in enumerate(blobs) if b.contains(mid)), 0)
-                comps[k].append((ln, t))
-        for comp in comps:
-            if not comp:
-                continue
-            total = sum(ln.length for ln, t in comp)
-            if total < 0.4:
-                continue
-            names = collections.Counter()
-            lanes = collections.Counter()
-            speed = collections.Counter()
-            toll = 0.0
-            for ln, t in comp:
-                n = norm_name(t.get("name"))
-                if n and not LATER_NAMES.search(n):
-                    names[n] += ln.length
-                try:
-                    l = int(str(t.get("lanes", "")).split(";")[0])
-                    lanes[l if t.get("oneway") in ("yes", "1") else max(1, l // 2)] += ln.length
-                except ValueError:
-                    pass
-                m = re.match(r"(\d+)\s*mph", t.get("maxspeed", ""))
-                if m:
-                    speed[int(m.group(1))] += ln.length
-                if t.get("toll") == "yes":
-                    toll += ln.length
-            geom = merge_lines(unary_union([ln for ln, t in comp]).intersection(FRAME))
-            if geom.is_empty:
-                continue
-            crossed = []
-            for i in area_tree.query(geom):
-                l = l1_geom[area_tree_ids[i]].intersection(geom).length
-                if l > 0.5:
-                    crossed.append((l, area_tree_ids[i]))
-            rid = re.sub(r"[^a-z0-9]+", "-", (cls[0] + "-" + key).lower()).strip("-")
-            used_ids[rid] += 1
-            if used_ids[rid] > 1:
-                rid += "-" + str(used_ids[rid])
-            ref = key if cls == "motorway" and re.match(r"^(I-|US |SH |Loop |Spur )|^(PGBT|DNT)$", key) else ""
-            props = {"cls": cls, "id": rid, "ref": ref,
-                     "name": names.most_common(1)[0][0] if names else ("" if ref else key),
-                     "aka": [n for n, _ in names.most_common(4)[1:]],
-                     "lanes": lanes.most_common(1)[0][0] if lanes else 0,
-                     "speed": speed.most_common(1)[0][0] if speed else 0,
-                     "toll": toll > 0.5 * total,
-                     "km": round(total / (2 if cls == "motorway" else 1)),
-                     "areas": [a for l, a in sorted(crossed, reverse=True)][:8]}
-            feats.append(feature(geom, props, 0.015 if cls != "secondary" else 0.025))
-    log("дорог с названиями:", sum(1 for f in feats if f["properties"]["id"]))
-    return feats
-
-
 # ---------------------------------------------------------------- подложка
 log("подложка")
 
@@ -848,11 +730,9 @@ def lines_feature(ls, props, tol):
     return feature(m, props, tol)
 
 
-write("roads", road_features())
 write("water", [feature(lakes, {"cls": "lake"}, 0.02),
                 lines_feature(river_main, {"cls": "river"}, 0.02),
                 lines_feature(creeks, {"cls": "creek"}, 0.03)])
-write("rail", [lines_feature(rail, {"cls": "rail"}, 0.02), lines_feature(dart, {"cls": "dart"}, 0.015)])
 write("green", [feature(unary_union([g for g, t in green]).difference(taken), {"cls": "park"}, 0.02),
                 feature(unary_union([g for g, t in aero]).intersection(FRAME), {"cls": "airport"}, 0.02)])
 

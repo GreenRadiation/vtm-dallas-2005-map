@@ -4,10 +4,10 @@
   --accent:#b0242d; --hostile:#b0242d; --hostile-bg:#f6dcdd; --ally:#1f7368; --ally-bg:#d3ebe6;
   --haven:#2f8a46; --haven-bg:#dcf3df; --imp:#a86a00; --imp-bg:#f7e8c6;
   --sel:#1b2130; --on-accent:#ffffff;
-  --sea:#d9dee3; --land:#f4f2ec; --halo:#f7f6f2; --rline:#5f6876; --r-muted:#8a7a64; --park-strong:#9cc98a; --water-ink:#1f5f8a; --green-ink:#2f6b2a; --water:#a9cde3; --park:#d5e3c0; --airport:#b9b4cc;
+  --sea:#d9dee3; --land:#f4f2ec; --halo:#f7f6f2; --rline:#5f6876; --park-strong:#9cc98a; --water-ink:#1f5f8a; --green-ink:#2f6b2a; --water:#a9cde3; --park:#d5e3c0; --airport:#b9b4cc;
   --t0:#ecdcc0; --t1:#d5e6cc; --t2:#dcd6ec; --t3:#cfe4ea; --t4:#efd3d3; --t5:#e4e4c6; --label-a:#4a5262;
   --dline:#8f98a5; --aline:#2a303b; --limit:#7d6a8f;
-  --r-motorway:#d0843a; --r-trunk:#d0843a; --r-primary:#8d96a2; --r-secondary:#b9bfc7; --rail:#6c6c6c; --dart:#b0242d;
+ 
   --display:"Unbounded","Arial Black",system-ui,sans-serif;
   --body:"Golos Text","Segoe UI",system-ui,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -17,20 +17,20 @@
   --accent:#ff6268; --hostile:#ff6268; --hostile-bg:#4a1d22; --ally:#55c2b2; --ally-bg:#123a33;
   --haven:#6fd487; --haven-bg:#173a20; --imp:#f0b544; --imp-bg:#45330f;
   --sel:#f2f4f7; --on-accent:#10131a;
-  --sea:#0b0e14; --land:#1a1f28; --halo:#12161e; --rline:#aab3c2; --r-muted:#7d6e5a; --park-strong:#2f5a34; --water-ink:#8cc7f0; --green-ink:#9fd88f; --water:#1d4560; --park:#1f2d22; --airport:#8a87a8;
+  --sea:#0b0e14; --land:#1a1f28; --halo:#12161e; --rline:#aab3c2; --park-strong:#2f5a34; --water-ink:#8cc7f0; --green-ink:#9fd88f; --water:#1d4560; --park:#1f2d22; --airport:#8a87a8;
   --t0:#4a3d26; --t1:#27452f; --t2:#3a3159; --t3:#21474e; --t4:#55303a; --t5:#46462a; --label-a:#c3cad6;
   --dline:#6a7488; --aline:#e3e7ee; --limit:#a58fbb;
-  --r-motorway:#c4823f; --r-trunk:#c4823f; --r-primary:#8a93a3; --r-secondary:#566074; --rail:#8a8a8a; --dart:#ff6268;
+ 
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f131b; --paper:#171c26; --ink:#e5e8ee; --muted:#9aa3b2; --line:#2f3849;
   --accent:#ff6268; --hostile:#ff6268; --hostile-bg:#4a1d22; --ally:#55c2b2; --ally-bg:#123a33;
   --haven:#6fd487; --haven-bg:#173a20; --imp:#f0b544; --imp-bg:#45330f;
   --sel:#f2f4f7; --on-accent:#10131a;
-  --sea:#0b0e14; --land:#1a1f28; --halo:#12161e; --rline:#aab3c2; --r-muted:#7d6e5a; --park-strong:#2f5a34; --water-ink:#8cc7f0; --green-ink:#9fd88f; --water:#1d4560; --park:#1f2d22; --airport:#8a87a8;
+  --sea:#0b0e14; --land:#1a1f28; --halo:#12161e; --rline:#aab3c2; --park-strong:#2f5a34; --water-ink:#8cc7f0; --green-ink:#9fd88f; --water:#1d4560; --park:#1f2d22; --airport:#8a87a8;
   --t0:#4a3d26; --t1:#27452f; --t2:#3a3159; --t3:#21474e; --t4:#55303a; --t5:#46462a; --label-a:#c3cad6;
   --dline:#6a7488; --aline:#e3e7ee; --limit:#a58fbb;
-  --r-motorway:#c4823f; --r-trunk:#c4823f; --r-primary:#8a93a3; --r-secondary:#566074; --rail:#8a8a8a; --dart:#ff6268;
+ 
   color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -72,8 +72,7 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 }
 
 /* ---------- слои карты ---------- */
-/* Классы на контейнере карты ставит app.js: z9…z16 (масштаб), lv1…lv3 (какой масштаб регионов показан),
-   mode-regions / mode-roads (режим), has-sel (что-то выбрано). */
+/* Классы на контейнере карты ставит app.js: z9…z16 (масштаб), has-sel (что-то выбрано). */
 .leaflet-container{background:var(--sea);outline:0}
 .land{fill:var(--land);stroke:none;fill-opacity:1}
 
@@ -120,29 +119,6 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .z12 .river,.z13 .river{stroke-width:3.5}
 .z14 .river,.z15 .river,.z16 .river{stroke-width:6}
 
-/* дороги в режиме «Районы»: бледные, только для ориентира */
-.rd{fill:none;stroke-linecap:round;stroke-linejoin:round}
-.rd-motorway{stroke:var(--r-muted);stroke-opacity:.55;stroke-width:1.2}
-.z12 .rd-motorway,.z13 .rd-motorway{stroke-width:1.8}
-.z14 .rd-motorway,.z15 .rd-motorway,.z16 .rd-motorway{stroke-width:2.6}
-.rd-primary{stroke:var(--r-muted);stroke-opacity:.3;stroke-width:.9}
-/* режим «Дороги»: регионы — бледный фон, дороги яркие и кликаются */
-.mode-roads .reg{fill-opacity:.18!important;stroke-opacity:.25;pointer-events:none!important}
-.mode-roads .nat{fill-opacity:.5;pointer-events:none!important}
-.mode-roads .rd-motorway{stroke:var(--r-motorway);stroke-opacity:1;stroke-width:2.2}
-.mode-roads.z12 .rd-motorway,.mode-roads.z13 .rd-motorway{stroke-width:3.4}
-.mode-roads.z14 .rd-motorway,.mode-roads.z15 .rd-motorway,.mode-roads.z16 .rd-motorway{stroke-width:5}
-.mode-roads .rd-primary{stroke:var(--r-primary);stroke-opacity:.9;stroke-width:1.1}
-.mode-roads.z13 .rd-primary{stroke-width:1.8}
-.mode-roads.z14 .rd-primary,.mode-roads.z15 .rd-primary,.mode-roads.z16 .rd-primary{stroke-width:3}
-.rd-secondary{stroke:var(--r-secondary);stroke-width:.8}
-.z14 .rd-secondary,.z15 .rd-secondary,.z16 .rd-secondary{stroke-width:1.6}
-.rd.rd-hov{stroke:var(--accent);stroke-opacity:1}
-.rdhit{stroke:transparent;fill:none;stroke-width:14px}
-.selroad{fill:none;stroke:var(--accent);stroke-width:5;stroke-opacity:.85;stroke-linecap:round;stroke-linejoin:round}
-.rail{stroke:var(--rail);stroke-width:1;stroke-dasharray:4 3;fill:none;opacity:.7}
-.dart{stroke:var(--dart);stroke-width:1.6;fill:none;opacity:.75}
-.z14 .dart,.z15 .dart,.z16 .dart{stroke-width:2.6}
 .grid{stroke:var(--accent);stroke-width:1;fill:none;opacity:.55}
 
 /* подписи: области — разреженными заглавными, как регионы на картах стран; районы и секторы — обычным шрифтом */
@@ -155,11 +131,9 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .lbl-nat span{font-weight:500;font-size:11.5px;max-width:120px}
 .lk-water span{color:var(--water-ink);font-style:italic}
 .lk-green span{color:var(--green-ink);font-style:italic}
-.mode-roads .lbl span{opacity:.6}
 .lbl-g span{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);opacity:.8}
 .leaflet-tooltip.tip{background:var(--paper);color:var(--ink);border:1px solid var(--line);font:600 13px var(--body);box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .leaflet-tooltip.tip::before{display:none}
-.leaflet-tooltip.tip-road{border-color:var(--r-motorway)}
 .leaflet-control-attribution{background:color-mix(in srgb,var(--paper) 80%,transparent)!important;color:var(--muted)!important;font-size:10.5px}
 .leaflet-control-attribution a{color:var(--muted)!important}
 .leaflet-bar a{background:var(--paper);color:var(--ink);border-color:var(--line)}
