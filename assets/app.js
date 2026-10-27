@@ -92,7 +92,7 @@ function plural(n, one, few, many) {
 function kindLabel(id) {
   var x = idx[id], top = !x.parent;
   if (x.kind === "aero") return "Аэропорт";
-  if (x.kind === "osm") return "Знаковое место";
+  if (x.kind === "osm" || x.kind === "place") return "Знаковое место";
   if (x.kind === "city") return top ? "Город" : "Отдельный город";
   if (x.kind === "group") return top ? "Пригороды" : "Отдельные города";
   return x.n ? "Часть города" : "Район";

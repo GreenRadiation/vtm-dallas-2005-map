@@ -147,8 +147,8 @@
    "notes": ""
   },
   "marketcenter": {
-   "marker": "important",
-   "label": "Отель Барона",
+   "marker": "",
+   "label": "",
    "summary": "",
    "details": "Гигантские оптовые выставочные центры Dallas Market Center, стеклянный Infomart, огромный отель Anatole, а у дамб Тринити склады и шоурумы Дизайн-дистрикта с первыми галереями. Ночью кроме отеля ни души: пустые парковки и склады под сигнализацией.",
    "more": "",
@@ -1021,6 +1021,14 @@
   "parkland": {
    "marker": "ally",
    "label": "Союзник в Паркленде",
+   "summary": "",
+   "details": "",
+   "more": "",
+   "notes": ""
+  },
+  "anatole": {
+   "marker": "important",
+   "label": "Отель Барона",
    "summary": "",
    "details": "",
    "more": "",

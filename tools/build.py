@@ -314,7 +314,7 @@ for k, v in T.items():
         if not cand:
             sys.exit("tree.tsv: %s — не найден контур OSM %s" % (k, names))
         SHAPE[k] = unary_union(cand).buffer(0.05).buffer(-0.05).intersection(FRAME); STRENGTH[k] = 3
-    elif kind not in ("", "group"):
+    elif kind not in ("", "group", "place"):
         sys.exit("tree.tsv: %s — непонятный вид «%s»" % (k, kind))
 # точки: свои, а у готового контура без точек — середина контура
 PTS = {}
@@ -442,6 +442,14 @@ SUB = {k: subtree(k) for k in T}
 ATOMS = {}
 
 
+# Знаковые места по точке («place»: отель, торговый квартал, сад) не расползаются: дальше PLACE_R км от точки
+# (по прямой, барьеры не считаются) земля уходит соседям. Так здание остаётся маленьким регионом, а не забирает полрайона. Места с контуром OSM растут
+# как обычные районы: вокруг больницы или кампуса обычно нет другого имени, и земля достаётся им.
+# Если место при этом оказалось анклавом внутри одного соседа, предел для него удваивается, пока не перестанет.
+PLACE_R = 0.6
+PLACE = {k for k, v in T.items() if not KIDS.get(k) and v["kind"] == "place"}
+
+
 def split(parent, atoms_):
     kids = KIDS.get(parent, [])
     if not kids:
@@ -472,7 +480,34 @@ def split(parent, atoms_):
         errors.append("%s: нет ни точек, ни контуров у детей" % parent); return
     srcu, first = np.unique(src, return_index=True)
     kid_of_src = {s: src_kid[f] for s, f in zip(srcu, first)}
-    _, _, owner = dijkstra(M, directed=False, indices=list(srcu), min_only=True, return_predecessors=True)
+    dist, _, owner0 = dijkstra(M, directed=False, indices=list(srcu), min_only=True, return_predecessors=True)
+    owner = owner0
+    other = [x for x in srcu if kid_of_src[x] not in PLACE]
+    places = [k for k in kids if k in PLACE]
+    if places and other:
+        _, _, owner2 = dijkstra(M, directed=False, indices=other, min_only=True, return_predecessors=True)
+        rlim = {k: PLACE_R for k in places}
+        for _ in range(6):
+            owner = owner0.copy()
+            for i, o in enumerate(owner0):
+                k = kid_of_src[o] if o >= 0 else None
+                if k in rlim and np.min(np.hypot(*(AC[nodes[i]] - np.array(PTS[k])).T)) > rlim[k] and nodes[i] not in lab and owner2[i] >= 0:
+                    owner[i] = owner2[i]
+            enclaved = []
+            for k in places:
+                mine = {nodes[i] for i, o in enumerate(owner) if o >= 0 and kid_of_src[o] == k}
+                around = collections.Counter()  # длина общей границы с каждым соседом (None — край родителя)
+                for a in mine:
+                    for q, l in NB[a].items():
+                        if q not in mine:
+                            around[kid_of_src.get(owner[pos[q]]) if q in S else None] += l
+                second = sorted(around.values())[-2] if len(around) > 1 else 0
+                if second < 0.3 and rlim[k] < 50:  # короткий стык со вторым соседом сгладится — всё равно анклав
+                    enclaved.append(k)
+            if not enclaved:
+                break
+            for k in enclaved:
+                rlim[k] *= 2
     res = {}
     for i, o in enumerate(owner):
         if o >= 0:
@@ -628,12 +663,12 @@ def label_point(g, prec):
 
 
 def kind_of(k):
-    """city, aero, osm, group (объединение городков) или пусто (часть города или район)."""
+    """city, aero, osm, place (знаковое место по точке), group (объединение городков) или пусто (часть города или район)."""
     v = T[k]["kind"]
     return v.split(":")[0] if v else ""
 
 
-SOURCE = {"city": "город по переписи 2000", "aero": "аэродром (OSM)", "osm": "контур места (OSM)", "group": "объединение детей", "": "опорная точка"}
+SOURCE = {"city": "город по переписи 2000", "aero": "аэродром (OSM)", "osm": "контур места (OSM)", "place": "знаковое место (точка)", "group": "объединение детей", "": "опорная точка"}
 TREE_OUT = OUT / "tree"
 TREE_OUT.mkdir(parents=True, exist_ok=True)
 for f in TREE_OUT.glob("*.geojson"):
@@ -695,7 +730,7 @@ for b, (nc, nr, n_, s_, w_, e_) in GRIDS.items():
                 aliases[b + ":" + "ABCDEFGHI"[c] + str(r + 1)] = k
 # старые районы, которые теперь стали частью города целиком
 aliases.update({k: v for k, v in {"d:medical": "dal-medical", "d:downtown": "dal-downtown", "d:oaklawn": "dal-oaklawn",
-                                   "d:lakehighlands": "dal-lakehighlands", "s:anatole": "marketcenter"}.items() if v in GEOM})
+                                   "d:lakehighlands": "dal-lakehighlands", "s:anatole": "anatole"}.items() if v in GEOM})
 (TREE_OUT / "aliases.json").write_text(json.dumps(aliases, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
 
