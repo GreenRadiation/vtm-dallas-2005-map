@@ -5,6 +5,7 @@
   --haven:#2f8a46; --haven-bg:#dcf3df; --imp:#a86a00; --imp-bg:#f7e8c6;
   --sel:#1b2130; --on-accent:#ffffff;
   --sea:#d9dee3; --land:#f4f2ec; --halo:#f7f6f2; --rline:#5f6876; --park-strong:#9cc98a; --water-ink:#1f5f8a; --green-ink:#2f6b2a; --water:#a9cde3; --park:#d5e3c0; --airport:#b9b4cc;
+  --race-w:#eef5fc; --race-h:#ef9f27; --race-b:#7f77dd; --race-a:#f09595; --race-o:#b4b2a9;
   --t0:#ecdcc0; --t1:#d5e6cc; --t2:#dcd6ec; --t3:#cfe4ea; --t4:#efd3d3; --t5:#e4e4c6; --label-a:#4a5262;
   --dline:#8f98a5; --aline:#2a303b; --limit:#7d6a8f;
  
@@ -18,6 +19,7 @@
   --haven:#6fd487; --haven-bg:#173a20; --imp:#f0b544; --imp-bg:#45330f;
   --sel:#f2f4f7; --on-accent:#10131a;
   --sea:#0b0e14; --land:#1a1f28; --halo:#12161e; --rline:#aab3c2; --park-strong:#2f5a34; --water-ink:#8cc7f0; --green-ink:#9fd88f; --water:#1d4560; --park:#1f2d22; --airport:#8a87a8;
+  --race-w:#e6f1fb; --race-h:#ef9f27; --race-b:#8f88e6; --race-a:#f09595; --race-o:#888780;
   --t0:#4a3d26; --t1:#27452f; --t2:#3a3159; --t3:#21474e; --t4:#55303a; --t5:#46462a; --label-a:#c3cad6;
   --dline:#6a7488; --aline:#e3e7ee; --limit:#a58fbb;
  
@@ -28,6 +30,7 @@
   --haven:#6fd487; --haven-bg:#173a20; --imp:#f0b544; --imp-bg:#45330f;
   --sel:#f2f4f7; --on-accent:#10131a;
   --sea:#0b0e14; --land:#1a1f28; --halo:#12161e; --rline:#aab3c2; --park-strong:#2f5a34; --water-ink:#8cc7f0; --green-ink:#9fd88f; --water:#1d4560; --park:#1f2d22; --airport:#8a87a8;
+  --race-w:#e6f1fb; --race-h:#ef9f27; --race-b:#8f88e6; --race-a:#f09595; --race-o:#888780;
   --t0:#4a3d26; --t1:#27452f; --t2:#3a3159; --t3:#21474e; --t4:#55303a; --t5:#46462a; --label-a:#c3cad6;
   --dline:#6a7488; --aline:#e3e7ee; --limit:#a58fbb;
  
@@ -188,13 +191,20 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .leaflet-tooltip.tip small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
 
-/* теги в карточке: перепись 2000 и оценки для игры */
-.tags{display:grid;grid-template-columns:max-content 1fr;gap:5px 14px;margin:0 0 6px;font-size:13.5px;line-height:1.35}
-.tags dt{color:var(--muted);font-weight:600}
-.tags dt sup{font-size:10px;margin-left:1px}
-.tags dd{margin:0}
-.tags b{font-weight:700}
-.tags .dots{color:var(--accent);letter-spacing:1px}
-.tags .dots i{font-style:normal;opacity:.25}
-.tags-src{margin:0 0 14px;color:var(--muted);font-size:12px}
-@media (max-width:420px){.tags{grid-template-columns:1fr;gap:0}.tags dd{margin-bottom:6px}}
+/* теги в карточке: табличка с иконками, пояснение — строкой под ней */
+.tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 6px}
+.tag{background:color-mix(in srgb,var(--ink) 5%,transparent);border:1px solid transparent;border-radius:6px;padding:6px 8px 7px;cursor:help;min-width:0;outline:0}
+.tag.wide{grid-column:span 2}
+.tag:hover,.tag.on,.tag:focus-visible{border-color:var(--line)}
+.tag>span{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.tag>div{display:flex;align-items:center;gap:1px;min-height:18px;flex-wrap:wrap}
+.tag small{font-size:12.5px;font-weight:600;color:var(--ink)}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:var(--ink);flex:none}
+.ic.mid{opacity:.5}
+.ic.off{opacity:.18}
+.rbar{display:flex;flex:1 1 100%;height:10px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line);margin:3px 0 2px}
+.rbar i{display:block;height:100%}
+.r0{background:var(--race-w)}.r1{background:var(--race-h)}.r2{background:var(--race-b)}.r3{background:var(--race-a)}.r4{background:var(--race-o)}
+.tagtip{margin:0 0 14px;color:var(--muted);font-size:12.5px;line-height:1.45;min-height:3em}
+.tagtip.on{color:var(--ink)}
+.tagtip b{font-weight:700}

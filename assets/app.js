@@ -95,55 +95,120 @@ function kindLabel(id) {
 }
 
 // ---------- теги ----------
-// Ручные теги — map.json (поле tags), число или [от, до]; перепись 2000 — census.json. Шкалы описаны в docs/TEXTS.md.
+// Табличка с иконками; пояснение к клетке — при наведении или нажатии. Ручные теги — map.json (поле tags: число
+// или [от, до], пояснения к клеткам — tags.notes), перепись 2000 — census.json. Шкалы описаны в docs/TEXTS.md.
+// Иконки — Tabler Icons (MIT), https://tabler.io/icons
+var ICON = {"coin":["M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0","M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1 -1.8 -1","M12 7v10"],"crosshair":["M4 8v-2a2 2 0 0 1 2 -2h2","M4 16v2a2 2 0 0 0 2 2h2","M16 4h2a2 2 0 0 1 2 2v2","M16 20h2a2 2 0 0 0 2 -2v-2","M9 12l6 0","M12 9l0 6"],"eye":["M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0","M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"],"glass":["M8 21h8","M12 15v6","M12 5m-7 0a7 2 0 1 0 14 0a7 2 0 1 0 -14 0","M5 5v.388c0 .432 .126 .853 .362 1.206l5 7.509c.633 .951 1.88 1.183 2.785 .517c.191 -.141 .358 -.316 .491 -.517l5 -7.509c.236 -.353 .362 -.774 .362 -1.206v-.388"],"shield":["M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"],"houses":["M5 12l-2 0l9 -9l9 9l-2 0","M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7","M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"],"estates":["M19.258 10.258l-7.258 -7.258l-9 9h2v7a2 2 0 0 0 2 2h4","M9 21v-6a2 2 0 0 1 2 -2h1.5","M17.8 20.817l-2.172 1.138a.392 .392 0 0 1 -.568 -.41l.415 -2.411l-1.757 -1.707a.389 .389 0 0 1 .217 -.665l2.428 -.352l1.086 -2.193a.392 .392 0 0 1 .702 0l1.086 2.193l2.428 .352a.39 .39 0 0 1 .217 .665l-1.757 1.707l.414 2.41a.39 .39 0 0 1 -.567 .411l-2.172 -1.138z"],"apts":["M8 9l5 5v7h-5v-4m0 4h-5v-7l5 -5m1 1v-6a1 1 0 0 1 1 -1h10a1 1 0 0 1 1 1v17h-8","M13 7l0 .01","M17 7l0 .01","M17 11l0 .01","M17 15l0 .01"],"towers":["M3 21l18 0","M5 21v-14l8 -4v18","M19 21v-10l-6 -4","M9 9l0 .01","M9 12l0 .01","M9 15l0 .01","M9 18l0 .01"],"industry":["M3 21h18","M5 21v-12l5 4v-4l5 4h4","M19 21v-8l-1.436 -9.574a.5 .5 0 0 0 -.495 -.426h-1.145a.5 .5 0 0 0 -.494 .418l-1.43 8.582","M9 17h1","M14 17h1"],"strip":["M3 21l18 0","M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4","M5 21l0 -10.15","M19 21l0 -10.15","M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4"],"fields":["M7 15m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0","M7 15l0 .01","M19 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0","M10.5 17l6.5 0","M20 15.2v-4.2a1 1 0 0 0 -1 -1h-6l-2 -5h-6v6.5","M18 5h-1a1 1 0 0 0 -1 1v4"],"campus":["M22 9l-10 -4l-10 4l10 4l10 -4v6","M6 10.6v5.4a6 3 0 0 0 12 0v-5.4"],"other":["M3 21l18 0","M9 8l1 0","M9 12l1 0","M9 16l1 0","M14 8l1 0","M14 12l1 0","M14 16l1 0","M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"]};
 var WEALTH = ["бедность", "ниже среднего", "средний достаток", "зажиточно", "богатство"];
 var RACE = ["белые", "латиноамериканцы", "чёрные", "азиаты", "другие"];
 var BUILD = {houses: "частные дома с участками", estates: "особняки", apts: "жилые комплексы", towers: "высотки",
   industry: "склады и промзона", strip: "торговля у фривея", fields: "поля и ранчо", campus: "кампус"};
-var STREET = ["", "тихо", "обычно", "смотри по сторонам", "неспокойно", "опасно"];
-var EYES = ["", "никому нет дела", "мало глаз", "людно", "присматривают", "под надзором"];
-var NIGHT = ["ничего", "только круглосуточное", "бары у дороги, пара мест допоздна", "есть куда пойти", "центр ночной жизни"];
-var POLICE = {dpd: "полиция Далласа", fwpd: "полиция Форт-Уэрта", city: "своя полиция города", sheriff: "шериф округа", campus: "полиция кампуса"};
+var STREET = [null,
+  ["тихо", "С прохожими почти ничего не случается, худшее — разбитое стекло машины."],
+  ["обычно", "Бывают кражи из машин и домов, но ночью на улице спокойно."],
+  ["неспокойно", "Угоны и ограбления прохожих случаются; ночью местные пешком не ходят."],
+  ["опасно", "Уличные банды и торговля наркотиками, стрельба бывает каждую неделю."],
+  ["очень опасно", "Худшие кварталы города: перестрелки, наркопритоны, заброшенные дома. Таких мест на карте единицы."]];
+var EYES = [null,
+  ["никому нет дела", "Свидетели молчат, полиция едет долго."],
+  ["мало глаз", "Ночью улицы пусты, свидетелей немного."],
+  ["людно", "Вокруг люди: видят, но не запоминают."],
+  ["присматривают", "Соседи звонят в полицию из-за чужой машины у дома."],
+  ["под надзором", "Частные патрули, камеры, полиция за пару минут."]];
+var NIGHT = [
+  ["ничего", "После десяти вечера всё закрыто."],
+  ["только круглосуточное", "Заправки, закусочные и магазины, открытые всю ночь."],
+  ["бары у дороги", "Придорожные бары и пара мест, открытых допоздна."],
+  ["есть куда пойти", "Бары, клубы и рестораны допоздна."],
+  ["центр ночной жизни", "Сюда едут развлекаться со всего города."]];
+var POLICE = {dpd: ["Даллас", "Полиция Далласа."], fwpd: ["Форт-Уэрт", "Полиция Форт-Уэрта."], city: ["своя", "Своя полиция города."],
+  sheriff: ["шериф", "Шериф округа."], campus: ["кампус", "Полиция кампуса."]};
 
+function icon(name, cls) {
+  return '<svg class="ic' + (cls ? " " + cls : "") + '" viewBox="0 0 24 24" aria-hidden="true">' +
+    ICON[name].map(function (d) { return '<path d="' + d + '"/>'; }).join("") + '</svg>';
+}
+// v — число или [от, до]: до «от» иконки полные, между «от» и «до» — бледнее, дальше — пустые
+function pips(name, v, max, base) {
+  var lo = Array.isArray(v) ? v[0] : v, hi = Array.isArray(v) ? v[1] : v, out = "";
+  for (var i = Math.max(base, 1); i <= max; i++) out += icon(name, i <= lo ? "" : i <= hi ? "mid" : "off");
+  return out;
+}
+function scaleTip(v, names, max) {
+  if (Array.isArray(v)) return "От " + v[0] + " до " + v[1] + " из " + max + ": от «" + names[v[0]][0] + "» до «" + names[v[1]][0] + "», внутри всё разное.";
+  return v + " из " + max + ", " + names[v][0] + ". " + names[v][1];
+}
 function wealthLevel(inc) {
   var r = inc / census.inc_ref;
   return r < 0.6 ? 1 : r < 0.9 ? 2 : r < 1.3 ? 3 : r < 2 ? 4 : 5;
 }
 function num(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
-function scale(v, names, max) {
-  if (Array.isArray(v)) return '<b>' + v[0] + "–" + v[1] + '</b> из ' + max + ' · от «' + names[v[0]] + '» до «' + names[v[1]] + '»';
-  return '<b>' + v + '</b> из ' + max + ' · ' + names[v];
+function money(n) { return "$" + num(n); }
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+// Перепись показываем, только где живут хотя бы несколько сотен семей: в нежилых местах цифры ничего не значат
+function censusOf(id) {
+  var x = idx[id], c = x && census.nodes[id];
+  return c && c.hh >= 300 && !/^(place|osm|aero)$/.test(x.kind) ? c : null;
 }
+var tagTexts = [];
 function tagsBlock(s) {
-  var t = info(s).tags || {}, rows = [], x = s.k === "n" ? idx[s.id] : null;
-  var c = x && !/^(place|osm|aero)$/.test(x.kind) && census.nodes[s.id];
-  if (c && c.pop >= 500) {
-    if (c.inc) {
-      var w = wealthLevel(c.inc);
-      rows.push(["Достаток", '<span class="dots">' + "●●●●●".slice(0, w) + '<i>' + "●●●●●".slice(w) + '</i></span> ' + WEALTH[w - 1] +
-        ' · $' + num(c.inc) + ' в год на семью', 1]);
+  var t = info(s).tags || {}, n = t.notes || {}, cells = [], c = s.k === "n" ? censusOf(s.id) : null;
+  function note(k) { return n[k] ? " " + n[k] : ""; }
+  if (c && c.inc) {
+    var w = wealthLevel(c.inc), tip = cap(WEALTH[w - 1]) + ": медианный доход семьи " + money(c.inc) + " в год, по всей карте " + money(census.inc_ref) + ".";
+    var kids = (kidsOf[s.id] || []).filter(function (k) { return censusOf(k) && census.nodes[k].inc; })
+      .sort(function (a, b) { return census.nodes[a].inc - census.nodes[b].inc; });
+    if (kids.length > 1) tip += " Беднее всего — " + idx[kids[0]].name + " (" + money(census.nodes[kids[0]].inc) + "), богаче всего — " +
+      idx[kids[kids.length - 1]].name + " (" + money(census.nodes[kids[kids.length - 1]].inc) + ").";
+    cells.push(["Достаток", pips("coin", w, 5, 1), tip + note("wealth") + " Перепись 2000."]);
+  }
+  if (t.street != null) cells.push(["Улица", pips("crosshair", t.street, 5, 1), "Преступность на улицах, оценка для игры. " + scaleTip(t.street, STREET, 5) + note("street")]);
+  if (t.eyes != null) cells.push(["Глаза", pips("eye", t.eyes, 5, 1), "Как быстро заметят чужака и странное, оценка для игры. " + scaleTip(t.eyes, EYES, 5) + note("eyes")]);
+  if (c) {
+    var r = c.race.map(function (p, i) { return [p, i]; }).filter(function (q) { return q[0] > 0; }).sort(function (a, b) { return b[0] - a[0]; });
+    var pop = c.pop >= 1e6 ? (c.pop / 1e6).toFixed(2).replace(".", ",") + " млн" : c.pop >= 10000 ? num(c.pop / 1000) + " тыс." : num(c.pop);
+    var dens = c.dens ? ", около " + num(c.dens >= 1000 ? Math.round(c.dens / 100) * 100 : Math.round(c.dens / 10) * 10) + " на км²" : "";
+    cells.push(["Жители", '<span class="rbar">' + r.map(function (q) { return '<i class="r' + q[1] + '" style="width:' + q[0] + '%"></i>'; }).join("") +
+      '</span><small>' + pop + '</small>',
+      cap(r.filter(function (q) { return q[0] >= 5; }).sort(function (a, b) { return b[0] - a[0]; }).map(function (q) { return RACE[q[1]] + " " + q[0] + "%"; }).join(", ")) +
+      ". Жителей " + num(c.pop) + dens + "." + note("people") + " Перепись 2000; белые, чёрные и азиаты — не латиноамериканского происхождения.", "wide"]);
+  }
+  if (t.night != null) cells.push(["Ночь", pips("glass", t.night, 4, 0), "Ночная жизнь, оценка для игры. " + scaleTip(t.night, NIGHT, 4) + note("night")]);
+  if (t.build || c) {
+    var b = t.build || [], tip2 = b.length ? cap(b.map(function (x) { return BUILD[x] || x; }).join(", ")) + "." : "";
+    if (c) {
+      var h = c.homes, parts = [];
+      if (h[0] >= 5) parts.push("частные дома " + h[0] + "%");
+      if (h[1] >= 5) parts.push("дуплексы и малоэтажки " + h[1] + "%");
+      if (h[2] >= 5) parts.push("комплексы от 10 квартир " + h[2] + "%");
+      if (h[3] >= 5) parts.push("трейлеры " + h[3] + "%");
+      tip2 += " Жильё по переписи 2000: " + parts.join(", ") + (c.built ? "; построено в среднем в " + c.built + " году" : "") + "; своё жильё у " + c.own + "%.";
     }
-    var r = c.race.map(function (p, i) { return [p, i]; }).filter(function (q) { return q[0] >= 10; }).sort(function (a, b) { return b[0] - a[0]; });
-    rows.push(["Кто живёт", r.map(function (q) { return RACE[q[1]] + " " + q[0] + "%"; }).join(" · "), 1]);
+    cells.push(["Застройка", b.map(function (x) { return icon(BUILD[x] ? x : "other"); }).join("") || icon("other", "off"), (tip2 + note("build")).trim(), "wide"]);
   }
-  if (t.build) rows.push(["Застройка", t.build.map(function (b) { return BUILD[b] || b; }).join(", ")]);
-  if (c && c.pop >= 500) {
-    var h = c.homes, parts = [];
-    if (h[0] >= 10) parts.push("частные дома " + h[0] + "%");
-    if (h[1] >= 10) parts.push("дуплексы и малоэтажки " + h[1] + "%");
-    if (h[2] >= 10) parts.push("комплексы от 10 квартир " + h[2] + "%");
-    if (h[3] >= 10) parts.push("трейлеры " + h[3] + "%");
-    rows.push(["Жильё", parts.join(" · ") + (c.built ? "; построено в среднем в " + c.built + " году" : "") + "; своё жильё у " + c.own + "%", 1]);
-    rows.push(["Жителей", (c.pop >= 1e6 ? (c.pop / 1e6).toFixed(2).replace(".", ",") + " млн" : c.pop >= 10000 ? num(c.pop / 1000) + " тыс." : num(c.pop)) + (c.dens ? " · около " + num(c.dens >= 1000 ? Math.round(c.dens / 100) * 100 : Math.round(c.dens / 10) * 10) + " на км²" : ""), 1]);
+  if (t.police) {
+    var p = POLICE[t.police] || [t.police, ""];
+    cells.push(["Полиция", '<small>' + esc(p[0]) + '</small>', (p[1] || cap(p[0]) + ".") + note("police")]);
   }
-  if (t.street != null) rows.push(["Улица", scale(t.street, STREET, 5)]);
-  if (t.eyes != null) rows.push(["Глаза", scale(t.eyes, EYES, 5)]);
-  if (t.night != null) rows.push(["Ночная жизнь", scale(t.night, NIGHT, 4)]);
-  if (t.police) rows.push(["Полиция", POLICE[t.police] || t.police]);
-  if (!rows.length) return "";
-  var src = rows.some(function (q) { return q[2]; });
-  return '<dl class="tags">' + rows.map(function (q) { return '<dt>' + q[0] + (q[2] ? '<sup>*</sup>' : '') + '</dt><dd>' + q[1] + '</dd>'; }).join("") + '</dl>' +
-    (src ? '<p class="tags-src">* перепись США 2000 года; остальное — оценка для игры</p>' : '');
+  tagTexts = cells.map(function (q) { return q[2]; });
+  if (!cells.length) return "";
+  var hint = (window.matchMedia("(hover: none)").matches ? "Нажми" : "Наведи") + " на клетку — здесь появится пояснение.";
+  return '<div class="tags">' + cells.map(function (q, i) {
+    return '<div class="tag' + (q[3] ? " " + q[3] : "") + '" tabindex="0" data-i="' + i + '"><span>' + q[0] + '</span><div>' + q[1] + '</div></div>';
+  }).join("") + '</div><p class="tagtip" id="tagtip">' + hint + '</p>';
+}
+function bindTags() {
+  var tip = document.getElementById("tagtip"), cur = null;
+  if (!tip) return;
+  panel.querySelectorAll(".tag").forEach(function (el) {
+    function on() {
+      if (cur) cur.classList.remove("on");
+      cur = el; el.classList.add("on");
+      tip.innerHTML = "<b>" + esc(el.firstChild.textContent) + ".</b> " + esc(tagTexts[+el.getAttribute("data-i")]);
+      tip.classList.add("on");
+    }
+    el.addEventListener("mouseenter", on); el.addEventListener("focus", on); el.addEventListener("click", on);
+  });
 }
 
 // ---------- карта ----------
@@ -477,6 +542,7 @@ function renderPanel() {
     '<button class="btn" type="button" id="p-edit">' + (own(s) ? "Изменить мои пометки" : "Добавить свою пометку") + '</button>' +
     '<button class="btn" type="button" id="p-show">Показать на карте</button>' +
     (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' + kids;
+  bindTags();
   var pm = document.getElementById("p-more");
   if (pm) pm.addEventListener("toggle", function () { if (pm.open) moreOpen[skey(s)] = 1; else delete moreOpen[skey(s)]; });
   var po = document.getElementById("p-open"); if (po) po.addEventListener("click", function () { expand(s.id); });
