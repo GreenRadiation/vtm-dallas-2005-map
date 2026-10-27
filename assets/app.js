@@ -2,7 +2,8 @@
  * Карта Далласа и Форт-Уэрта 2005 для «Вампиры: Маскарад» (V20).
  * Регионы — дерево (data/tree.tsv → data/geo/tree/*.geojson, собирает tools/build.py, см. docs/TREE.md).
  * Сначала видны только верхние узлы. Двойной клик или «Подробнее» раскрывает регион на его детей; раскрыта всегда
- * одна ветка. Озёра и парки — отдельный слой поверх, кликается всегда.
+ * одна ветка. Карта сама двигается только по поиску, «Показать на карте» и ссылке. Переключатель «Все районы»
+ * показывает сразу все листья дерева (для проверки нарезки). Озёра и парки — отдельный слой поверх, кликается всегда.
  * Тексты и метки — data/map.json. Личные пометки игрока — только в его браузере (localStorage).
  * Два режима: «Районы» (кликаются регионы, дороги бледные) и «Дороги» (кликаются дороги, регионы бледные).
  * Подробности устройства: docs/MAP.md
@@ -30,7 +31,7 @@ var geo = {}, text = {nodes: {}, nature: {}}, mine = {items: {}}, aliases = {};
 var idx = {}, kidsOf = {}; // узел по id; дети по id родителя ("" — верхний уровень)
 var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
 var open = []; // раскрытая ветка: путь от верхнего уровня
-var view = {mode: "regions"};
+var view = {mode: "regions", leaves: false}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
 var sel = null; // {k: "n" | "nat" | "r", id}
 var editing = false, status = "", toolStatus = "", confirmWipe = false, moreOpen = {};
 var map, featOf = {n: {}, nat: {}, r: {}}, layerOf = {n: {}, nat: {}, r: {}}, labelLayer, natLayer;
@@ -47,6 +48,7 @@ function own(s) { return mine.items[skey(s)] || null; }
 function marker(s) { var o = own(s); return (o && o.marker) || info(s).marker || ""; }
 function store(key, val) { try { localStorage.setItem(key, val); } catch (_) {} }
 function load(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+function isOpen(id) { return view.leaves ? !!(idx[id] && idx[id].n) : open.indexOf(id) >= 0; }
 function ancestors(id) { var out = [], p = idx[id] && idx[id].parent; while (p) { out.unshift(p); p = idx[p].parent; } return out; }
 function nameOf(s) {
   if (s.k === "n") return idx[s.id].name;
@@ -57,7 +59,7 @@ function nameOf(s) {
 // Ключи: «n:<узел>», «nat:<озеро или парк>». Пометки старых карт («d:<район>» и т. п.) переносятся по таблице aliases.
 function loadMine() {
   try { var raw = load(STORE_KEY); if (raw) { var p = JSON.parse(raw); if (p && p.items) mine = p; } } catch (_) {}
-  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); if (v.mode) view.mode = v.mode; } catch (_) {}
+  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); if (v.mode) view.mode = v.mode; view.leaves = !!v.leaves; } catch (_) {}
   var moved = 0;
   Object.keys(mine.items).forEach(function (k) {
     if (/^(n|nat):/.test(k)) return;
@@ -154,6 +156,12 @@ function ensureKids(parent) {
     return fc;
   });
 }
+function ensureAll() { // режим листьев: файлы детей всех узлов
+  return Promise.all(parents().map(ensureKids));
+}
+function parents() { // все узлы с детьми, сверху вниз: глубже — поверх
+  return [""].concat(Object.keys(idx).filter(function (id) { return idx[id].n; }).sort(function (a, b) { return idx[a].depth - idx[b].depth; }));
+}
 function ensurePath(ids) { // загрузить файлы для всех узлов пути по очереди
   return ids.reduce(function (p, id) { return p.then(function () { return ensureKids(id); }); }, ensureKids(""));
 }
@@ -161,12 +169,12 @@ function ensurePath(ids) { // загрузить файлы для всех уз
 function regClass(id, p) {
   var x = idx[id], m = marker({k: "n", id: id}), inh = "";
   p = p || (featOf.n[id] ? featOf.n[id].properties : {});
-  if (!m && x.n && open.indexOf(id) < 0) { // свёрнутый регион показывает метки того, что внутри
+  if (!m && x.n && !isOpen(id)) { // свёрнутый регион показывает метки того, что внутри
     descendants(id).some(function (d) { var dm = marker({k: "n", id: d}); if (dm) inh = " mi-" + dm; return dm; });
   }
-  var parent = x.parent || "", focus = parent === (open.length ? open[open.length - 1] : "");
+  var parent = x.parent || "", focus = view.leaves || parent === (open.length ? open[open.length - 1] : "");
   return "reg d" + Math.min(x.depth, 3) + " t" + (p.tone || 0) + " s" + (p.shade || 0) +
-    " k-" + (x.kind || "area") + (open.indexOf(id) >= 0 ? " exp" : focus ? " focus" : " ctx") + (m ? " m-" + m : inh);
+    " k-" + (x.kind || "area") + (isOpen(id) ? " exp" : focus ? " focus" : " ctx") + (m ? " m-" + m : inh);
 }
 function descendants(id) {
   var out = [];
@@ -177,7 +185,7 @@ function descendants(id) {
 function hook(f, l) {
   var id = f.properties.id;
   featOf.n[id] = f; layerOf.n[id] = l;
-  l.bindTooltip(function () { return esc(idx[id].name) + (idx[id].n && open.indexOf(id) < 0 ? '<small>двойной клик — что внутри</small>' : ''); },
+  l.bindTooltip(function () { return esc(idx[id].name) + (idx[id].n && !isOpen(id) ? '<small>двойной клик — что внутри</small>' : ''); },
     {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
   l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "n", id: id}, false); });
   l.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); if (idx[id].n) expand(id); });
@@ -199,22 +207,22 @@ function show(layer, on) { if (on) { if (!map.hasLayer(layer)) layer.addTo(map);
 
 // Какие слои регионов на карте: верхний уровень и дети каждого раскрытого узла (глубже — поверх)
 function syncLayers() {
-  var want = [""].concat(open);
+  var want = view.leaves ? parents() : [""].concat(open);
   Object.keys(regLayer).forEach(function (p) { if (want.indexOf(p) < 0) show(regLayer[p], false); });
   want.forEach(function (p) { if (regLayer[p] && map.hasLayer(regLayer[p])) map.removeLayer(regLayer[p]); });
   want.forEach(function (p) { if (regLayer[p]) regLayer[p].addTo(map); });
   refreshStyles(); drawSel();
-  document.getElementById("collapse").disabled = !open.length;
+  document.getElementById("collapse").disabled = view.leaves || !open.length;
 }
 
-// Раскрыть узел: только его ветка, остальные свёрнуты
-function expand(id) {
-  if (!idx[id] || !idx[id].n) return;
+// Раскрыть узел: только его ветка, остальные свёрнуты. Карта не двигается, кроме перехода по ссылке (fly).
+function expand(id, fly) {
+  if (!idx[id] || !idx[id].n || view.leaves) return;
   var path = ancestors(id).concat([id]);
   ensurePath(path).then(function () {
     open = path; syncLayers();
     var b = idx[id].bbox;
-    map.flyToBounds([[b[1], b[0]], [b[3], b[2]]], {padding: [30, 30], duration: 0.6});
+    if (fly) map.flyToBounds([[b[1], b[0]], [b[3], b[2]]], {padding: [30, 30], duration: 0.6});
     if (!sel || sel.k !== "n" || sel.id !== id) select({k: "n", id: id}, false); else { renderPanel(); syncHash(); }
     placeLabels();
   });
@@ -257,7 +265,11 @@ function labelSize(x) {
 var labelCache = {};
 function labelList() {
   var list = [], last = open.length ? open[open.length - 1] : "";
-  [""].concat(open).forEach(function (p) {
+  if (view.leaves) Object.keys(featOf.n).forEach(function (id) {
+    var x = idx[id], key = id + "|focus";
+    if (!x.n) list.push(labelCache[key] = labelCache[key] || {id: "n:" + id, name: x.name, ll: L.latLng(x.ly, x.lx), km2: x.km2, cls: "focus", rank: x.km2});
+  });
+  else [""].concat(open).forEach(function (p) {
     (kidsOf[p] || []).forEach(function (id) {
       if (open.indexOf(id) >= 0 || !featOf.n[id]) return;
       var x = idx[id], cls = p === last ? (p === "" ? "top" : "focus") : (p === "" ? "top" : "ctx");
@@ -338,7 +350,7 @@ function select(s, fly) {
   if (s.k === "n") {
     if (!idx[s.id]) return;
     var anc = ancestors(s.id);
-    var visible = anc.every(function (a, i) { return open[i] === a; });
+    var visible = view.leaves || anc.every(function (a, i) { return open[i] === a; });
     if (!visible || !featOf.n[s.id]) {
       ensurePath(anc).then(function () { open = anc; syncLayers(); select(s, fly); });
       return;
@@ -360,7 +372,7 @@ function drawSel() {
   if (selLayer) map.removeLayer(selLayer);
   selLayer = null;
   if (!sel) return;
-  var cls = sel.k === "r" ? "selroad" : "selpath" + (sel.k === "n" && open.indexOf(sel.id) >= 0 ? " selopen" : "");
+  var cls = sel.k === "r" ? "selroad" : "selpath" + (sel.k === "n" && isOpen(sel.id) ? " selopen" : "");
   selLayer = L.geoJSON(featOf[sel.k][sel.id], {pane: "sel", interactive: false, style: {className: cls}}).addTo(map);
   map.getContainer().classList.toggle("has-sel", sel.k !== "r");
 }
@@ -465,7 +477,7 @@ function renderPanel() {
       : '<p class="hint">Описания пока нет.</p>';
   }
   if (!body) body = '<p class="hint">Описания пока нет.</p>';
-  var isOpen = node && open.indexOf(s.id) >= 0, kids = "";
+  var opened = node && open.indexOf(s.id) >= 0, kids = "";
   if (node && node.n) {
     var list = (kidsOf[s.id] || []).slice().sort(function (a, b) { return idx[a].name.localeCompare(idx[b].name, "ru"); });
     kids = '<div class="kids"><h3>Внутри · ' + list.length + '</h3><ul>' + list.map(function (id) {
@@ -483,7 +495,7 @@ function renderPanel() {
     (x.notes && x.notes.trim() ? '<div class="notes"><h3>Заметки мастера</h3><p>' + esc(x.notes) + '</p></div>' : "") +
     mineBlock +
     '<div class="actions">' +
-    (node && node.n ? (isOpen ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Подробнее</button>') : '') +
+    (node && node.n && !view.leaves ? (opened ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Подробнее</button>') : '') +
     '<button class="btn" type="button" id="p-edit">' + (own(s) ? "Изменить мои пометки" : "Добавить свою пометку") + '</button>' +
     '<button class="btn" type="button" id="p-show">Показать на карте</button>' +
     (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' + kids;
@@ -506,7 +518,7 @@ panel.addEventListener("click", function (e) {
   var t = e.target.closest("[data-go]"); if (!t) return;
   e.preventDefault();
   var g = t.getAttribute("data-go").split(":");
-  select({k: g[0], id: g.slice(1).join(":")}, true);
+  select({k: g[0], id: g.slice(1).join(":")}, false);
 });
 
 // ---------- поиск ----------
@@ -618,7 +630,7 @@ function syncHash() {
 function readHash(fly) {
   var h = decodeURIComponent(location.hash || ""), m = /^#(n|nat|r)\/([^+]+)(\+?)$/.exec(h);
   if (m) {
-    if (m[1] === "n" && m[3] && idx[m[2]]) expand(m[2]);
+    if (m[1] === "n" && m[3] && idx[m[2]] && !view.leaves) expand(m[2], fly);
     else select({k: m[1], id: m[2]}, fly);
     return;
   }
@@ -643,10 +655,20 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   loaded[""] = res[files.length + 3];
   regLayer[""] = L.geoJSON(loaded[""], {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; }, onEachFeature: function (f, l) { hook(f, l); }});
   syncLayers(); refresh(); setupSearch(); renderTools(); renderPanel();
+  var lt = document.getElementById("leaf-tog");
+  function setLeaves(on) {
+    view.leaves = on; lt.checked = on; store(VIEW_KEY, JSON.stringify(view));
+    (on ? ensureAll() : Promise.resolve()).then(function () {
+      syncLayers(); placeLabels(); renderPanel(); syncHash();
+      if (!on && sel && sel.k === "n") select(sel, false); // раскрыть ветку до выбранного листа
+    });
+  }
+  lt.addEventListener("change", function () { setLeaves(lt.checked); });
+  if (view.leaves) setLeaves(true);
   document.getElementById("md").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setMode(b.getAttribute("data-m")); });
-  document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); home(true); });
+  document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); });
   document.addEventListener("keydown", function (e) {
-    if (e.key !== "Escape" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !open.length) return;
+    if (e.key !== "Escape" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !open.length || view.leaves) return;
     var last = open[open.length - 1]; collapseTo(last); select({k: "n", id: last}, false);
   });
   readHash(true);
