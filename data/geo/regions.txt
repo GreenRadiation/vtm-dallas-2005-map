@@ -174,7 +174,7 @@ irving	Ирвинг	city:Irving	169.0 км²
   irving-lascolinas	Лас-Колинас	-	29.4 км²
   irving-valleyranch	Валли-Ранч	-	15.7 км²
   irving-northlake	Норт-Лейк	-	29.6 км²
-  irving-stadium	Стадион «Техас»	-	13.6 км²
+  irving-stadium	Техас-Стэдиум	-	13.6 км²
   irving-plymouth	Плимут-Парк	-	22.5 км²
   irving-center	Центр Ирвинга	-	35.2 км²
   irving-west	Западный Ирвинг	-	22.9 км²
