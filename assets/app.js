@@ -31,7 +31,7 @@ var geo = {}, text = {nodes: {}, nature: {}}, census = {nodes: {}}, mine = {item
 var idx = {}, kidsOf = {}; // узел по id; дети по id родителя ("" — верхний уровень)
 var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
 var open = []; // раскрытая ветка: путь от верхнего уровня
-var view = {leaves: false}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
+var view = {leaves: false, lens: ""}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
 var sel = null; // {k: "n" | "nat", id}
 var editing = false, status = "", toolStatus = "", confirmWipe = false, moreOpen = {};
 var map, featOf = {n: {}, nat: {}}, layerOf = {n: {}, nat: {}}, labelLayer, natLayer;
@@ -59,7 +59,7 @@ function nameOf(s) {
 // Ключи: «n:<узел>», «nat:<озеро или парк>». Пометки старых карт («d:<район>» и т. п.) переносятся по таблице aliases.
 function loadMine() {
   try { var raw = load(STORE_KEY); if (raw) { var p = JSON.parse(raw); if (p && p.items) mine = p; } } catch (_) {}
-  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; } catch (_) {}
+  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; view.lens = LENS[v.lens] ? v.lens : ""; } catch (_) {}
   var moved = 0;
   Object.keys(mine.items).forEach(function (k) {
     if (/^(n|nat):/.test(k)) return;
@@ -215,6 +215,149 @@ function bindTags() {
   });
 }
 
+// ---------- линзы ----------
+// Линза перекрашивает регионы по одному параметру тегов. Шкалы — один цвет от светлого к насыщенному,
+// категории — свой цвет у каждого значения; смешанный состав — диагональные полосы в пропорции долей.
+var LENS_COLORS = {
+  wealth: ["#f3e7c4", "#e6cf86", "#d4b04a", "#b88a1e", "#8a6410"],
+  street: ["#f6e3df", "#eeb7aa", "#e2846f", "#c9503a", "#9b2a1c"],
+  eyes: ["#e3ecf7", "#b5cdea", "#7ea8d8", "#4a7fc0", "#23559a"],
+  night: ["#ece6f5", "#cdbbe6", "#a98ad3", "#8159bb", "#5a3496"]
+};
+var BUILD_COLOR = {houses: "#8fbf7f", estates: "#3f8a55", apts: "#e3a34f", towers: "#5a6f9c", industry: "#9a8f84",
+  strip: "#d07a6a", fields: "#d9c98a", campus: "#7fb3c9", other: "#c2b8d6"};
+var POLICE_COLOR = {dpd: "#4a7fc0", fwpd: "#c9503a", city: "#e3a34f", sheriff: "#8a6410", campus: "#7fb3c9", other: "#b4b2a9"};
+var POLICE_NAME = {dpd: "полиция Далласа", fwpd: "полиция Форт-Уэрта", city: "своя полиция города", sheriff: "шериф округа",
+  campus: "полиция кампуса", other: "другое"};
+var POLICE_DESC = {dpd: "Одна полиция на весь Даллас, по вызовам из бедных районов едет не сразу.", fwpd: "Своя полиция Форт-Уэрта.",
+  city: "Пригород — отдельный город со своей полицией; она маленькая и знает местных.", sheriff: "Земля вне городов: патрулирует шериф округа, патрули редкие.",
+  campus: "Своя полиция университета: настоящие полицейские штата.", other: "Своя охрана или особый случай — подробнее в карточке."};
+var LENS = {
+  wealth: {name: "Достаток", n: 5, from: 1, colors: LENS_COLORS.wealth, label: function (v) { return WEALTH[v - 1]; },
+    desc: function (v) {
+      var r = census.inc_ref, b = [0, 0.6, 0.9, 1.3, 2].map(function (k) { return Math.round(r * k / 100) * 100; });
+      return "Медианный доход семьи " + (v === 1 ? "меньше " + money(b[1]) : v === 5 ? "больше " + money(b[4]) : "от " + money(b[v - 1]) + " до " + money(b[v])) + " в год.";
+    },
+    get: function (s) { var c = s.k === "n" && censusOf(s.id); return c && c.inc ? wealthLevel(c.inc) : null; }},
+  people: {name: "Жители", kind: "race"},
+  street: {name: "Улица", n: 5, from: 1, colors: LENS_COLORS.street, label: function (v) { return STREET[v][0]; }, desc: function (v) { return STREET[v][1]; }, tag: "street"},
+  eyes: {name: "Глаза", n: 5, from: 1, colors: LENS_COLORS.eyes, label: function (v) { return EYES[v][0]; }, desc: function (v) { return EYES[v][1]; }, tag: "eyes"},
+  night: {name: "Ночная жизнь", n: 5, from: 0, colors: LENS_COLORS.night, label: function (v) { return NIGHT[v][0]; }, desc: function (v) { return NIGHT[v][1]; }, tag: "night"},
+  build: {name: "Застройка", kind: "build"},
+  police: {name: "Полиция", kind: "police"}
+};
+function tagVal(s, k) {
+  var v = (info(s).tags || {})[k];
+  if (v == null) return null;
+  return Array.isArray(v) ? Math.round((v[0] + v[1]) / 2) : v;
+}
+function raceHex(i) { return getComputedStyle(document.documentElement).getPropertyValue(["--race-w", "--race-h", "--race-b", "--race-a", "--race-o"][i]).trim(); }
+
+// Полосатые заливки: SVG-узоры в слое регионов, создаются по требованию
+var patterns = {};
+function stripes(parts) { // parts: [[цвет, доля], ...]
+  var key = parts.map(function (p) { return p[0] + p[1]; }).join("|");
+  if (patterns[key]) return "url(#" + patterns[key] + ")";
+  var id = "lp" + Object.keys(patterns).length, W = 14, total = parts.reduce(function (a, p) { return a + p[1]; }, 0), x = 0;
+  var body = parts.map(function (p) { var w = W * p[1] / total, r = '<rect x="' + x.toFixed(2) + '" y="0" width="' + (w + 0.3).toFixed(2) + '" height="' + W + '" fill="' + p[0] + '"/>'; x += w; return r; }).join("");
+  // узоры лежат в одном скрытом SVG на странице: ссылки url(#…) работают из любого SVG документа
+  var holder = document.getElementById("lens-defs");
+  if (!holder) {
+    document.body.insertAdjacentHTML("beforeend", '<svg id="lens-defs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs></defs></svg>');
+    holder = document.getElementById("lens-defs");
+  }
+  holder.firstChild.insertAdjacentHTML("beforeend", '<pattern id="' + id + '" patternUnits="userSpaceOnUse" width="' + W + '" height="' + W + '" patternTransform="rotate(45)">' + body + '</pattern>');
+  patterns[key] = id;
+  return "url(#" + id + ")";
+}
+// Чем закрасить регион в текущей линзе: {fill, text} или null — нет данных
+function lensPaint(s) {
+  var L0 = LENS[view.lens];
+  if (!L0) return null;
+  if (L0.kind === "race") {
+    var c = s.k === "n" && censusOf(s.id);
+    if (!c) return null;
+    var r = c.race.map(function (p, i) { return [i, p]; }).sort(function (a, b) { return b[1] - a[1]; });
+    var text = r.filter(function (q) { return q[1] >= 10; }).map(function (q) { return RACE[q[0]] + " " + q[1] + "%"; }).join(", ");
+    if (r[0][1] >= 60 || r[1][1] < 20) return {fill: raceHex(r[0][0]), text: text};
+    var mix = r.filter(function (q) { return q[1] >= 20; }).slice(0, 3);
+    return {fill: stripes(mix.map(function (q) { return [raceHex(q[0]), q[1]]; })), text: text};
+  }
+  if (L0.kind === "build") {
+    var b = (info(s).tags || {}).build;
+    if (!b || !b.length) return null;
+    var codes = b.map(function (x) { return BUILD[x] ? x : "other"; });
+    var names = b.map(function (x) { return BUILD[x] || x; }).join(", ");
+    if (codes.length === 1 || codes[0] === codes[1]) return {fill: BUILD_COLOR[codes[0]], text: names};
+    return {fill: stripes([[BUILD_COLOR[codes[0]], 60], [BUILD_COLOR[codes[1]], 40]]), text: names};
+  }
+  if (L0.kind === "police") {
+    var p = (info(s).tags || {}).police;
+    if (!p) return null;
+    var code = POLICE_COLOR[p] ? p : "other";
+    return {fill: POLICE_COLOR[code], text: POLICE_NAME[code] === "другое" ? p : POLICE_NAME[code]};
+  }
+  var v = L0.get ? L0.get(s) : tagVal(s, L0.tag);
+  if (v == null) return null;
+  return {fill: L0.colors[v - L0.from], text: L0.label(v)};
+}
+function paintLens(el, s) {
+  var p = view.lens ? lensPaint(s) : null;
+  // у озёр и парков без данных оставляем их обычный цвет
+  el.style.fill = !view.lens || (!p && s.k === "nat") ? "" : p ? p.fill : stripes([["#d9d9d9", 50], ["#f2f2f2", 50]]);
+}
+function lensTip(s) {
+  if (!view.lens) return "";
+  var p = lensPaint(s);
+  return "<small>" + esc(LENS[view.lens].name) + ": " + esc(p ? p.text : "нет данных") + "</small>";
+}
+
+// Легенда линзы: значения с образцами цвета; наведение показывает, что значит уровень
+function legendItems() {
+  var L0 = LENS[view.lens], out = [];
+  if (L0.kind === "race") {
+    RACE.forEach(function (n, i) { out.push([raceHex(i), n, "Больше 60% жителей — " + n + "."]); });
+    out.push([stripes([[raceHex(1), 50], [raceHex(0), 30], [raceHex(2), 20]]), "смешанный",
+      "Ни у одной группы нет 60%: полосы крупнейших групп (от 20%) в пропорции их долей. Цвета полос — как у групп выше."]);
+  } else if (L0.kind === "build") {
+    Object.keys(BUILD).forEach(function (k) { out.push([BUILD_COLOR[k], BUILD[k], ""]); });
+    out.push([BUILD_COLOR.other, "особое", "Своё описание: рынки, вокзал, тюрьма и тому подобное — подробнее в карточке."]);
+    out.push([stripes([[BUILD_COLOR.houses, 60], [BUILD_COLOR.apts, 40]]), "смешанная", "Два типа застройки: полосы обоих цветов, главный шире."]);
+  } else if (L0.kind === "police") {
+    Object.keys(POLICE_COLOR).forEach(function (k) { out.push([POLICE_COLOR[k], POLICE_NAME[k], POLICE_DESC[k]]); });
+  } else {
+    for (var v = L0.from; v < L0.from + L0.n; v++) out.push([L0.colors[v - L0.from], (L0.from === 0 ? v : v) + " · " + L0.label(v), L0.desc(v)]);
+  }
+  out.push([stripes([["#d9d9d9", 50], ["#f2f2f2", 50]]), "нет данных", L0.kind === "race" || view.lens === "wealth" ?
+    "Здесь почти никто не живёт: рынки, склады, больницы, парки." : "Этот регион ещё не описан."]);
+  return out;
+}
+var legendEl = null;
+function renderLegend() {
+  if (!legendEl) {
+    legendEl = document.createElement("div"); legendEl.className = "lens-legend";
+    document.querySelector(".mapbox").appendChild(legendEl);
+    L.DomEvent.disableClickPropagation(legendEl); L.DomEvent.disableScrollPropagation(legendEl);
+  }
+  legendEl.hidden = !view.lens;
+  if (!view.lens) return;
+  var items = legendItems();
+  legendEl.innerHTML = '<b>' + esc(LENS[view.lens].name) + '</b><ul>' + items.map(function (q, i) {
+    return '<li tabindex="0" data-i="' + i + '"><svg width="18" height="12" aria-hidden="true"><rect width="18" height="12" rx="2" style="fill:' + q[0] + '"/></svg>' + esc(q[1]) + '</li>';
+  }).join("") + '</ul><p class="lg-tip">' + (window.matchMedia("(hover: none)").matches ? "Нажми" : "Наведи") + ' на уровень, чтобы узнать, что он значит.</p>';
+  var tip = legendEl.querySelector(".lg-tip");
+  legendEl.querySelectorAll("li").forEach(function (li) {
+    function on() { var q = items[+li.getAttribute("data-i")]; tip.innerHTML = "<b>" + esc(q[1]) + ".</b> " + esc(q[2] || ""); }
+    li.addEventListener("mouseenter", on); li.addEventListener("focus", on); li.addEventListener("click", on);
+  });
+}
+function setLens(k) {
+  view.lens = LENS[k] ? k : ""; store(VIEW_KEY, JSON.stringify(view));
+  document.getElementById("lens").value = view.lens;
+  map.getContainer().classList.toggle("lensed", !!view.lens);
+  refreshStyles(); renderLegend();
+}
+
 // ---------- карта ----------
 function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
@@ -235,7 +378,7 @@ function buildMap() {
   natLayer = L.geoJSON(geo.nature, {pane: "nat", style: function (f) { return {className: "nat k-" + f.properties.kind}; },
     onEachFeature: function (f, l) {
       var id = f.properties.id; featOf.nat[id] = f; layerOf.nat[id] = l;
-      l.bindTooltip(esc(f.properties.name), {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+      l.bindTooltip(function () { return esc(f.properties.name) + lensTip({k: "nat", id: id}); }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
       l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "nat", id: id}, false); });
     }}).addTo(map);
 
@@ -292,7 +435,7 @@ function descendants(id) {
 function hook(f, l) {
   var id = f.properties.id;
   featOf.n[id] = f; layerOf.n[id] = l;
-  l.bindTooltip(function () { return esc(idx[id].name) + (idx[id].n && !isOpen(id) ? '<small>двойной клик — что внутри</small>' : ''); },
+  l.bindTooltip(function () { return esc(idx[id].name) + lensTip({k: "n", id: id}) + (idx[id].n && !isOpen(id) ? '<small>двойной клик — что внутри</small>' : ''); },
     {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
   l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "n", id: id}, false); });
   l.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); if (idx[id].n) expand(id); });
@@ -460,10 +603,13 @@ function drawSel() {
 }
 
 function refreshStyles() {
-  Object.keys(layerOf.n).forEach(function (id) { var el = layerOf.n[id].getElement(); if (el) el.setAttribute("class", regClass(id) + " leaflet-interactive"); });
+  Object.keys(layerOf.n).forEach(function (id) {
+    var el = layerOf.n[id].getElement();
+    if (el) { el.setAttribute("class", regClass(id) + " leaflet-interactive"); paintLens(el, {k: "n", id: id}); }
+  });
   Object.keys(layerOf.nat).forEach(function (id) {
     var el = layerOf.nat[id].getElement(), m = marker({k: "nat", id: id});
-    if (el) el.setAttribute("class", "nat k-" + featOf.nat[id].properties.kind + (m ? " m-" + m : "") + " leaflet-interactive");
+    if (el) { el.setAttribute("class", "nat k-" + featOf.nat[id].properties.kind + (m ? " m-" + m : "") + " leaflet-interactive"); paintLens(el, {k: "nat", id: id}); }
   });
 }
 
@@ -711,6 +857,8 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   }
   lt.addEventListener("change", function () { setLeaves(lt.checked); });
   if (view.leaves) setLeaves(true);
+  document.getElementById("lens").addEventListener("change", function (e) { setLens(e.target.value); });
+  if (view.lens) setLens(view.lens);
   document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !open.length || view.leaves) return;

@@ -208,3 +208,19 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .tagtip{margin:0 0 14px;color:var(--muted);font-size:12.5px;line-height:1.45;min-height:3em}
 .tagtip.on{color:var(--ink)}
 .tagtip b{font-weight:700}
+
+/* линзы: регион закрашен по параметру, легенда в углу карты */
+.lensed .reg{fill-opacity:.88}
+.lensed .reg.hov{fill-opacity:1}
+.lens-pick select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.lens-legend{position:absolute;right:10px;top:10px;z-index:800;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;
+  font-size:12.5px;max-width:250px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.lens-legend[hidden]{display:none}
+.lens-legend b{font-weight:700}
+.lens-legend ul{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:2px}
+.lens-legend li{display:flex;align-items:center;gap:7px;cursor:help;padding:1px 3px;border-radius:4px;outline:0}
+.lens-legend li:hover,.lens-legend li:focus-visible{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.lens-legend svg{flex:none;box-shadow:inset 0 0 0 1px var(--line);border-radius:2px}
+.lg-tip{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.4;min-height:2.8em}
+.lg-tip b{color:var(--ink)}
+@media (max-width:620px){.lens-legend{max-width:190px;font-size:12px;right:6px;top:6px}}
