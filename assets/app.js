@@ -1,11 +1,11 @@
 /*
  * Карта Далласа и Форт-Уэрта 2005 для «Вампиры: Маскарад» (V20).
  * Регионы — дерево (data/tree.tsv → data/geo/tree/*.geojson, собирает tools/build.py, см. docs/TREE.md).
- * Сначала видны только верхние узлы. Двойной клик или «Подробнее» раскрывает регион на его детей; раскрыта всегда
+ * Сначала видны только верхние узлы. Двойной клик или «Раскрыть» раскрывает регион на его детей; раскрыта всегда
  * одна ветка. Карта сама двигается только по поиску, «Показать на карте» и ссылке. Переключатель «Все районы»
  * показывает сразу все листья дерева (для проверки нарезки). Озёра и парки — отдельный слой поверх, кликается всегда.
- * Тексты и метки — data/map.json. Личные пометки игрока — только в его браузере (localStorage).
- * Два режима: «Районы» (кликаются регионы, дороги бледные) и «Дороги» (кликаются дороги, регионы бледные).
+ * Тексты, метки и теги — data/map.json, данные переписи 2000 — data/census.json (tools/census.py).
+ * Личные пометки игрока — только в его браузере (localStorage).
  * Подробности устройства: docs/MAP.md
  */
 (function () {
@@ -27,7 +27,7 @@ var GRIDS = {
 };
 var LET = "ABCDEFGHI";
 
-var geo = {}, text = {nodes: {}, nature: {}}, mine = {items: {}}, aliases = {};
+var geo = {}, text = {nodes: {}, nature: {}}, census = {nodes: {}}, mine = {items: {}}, aliases = {};
 var idx = {}, kidsOf = {}; // узел по id; дети по id родителя ("" — верхний уровень)
 var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
 var open = []; // раскрытая ветка: путь от верхнего уровня
@@ -92,6 +92,58 @@ function kindLabel(id) {
   if (x.kind === "city") return top ? "Город" : "Отдельный город";
   if (x.kind === "group") return top ? "Пригороды" : "Отдельные города";
   return x.n ? "Часть города" : "Район";
+}
+
+// ---------- теги ----------
+// Ручные теги — map.json (поле tags), число или [от, до]; перепись 2000 — census.json. Шкалы описаны в docs/TEXTS.md.
+var WEALTH = ["бедность", "ниже среднего", "средний достаток", "зажиточно", "богатство"];
+var RACE = ["белые", "латиноамериканцы", "чёрные", "азиаты", "другие"];
+var BUILD = {houses: "частные дома с участками", estates: "особняки", apts: "жилые комплексы", towers: "высотки",
+  industry: "склады и промзона", strip: "торговля у фривея", fields: "поля и ранчо", campus: "кампус"};
+var STREET = ["", "тихо", "обычно", "смотри по сторонам", "неспокойно", "опасно"];
+var EYES = ["", "никому нет дела", "мало глаз", "людно", "присматривают", "под надзором"];
+var NIGHT = ["ничего", "только круглосуточное", "бары у дороги, пара мест допоздна", "есть куда пойти", "центр ночной жизни"];
+var POLICE = {dpd: "полиция Далласа", fwpd: "полиция Форт-Уэрта", city: "своя полиция города", sheriff: "шериф округа", campus: "полиция кампуса"};
+
+function wealthLevel(inc) {
+  var r = inc / census.inc_ref;
+  return r < 0.6 ? 1 : r < 0.9 ? 2 : r < 1.3 ? 3 : r < 2 ? 4 : 5;
+}
+function num(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+function scale(v, names, max) {
+  if (Array.isArray(v)) return '<b>' + v[0] + "–" + v[1] + '</b> из ' + max + ' · от «' + names[v[0]] + '» до «' + names[v[1]] + '»';
+  return '<b>' + v + '</b> из ' + max + ' · ' + names[v];
+}
+function tagsBlock(s) {
+  var t = info(s).tags || {}, rows = [], x = s.k === "n" ? idx[s.id] : null;
+  var c = x && !/^(place|osm|aero)$/.test(x.kind) && census.nodes[s.id];
+  if (c && c.pop >= 500) {
+    if (c.inc) {
+      var w = wealthLevel(c.inc);
+      rows.push(["Достаток", '<span class="dots">' + "●●●●●".slice(0, w) + '<i>' + "●●●●●".slice(w) + '</i></span> ' + WEALTH[w - 1] +
+        ' · $' + num(c.inc) + ' в год на семью', 1]);
+    }
+    var r = c.race.map(function (p, i) { return [p, i]; }).filter(function (q) { return q[0] >= 10; }).sort(function (a, b) { return b[0] - a[0]; });
+    rows.push(["Кто живёт", r.map(function (q) { return RACE[q[1]] + " " + q[0] + "%"; }).join(" · "), 1]);
+  }
+  if (t.build) rows.push(["Застройка", t.build.map(function (b) { return BUILD[b] || b; }).join(", ")]);
+  if (c && c.pop >= 500) {
+    var h = c.homes, parts = [];
+    if (h[0] >= 10) parts.push("частные дома " + h[0] + "%");
+    if (h[1] >= 10) parts.push("дуплексы и малоэтажки " + h[1] + "%");
+    if (h[2] >= 10) parts.push("комплексы от 10 квартир " + h[2] + "%");
+    if (h[3] >= 10) parts.push("трейлеры " + h[3] + "%");
+    rows.push(["Жильё", parts.join(" · ") + (c.built ? "; построено в среднем в " + c.built + " году" : "") + "; своё жильё у " + c.own + "%", 1]);
+    rows.push(["Жителей", (c.pop >= 1e6 ? (c.pop / 1e6).toFixed(2).replace(".", ",") + " млн" : c.pop >= 10000 ? num(c.pop / 1000) + " тыс." : num(c.pop)) + (c.dens ? " · около " + num(c.dens >= 1000 ? Math.round(c.dens / 100) * 100 : Math.round(c.dens / 10) * 10) + " на км²" : ""), 1]);
+  }
+  if (t.street != null) rows.push(["Улица", scale(t.street, STREET, 5)]);
+  if (t.eyes != null) rows.push(["Глаза", scale(t.eyes, EYES, 5)]);
+  if (t.night != null) rows.push(["Ночная жизнь", scale(t.night, NIGHT, 4)]);
+  if (t.police) rows.push(["Полиция", POLICE[t.police] || t.police]);
+  if (!rows.length) return "";
+  var src = rows.some(function (q) { return q[2]; });
+  return '<dl class="tags">' + rows.map(function (q) { return '<dt>' + q[0] + (q[2] ? '<sup>*</sup>' : '') + '</dt><dd>' + q[1] + '</dd>'; }).join("") + '</dl>' +
+    (src ? '<p class="tags-src">* перепись США 2000 года; остальное — оценка для игры</p>' : '');
 }
 
 // ---------- карта ----------
@@ -349,7 +401,7 @@ function refreshStyles() {
 // ---------- карточка региона ----------
 var INTRO = '<div class="pmeta"><span>Даллас, Форт-Уэрт и пригороды · весна 2005</span></div><h2>Карта районов</h2>' +
   '<div class="pdet"><p>Сначала на карте только города и пригороды. Нажми на регион, и здесь откроется его описание.</p>' +
-  '<p>Чтобы заглянуть внутрь, дважды щёлкни по региону или нажми «Подробнее» в карточке: он разделится на части, а те — на районы. Раскрыта всегда одна ветка; «Свернуть всё» в шапке возвращает общий вид.</p>' +
+  '<p>Чтобы заглянуть внутрь, дважды щёлкни по региону или нажми «Раскрыть» в карточке: он разделится на части, а те — на районы. Раскрыта всегда одна ветка; «Свернуть всё» в шапке возвращает общий вид.</p>' +
   '<p>Озёра, парки и заповедники видны всегда, их тоже можно открыть.</p>' +
   '<p>К любому региону можно добавить свою метку и заметки: они хранятся только в твоём браузере.</p></div>';
 
@@ -416,12 +468,12 @@ function renderPanel() {
     (chips ? '<div class="pmeta" style="margin-bottom:8px">' + chips + '</div>' : '') +
     '<div class="pmeta" style="margin-bottom:12px"><span>≈ ' + String(km2).replace(".", ",") + ' км²</span><span>' + dist(ll) + '</span>' +
     (cells.length && gridOn() ? '<span>старая сетка: ' + esc(cells.join(", ")) + '</span>' : '') + '</div>' +
-    (x.summary ? '<p class="psum">' + esc(x.summary) + '</p>' : "") + body +
-    (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Ещё</summary><div class="pdet">' + paras(x.more) + '</div></details>' : "") +
+    tagsBlock(s) + (x.summary ? '<p class="psum">' + esc(x.summary) + '</p>' : "") + body +
+    (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Подробнее</summary><div class="pdet">' + paras(x.more) + '</div></details>' : "") +
     (x.notes && x.notes.trim() ? '<div class="notes"><h3>Заметки мастера</h3><p>' + esc(x.notes) + '</p></div>' : "") +
     mineBlock +
     '<div class="actions">' +
-    (node && node.n && !view.leaves ? (opened ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Подробнее</button>') : '') +
+    (node && node.n && !view.leaves ? (opened ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Раскрыть</button>') : '') +
     '<button class="btn" type="button" id="p-edit">' + (own(s) ? "Изменить мои пометки" : "Добавить свою пометку") + '</button>' +
     '<button class="btn" type="button" id="p-show">Показать на карте</button>' +
     (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' + kids;
@@ -566,7 +618,8 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   .concat([fetch(TREE + "index.json").then(function (r) { return r.json(); }),
     fetch(TREE + "aliases.json").then(function (r) { return r.json(); }),
     fetch("data/map.json", {cache: "no-cache"}).then(function (r) { return r.json(); }),
-    fetch(TREE + "_root.geojson").then(function (r) { return r.json(); })]))
+    fetch(TREE + "_root.geojson").then(function (r) { return r.json(); }),
+    fetch("data/census.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]))
 .then(function (res) {
   files.forEach(function (n, i) { geo[n] = res[i]; });
   res[files.length].forEach(function (x) { idx[x.id] = x; (kidsOf[x.parent] = kidsOf[x.parent] || []).push(x.id); });
@@ -575,6 +628,7 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   document.getElementById("loading").remove();
   loadMine(); buildMap();
   loaded[""] = res[files.length + 3];
+  if (res[files.length + 4]) census = res[files.length + 4];
   regLayer[""] = L.geoJSON(loaded[""], {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; }, onEachFeature: function (f, l) { hook(f, l); }});
   syncLayers(); refresh(); setupSearch(); renderTools(); renderPanel();
   var lt = document.getElementById("leaf-tog");

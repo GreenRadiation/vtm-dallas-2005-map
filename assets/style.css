@@ -187,3 +187,14 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .ln{width:22px;height:0;display:inline-block}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .leaflet-tooltip.tip small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+
+/* теги в карточке: перепись 2000 и оценки для игры */
+.tags{display:grid;grid-template-columns:max-content 1fr;gap:5px 14px;margin:0 0 6px;font-size:13.5px;line-height:1.35}
+.tags dt{color:var(--muted);font-weight:600}
+.tags dt sup{font-size:10px;margin-left:1px}
+.tags dd{margin:0}
+.tags b{font-weight:700}
+.tags .dots{color:var(--accent);letter-spacing:1px}
+.tags .dots i{font-style:normal;opacity:.25}
+.tags-src{margin:0 0 14px;color:var(--muted);font-size:12px}
+@media (max-width:420px){.tags{grid-template-columns:1fr;gap:0}.tags dd{margin-bottom:6px}}
