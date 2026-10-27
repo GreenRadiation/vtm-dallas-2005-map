@@ -1,20 +1,21 @@
-"""Сверяет точки районов из data/seeds.tsv с геокодером Nominatim (OSM).
+"""Сверяет опорные точки из data/tree.tsv с геокодером Nominatim (OSM).
 
 Запуск: python tools/geocheck.py
 Печатает районы, где точка из файла дальше 1 км от найденной геокодером. Ответы кэшируются в data/raw/geocode.json.
 Геокодер тоже ошибается (особенно на названиях районов), поэтому точки не правятся автоматически.
 """
 import json, math, pathlib, time, urllib.parse, urllib.request
-from seeds import read_seeds
+from seeds import read_tree
 
 CACHE = pathlib.Path("data/raw/geocode.json")
 UA = {"User-Agent": "vtm-dallas-2005-map/0.1 (tabletop game map)"}
 
 cache = json.loads(CACHE.read_text(encoding="utf-8")) if CACHE.exists() else {}
-for s in read_seeds():
-    q = s["query"]
-    if not q:
+for k, v in read_tree().items():
+    q = v["query"]
+    if not q or not v["pts"]:
         continue
+    s = {"id": k, "lat": v["pts"][0][0], "lon": v["pts"][0][1]}
     if q not in cache:
         url = "https://nominatim.openstreetmap.org/search?" + urllib.parse.urlencode(
             {"q": q + ", Texas", "format": "json", "limit": 1, "viewbox": "-97.6,33.1,-96.4,32.5", "bounded": 1})

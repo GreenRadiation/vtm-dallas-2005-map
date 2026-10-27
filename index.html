@@ -18,7 +18,7 @@
     <div class="search"><input id="q" type="search" placeholder="Найти район или город" autocomplete="off" aria-label="Поиск по районам"><div class="results" id="results" hidden></div></div>
     <div class="ctl">
       <div class="seg" id="md" role="group" aria-label="Режим карты"><button type="button" data-m="regions">Районы</button><button type="button" data-m="roads">Дороги</button></div>
-      <div class="seg" id="lv" role="group" aria-label="Масштаб регионов"><button type="button" data-l="auto">Авто</button><button type="button" data-l="1">Крупный</button><button type="button" data-l="2">Средний</button><button type="button" data-l="3">Мелкий</button><button type="button" data-l="4">Детальный</button></div>
+      <button class="btn" type="button" id="collapse" disabled title="Вернуться к городам и пригородам">Свернуть всё</button>
       <label class="tog"><input type="checkbox" id="grid-tog"> Старая сетка</label>
     </div>
   </header>
@@ -37,7 +37,7 @@
     </div>
     <div class="tools" id="tools"></div>
     <p><a href="review.html">Список всех регионов</a> — с названиями, откуда они взялись, и ссылками на Google Maps для сверки.</p>
-    <p>Подложка нарисована по данным OpenStreetMap и переписи США 2000 года. Что появилось после весны 2005 года, мы стараемся с карты убирать. Границы регионов игровые: они примерно идут по крупным дорогам и городской черте, но сглажены для удобства.</p>
+    <p>Подложка нарисована по данным OpenStreetMap и переписи США 2000 года. Что появилось после весны 2005 года, мы стараемся с карты убирать. Границы регионов игровые: они примерно идут по городской черте и крупным дорогам, но сглажены для удобства. Мелкие городки внутри больших городов показаны как их часть, а об этом сказано в описании.</p>
   </footer>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>

@@ -56,7 +56,8 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .seg button.eff{box-shadow:inset 0 -3px 0 var(--accent)}
 .seg.off{opacity:.45}
 .tog{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
-@media (max-width:620px){.brand{flex-basis:100%}.search{flex:1 1 100%}.seg button{padding:6px 7px;font-size:12px}#lv{width:100%}#lv button{flex:1 1 auto}}
+#collapse{padding:6px 12px;font-size:13px}
+@media (max-width:620px){.brand{flex-basis:100%}.search{flex:1 1 100%}.seg button{padding:6px 9px;font-size:12px}}
 
 /* ---------- карта и карточка ---------- */
 .main{display:grid;grid-template-columns:minmax(0,1fr) 420px;height:calc(100vh - 66px);min-height:520px}
@@ -76,17 +77,25 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .leaflet-container{background:var(--sea);outline:0}
 .land{fill:var(--land);stroke:none;fill-opacity:1}
 
-/* регионы: цвет области, оттенок чередуется у соседей, чтобы каждый регион читался отдельно */
+/* регионы: цвет — от верхнего узла, оттенок чередуется у соседей, чтобы каждый регион читался отдельно.
+   d0…d3 — глубина в дереве; focus — дети раскрытого узла, ctx — соседи вокруг, exp — сам раскрытый узел (только контур) */
 .reg{stroke:var(--rline);stroke-width:1;stroke-opacity:.9;fill-rule:nonzero}
-.reg1{stroke-width:1.6}
-.reg2{stroke-width:1.3}
-.reg3{stroke-width:1.1}
-.reg4{stroke-width:.9}
+.reg.d0{stroke-width:1.8}
+.reg.d1{stroke-width:1.3}
+.reg.d2,.reg.d3{stroke-width:1}
+.reg.ctx{fill-opacity:.4!important;stroke-opacity:.7}
+.reg.exp{fill:none!important;stroke:var(--aline);stroke-width:3;stroke-opacity:1;pointer-events:none}
+.reg.exp.d1,.reg.exp.d2{stroke-width:2.4}
 .t0{fill:var(--t0)}.t1{fill:var(--t1)}.t2{fill:var(--t2)}.t3{fill:var(--t3)}.t4{fill:var(--t4)}.t5{fill:var(--t5)}
 .reg.s0{fill-opacity:.62}.reg.s1{fill-opacity:.8}.reg.s2{fill-opacity:.97}
-.reg.k-water{fill:var(--water);fill-opacity:1}
-.reg.k-green{fill:var(--park-strong);fill-opacity:1}
-.reg.k-airport{fill:var(--airport);fill-opacity:.9}
+.reg.k-aero{fill:var(--airport);fill-opacity:.85}
+/* озёра и парки: отдельный слой поверх регионов, кликается всегда */
+.nat{stroke-width:1;stroke-linejoin:round}
+.nat.k-water{fill:var(--water);fill-opacity:1;stroke:var(--water-ink);stroke-opacity:.35}
+.nat.k-green{fill:var(--park-strong);fill-opacity:.9;stroke:var(--green-ink);stroke-opacity:.35}
+.nat:hover{stroke:var(--sel);stroke-width:2;stroke-opacity:1}
+.nat.m-haven{stroke:var(--haven);stroke-width:2.6;stroke-opacity:1}.nat.m-ally{stroke:var(--ally);stroke-width:2.6;stroke-opacity:1}
+.nat.m-hostile{stroke:var(--hostile);stroke-width:2.6;stroke-opacity:1}.nat.m-important{stroke:var(--imp);stroke-width:2.6;stroke-opacity:1}
 .reg.hov{stroke:var(--sel);stroke-width:2.2;fill-opacity:1}
 .has-sel .reg{opacity:.72}
 .reg.m-haven,.reg.mi-haven{stroke:var(--haven);stroke-width:2.6;fill:var(--haven-bg);fill-opacity:1}
@@ -100,6 +109,7 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .outl2{stroke-width:2.1;stroke-opacity:.9}
 .outl3{stroke-width:1.5;stroke-opacity:.8}
 .selpath{fill:var(--accent);fill-opacity:.38;stroke:var(--accent);stroke-width:4;stroke-linejoin:round}
+.selpath.selopen{fill:none;stroke-width:3.5}
 
 /* природа и вода на подложке (мелкие парки, аэродромы, все озёра — не кликаются, лежат поверх регионов) */
 .park{fill:var(--park);stroke:none;fill-opacity:.55}
@@ -117,8 +127,8 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .z14 .rd-motorway,.z15 .rd-motorway,.z16 .rd-motorway{stroke-width:2.6}
 .rd-primary{stroke:var(--r-muted);stroke-opacity:.3;stroke-width:.9}
 /* режим «Дороги»: регионы — бледный фон, дороги яркие и кликаются */
-.mode-roads .reg{fill-opacity:.18;stroke-opacity:.25;pointer-events:none!important}
-.mode-roads .outl1{stroke-opacity:.45}
+.mode-roads .reg{fill-opacity:.18!important;stroke-opacity:.25;pointer-events:none!important}
+.mode-roads .nat{fill-opacity:.5;pointer-events:none!important}
 .mode-roads .rd-motorway{stroke:var(--r-motorway);stroke-opacity:1;stroke-width:2.2}
 .mode-roads.z12 .rd-motorway,.mode-roads.z13 .rd-motorway{stroke-width:3.4}
 .mode-roads.z14 .rd-motorway,.mode-roads.z15 .rd-motorway,.mode-roads.z16 .rd-motorway{stroke-width:5}
@@ -139,14 +149,13 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .lbl{pointer-events:none!important;background:none;border:0}
 .lbl span{display:block;transform:translate(-50%,-50%);width:max-content;text-align:center;line-height:1.15;color:var(--ink);
   text-shadow:0 0 2px var(--halo),0 0 4px var(--halo),0 0 6px var(--halo)}
-.lbl1 span{font-weight:700;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;max-width:160px;color:var(--label-a)}
-.lbl2 span{font-weight:650;font-size:12px;max-width:140px}
-.lbl3 span{font-weight:600;font-size:12px;max-width:130px}
-.lbl4 span{font-weight:500;font-size:11px;max-width:110px}
-.z14 .lbl4 span,.z15 .lbl4 span,.z16 .lbl4 span{font-size:12.65px;max-width:126px}
+.lbl-top span{font-weight:700;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;max-width:170px;color:var(--label-a)}
+.lbl-focus span{font-weight:650;font-size:12.5px;max-width:140px}
+.lbl-ctx span{font-weight:600;font-size:11.5px;max-width:130px;opacity:.7}
+.lbl-nat span{font-weight:500;font-size:11.5px;max-width:120px}
 .lk-water span{color:var(--water-ink);font-style:italic}
 .lk-green span{color:var(--green-ink);font-style:italic}
-.mode-roads .lbl1 span{opacity:.6}
+.mode-roads .lbl span{opacity:.6}
 .lbl-g span{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);opacity:.8}
 .leaflet-tooltip.tip{background:var(--paper);color:var(--ink);border:1px solid var(--line);font:600 13px var(--body);box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .leaflet-tooltip.tip::before{display:none}
@@ -203,3 +212,4 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .sw{width:14px;height:14px;display:inline-block}
 .ln{width:22px;height:0;display:inline-block}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.leaflet-tooltip.tip small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}

@@ -26,6 +26,12 @@ QUERIES = {
               'way["landuse"="cemetery"]' + b + ';'),
     "aero": 'way["aeroway"="aerodrome"]' + b + ';rel["aeroway"="aerodrome"]' + b + ';',
     "places": 'node["place"~"^(city|town|village|suburb|quarter|neighbourhood|hamlet)$"]' + b + ';',
+    "hoods": ('way["place"~"^(suburb|quarter|neighbourhood)$"]' + b + ';rel["place"~"^(suburb|quarter|neighbourhood)$"]' + b + ';'
+              'rel["boundary"~"^(neighborhood|neighbourhood)$"]' + b + ';way["boundary"~"^(neighborhood|neighbourhood)$"]' + b + ';'
+              'rel["boundary"="historic"]' + b + ';way["historic"="district"]' + b + ';rel["historic"="district"]' + b + ';'),
+    "landmarks": ('way["amenity"~"^(hospital|university|college)$"]' + b + ';rel["amenity"~"^(hospital|university|college)$"]' + b + ';'
+                  'way["leisure"="stadium"]' + b + ';rel["leisure"="stadium"]' + b + ';way["tourism"~"^(zoo|theme_park)$"]' + b + ';'
+                  'way["shop"="mall"]' + b + ';rel["shop"="mall"]' + b + ';way["landuse"="military"]' + b + ';'),
 }
 
 

@@ -1,7 +1,8 @@
 /*
  * Карта Далласа и Форт-Уэрта 2005 для «Вампиры: Маскарад» (V20).
- * Четыре масштаба регионов: области (l1), части областей (l2), районы (l3), секторы (l4) — data/geo/*.geojson,
- * их собирает tools/build.py. Каждый следующий масштаб вложен в предыдущий.
+ * Регионы — дерево (data/tree.tsv → data/geo/tree/*.geojson, собирает tools/build.py, см. docs/TREE.md).
+ * Сначала видны только верхние узлы. Двойной клик или «Подробнее» раскрывает регион на его детей; раскрыта всегда
+ * одна ветка. Озёра и парки — отдельный слой поверх, кликается всегда.
  * Тексты и метки — data/map.json. Личные пометки игрока — только в его браузере (localStorage).
  * Два режима: «Районы» (кликаются регионы, дороги бледные) и «Дороги» (кликаются дороги, регионы бледные).
  * Подробности устройства: docs/MAP.md
@@ -9,25 +10,15 @@
 (function () {
 "use strict";
 
-var GEO = "data/geo/";
+var GEO = "data/geo/", TREE = GEO + "tree/";
 var STORE_KEY = "vtm-dallas-2005-map.personal.v1";
 var VIEW_KEY = "vtm-dallas-2005-map.view";
 var BOUNDS = [[32.58, -97.55], [33.08, -96.50]];
 var ORIGIN = [32.8005, -96.8277]; // отель Anatole, от него считаются расстояния
-// Уровни: ключ в ссылках и пометках, файл, название кнопки, слово в карточке
-var LEVELS = {
-  1: {k: "a", file: "l1", one: "Область", many: "Части области", text: "areas"},
-  2: {k: "z", file: "l2", one: "Часть области", many: "Части области", text: "zones"},
-  3: {k: "d", file: "l3", one: "Район", many: "Районы", text: "districts"},
-  4: {k: "s", file: "l4", one: "Сектор", many: "Секторы", text: "sectors"}
-};
-var LEVEL_OF = {a: 1, z: 2, d: 3, s: 4};
-var AUTO = [10.75, 11.6, 12.6]; // «Авто»: пороги приближения между масштабами
-var ZOOM_FOR = {1: [9, 10.5], 2: [10.75, 11.5], 3: [11.6, 12.5], 4: [12.6, 13.75]}; // куда приближать при выборе региона уровня
-var KIND = {water: "Озеро", green: "Природная зона", airport: "Аэропорт", rural: "Сельская местность"};
 var MARKS = [["", "Без метки"], ["haven", "Убежище"], ["ally", "Союзники"], ["hostile", "Враждебность"], ["important", "Важное место"]];
 var MLABEL = {haven: "Убежище", ally: "Союзники", hostile: "Враждебность", important: "Важное место"};
-// Сетки старой карты: чтобы показать клетки поверх и открыть старые ссылки вида #city-D5
+var NATKIND = {water: "Озеро", green: "Природная зона"};
+// Сетки старой карты: чтобы показать клетки поверх
 var GRIDS = {
   city: {cols: 9, rows: 9, n: 33.02, s: 32.62, w: -96.99, e: -96.55, label: "Даллас"},
   core: {cols: 8, rows: 8, n: 32.842222, s: 32.753333, w: -96.843333, e: -96.745556, label: "центр Далласа"},
@@ -35,12 +26,14 @@ var GRIDS = {
 };
 var LET = "ABCDEFGHI";
 
-var geo = {}, text = {areas: {}, zones: {}, districts: {}, sectors: {}}, mine = {items: {}};
-var view = {level: "auto", mode: "regions"};
-var sel = null; // {k: "a"|"d"|"s"|"r", id}
+var geo = {}, text = {nodes: {}, nature: {}}, mine = {items: {}}, aliases = {};
+var idx = {}, kidsOf = {}; // узел по id; дети по id родителя ("" — верхний уровень)
+var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
+var open = []; // раскрытая ветка: путь от верхнего уровня
+var view = {mode: "regions"};
+var sel = null; // {k: "n" | "nat" | "r", id}
 var editing = false, status = "", toolStatus = "", confirmWipe = false, moreOpen = {};
-var map, cur = 0, featOf = {a: {}, z: {}, d: {}, s: {}, r: {}}, layerOf = {a: {}, z: {}, d: {}, s: {}, r: {}}, labelPt = {a: {}, z: {}, d: {}, s: {}};
-var regLayer = {}, outline = {}, labels = {}, labelInfo = {}, children = {a: {}, z: {}, d: {}};
+var map, featOf = {n: {}, nat: {}, r: {}}, layerOf = {n: {}, nat: {}, r: {}}, labelLayer, natLayer;
 var selLayer = null, gridLayer, gridLabels, roadVis = {}, roadHit = {}, roadLine = {}, extra = {};
 var panel = document.getElementById("panel"), toolsEl = document.getElementById("tools");
 
@@ -49,70 +42,69 @@ function paras(t) {
   return String(t || "").split(/\n\s*\n/).filter(function (p) { return p.trim(); }).map(function (p) { return "<p>" + esc(p.trim()) + "</p>"; }).join("");
 }
 function skey(s) { return s.k + ":" + s.id; }
-function props(s) { var f = featOf[s.k][s.id]; return f ? f.properties : {}; }
-function info(s) { var L = LEVELS[LEVEL_OF[s.k]]; return (L && text[L.text][s.id]) || {}; }
+function info(s) { return (s.k === "nat" ? text.nature[s.id] : text.nodes[s.id]) || {}; }
 function own(s) { return mine.items[skey(s)] || null; }
 function marker(s) { var o = own(s); return (o && o.marker) || info(s).marker || ""; }
-function parentOf(s) {
-  var p = props(s);
-  if (s.k === "s") return {k: "d", id: p.parent};
-  if (s.k === "d") return {k: "z", id: p.zone};
-  if (s.k === "z") return {k: "a", id: p.area};
-  return null;
-}
 function store(key, val) { try { localStorage.setItem(key, val); } catch (_) {} }
 function load(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+function ancestors(id) { var out = [], p = idx[id] && idx[id].parent; while (p) { out.unshift(p); p = idx[p].parent; } return out; }
+function nameOf(s) {
+  if (s.k === "n") return idx[s.id].name;
+  var f = featOf[s.k][s.id]; return f ? (f.properties.name || f.properties.ref) : "";
+}
 
 // ---------- личное хранилище ----------
+// Ключи: «n:<узел>», «nat:<озеро или парк>». Пометки старых карт («d:<район>» и т. п.) переносятся по таблице aliases.
 function loadMine() {
   try { var raw = load(STORE_KEY); if (raw) { var p = JSON.parse(raw); if (p && p.items) mine = p; } } catch (_) {}
-  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); if (v.level) view.level = v.level; if (v.mode) view.mode = v.mode; } catch (_) {}
+  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); if (v.mode) view.mode = v.mode; } catch (_) {}
+  var moved = 0;
+  Object.keys(mine.items).forEach(function (k) {
+    if (/^(n|nat):/.test(k)) return;
+    var to = aliases[k];
+    if (to && !mine.items["n:" + to]) { mine.items["n:" + to] = mine.items[k]; moved++; }
+    if (to) delete mine.items[k];
+  });
+  if (moved) saveMine();
 }
 function saveMine() {
   try { mine.updated = new Date().toISOString(); localStorage.setItem(STORE_KEY, JSON.stringify(mine)); return true; }
   catch (_) { return false; }
 }
 
-// ---------- геометрия ----------
-function ringHas(r, x, y) {
-  var inside = false;
-  for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
-    var xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1];
-    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
-}
-function polyHas(g, lon, lat) {
-  var polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
-  return polys.some(function (p) { return ringHas(p[0], lon, lat) && !p.slice(1).some(function (h) { return ringHas(h, lon, lat); }); });
-}
-function regionAt(level, lat, lon) {
-  var f = geo[LEVELS[level].file].features.filter(function (f) { return polyHas(f.geometry, lon, lat); })[0];
-  return f ? f.properties.id : null;
-}
+// ---------- мелочи ----------
 function gridCell(b, lat, lon) {
   var G = GRIDS[b], c = Math.floor((lon - G.w) / ((G.e - G.w) / G.cols)), r = Math.floor((G.n - lat) / ((G.n - G.s) / G.rows));
   return (c >= 0 && c < G.cols && r >= 0 && r < G.rows) ? LET[c] + (r + 1) : null;
-}
-function cellCenter(b, id) {
-  var G = GRIDS[b], c = LET.indexOf(id[0]), r = +id.slice(1) - 1;
-  return [G.n - (r + .5) * (G.n - G.s) / G.rows, G.w + (c + .5) * (G.e - G.w) / G.cols];
 }
 function dist(ll) {
   var dx = (ll[1] - ORIGIN[1]) * 93.3, dy = (ll[0] - ORIGIN[0]) * 111, km = Math.sqrt(dx * dx + dy * dy);
   if (km < 0.8) return "рядом с отелем Anatole";
   return "≈ " + (km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)) + " км от отеля Anatole";
 }
+function plural(n, one, few, many) {
+  var a = n % 10, b = n % 100;
+  return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 10 || b >= 20) ? few : many;
+}
+// Как назвать узел в карточке
+function kindLabel(id) {
+  var x = idx[id], top = !x.parent;
+  if (x.kind === "aero") return "Аэропорт";
+  if (x.kind === "osm") return "Знаковое место";
+  if (x.kind === "city") return top ? "Город" : "Отдельный город";
+  if (x.kind === "group") return top ? "Пригороды" : "Отдельные города";
+  return x.n ? "Часть города" : "Район";
+}
 
 // ---------- карта ----------
 function buildMap() {
-  map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.25, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
-    maxBoundsViscosity: 0.8, attributionControl: true, renderer: L.svg({padding: 0.5})});
+  map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
+    maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: 0.5})});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
-  [["land", 200], ["reg", 300], ["green", 320], ["water", 330], ["outline", 360], ["roads", 400], ["roadhit", 420], ["sel", 430], ["grid", 440], ["labels", 450]].forEach(function (p) {
+  [["land", 200], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["roads", 400], ["roadhit", 420], ["sel", 430], ["grid", 440], ["labels", 450]].forEach(function (p) {
     map.createPane(p[0]).style.zIndex = p[1];
   });
-  ["green", "water", "outline", "roads", "grid", "labels"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
+  ["green", "water", "roads", "grid", "labels", "sel"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
 
   L.rectangle(BOUNDS, {pane: "land", className: "land", interactive: false}).addTo(map);
   L.geoJSON(geo.green, {pane: "green", interactive: false, style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
@@ -120,16 +112,13 @@ function buildMap() {
     style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
   extra.creek = L.geoJSON(geo.water, {pane: "water", interactive: false, filter: function (f) { return f.properties.cls === "creek"; }, style: {className: "creek"}});
 
-  geo.l2.features.forEach(function (f) { (children.a[f.properties.area] = children.a[f.properties.area] || []).push(f.properties.id); });
-  geo.l3.features.forEach(function (f) { (children.z[f.properties.zone] = children.z[f.properties.zone] || []).push(f.properties.id); });
-  geo.l4.features.forEach(function (f) { (children.d[f.properties.parent] = children.d[f.properties.parent] || []).push(f.properties.id); });
-  [1, 2, 3, 4].forEach(function (lv) {
-    var k = LEVELS[lv].k;
-    regLayer[lv] = L.geoJSON(geo[LEVELS[lv].file], {pane: "reg", style: function (f) { return {className: regClass(k, f.properties)}; },
-      onEachFeature: function (f, l) { hook(k, f, l); }});
-    if (lv < 4) outline[lv] = L.geoJSON(geo[LEVELS[lv].file], {pane: "outline", interactive: false, style: {className: "outl outl" + lv}});
-    labels[lv] = L.layerGroup(); labelInfo[lv] = [];
-  });
+  // озёра и парки: всегда видны и кликаются
+  natLayer = L.geoJSON(geo.nature, {pane: "nat", style: function (f) { return {className: "nat k-" + f.properties.kind}; },
+    onEachFeature: function (f, l) {
+      var id = f.properties.id; featOf.nat[id] = f; layerOf.nat[id] = l;
+      l.bindTooltip(esc(f.properties.name), {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+      l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "nat", id: id}, false); });
+    }}).addTo(map);
 
   // дороги: видимая линия + невидимая широкая полоса для мышки (только в режиме «Дороги»)
   ["secondary", "primary", "motorway"].forEach(function (cls) {
@@ -141,38 +130,57 @@ function buildMap() {
   });
   extra.dart = L.geoJSON(geo.rail, {pane: "roads", interactive: false, filter: function (f) { return f.properties.cls === "dart"; }, style: {className: "dart"}});
   extra.rail = L.geoJSON(geo.rail, {pane: "roads", interactive: false, filter: function (f) { return f.properties.cls === "rail"; }, style: {className: "rail"}});
-
-  geo.labels.features.forEach(function (f) {
-    var p = f.properties, k = LEVELS[p.level].k, ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
-    labelPt[k][p.id] = ll;
-    // важность подписи: крупные важнее, центры Далласа и Форт-Уэрта — важнее всего
-    labelInfo[p.level].push({id: p.id, name: p.name, kind: p.kind, ll: L.latLng(ll), km2: p.km2,
-      rank: p.km2 * (p.level !== 1 ? 1 : /^(dal|fw)-center$/.test(p.id) ? 100 : /^(dal|fw)-/.test(p.id) ? 5 : 1)});
-  });
-  [1, 2, 3, 4].forEach(function (lv) { labelInfo[lv].sort(function (a, b) { return b.rank - a.rank; }); });
+  labelLayer = L.layerGroup().addTo(map);
   buildGrid();
 
   map.on("zoomend", refresh);
   map.on("moveend", placeLabels);
-  if (map.getSize().x < 600) map.fitBounds([[32.68, -97.0], [32.95, -96.62]]); // на телефоне начинаем с Далласа
-  else map.fitBounds([[32.62, -97.45], [33.02, -96.58]]);
-  refresh();
+  home(false);
   window.vtmMap = map; // для отладки из консоли
 }
 
-function regClass(k, p) {
-  var m = marker({k: k, id: p.id}), inh = "";
-  if (!m && k === "s") { var pm = marker({k: "d", id: p.parent}); if (pm) inh = " mi-" + pm; } // метка района видна и на его секторах
-  if (!m && k === "z") { // часть области показывает метки своих районов
-    (children.z[p.id] || []).some(function (d) { var dm = marker({k: "d", id: d}); if (dm) inh = " mi-" + dm; return dm; });
-  }
-  return "reg reg" + LEVEL_OF[k] + " t" + (p.tone || 0) + " s" + (p.shade || 0) + (p.kind ? " k-" + p.kind : "") + (m ? " m-" + m : inh);
+function home(fly) {
+  var b = map.getSize().x < 600 ? [[32.68, -97.0], [32.95, -96.62]] : [[32.62, -97.45], [33.02, -96.58]]; // на телефоне — Даллас
+  if (fly) map.flyToBounds(b, {duration: 0.6}); else map.fitBounds(b);
 }
 
-function hook(k, f, l) {
-  featOf[k][f.properties.id] = f; layerOf[k][f.properties.id] = l;
-  l.bindTooltip(esc(f.properties.name), {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
-  l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: k, id: f.properties.id}, false); });
+// Слой детей узла (parent "" — верхний уровень). Файл грузится один раз.
+function ensureKids(parent) {
+  if (loaded[parent]) return Promise.resolve(loaded[parent]);
+  return fetch(TREE + (parent || "_root") + ".geojson").then(function (r) { if (!r.ok) throw new Error(parent); return r.json(); }).then(function (fc) {
+    loaded[parent] = fc;
+    regLayer[parent] = L.geoJSON(fc, {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; },
+      onEachFeature: function (f, l) { hook(f, l); }});
+    return fc;
+  });
+}
+function ensurePath(ids) { // загрузить файлы для всех узлов пути по очереди
+  return ids.reduce(function (p, id) { return p.then(function () { return ensureKids(id); }); }, ensureKids(""));
+}
+
+function regClass(id, p) {
+  var x = idx[id], m = marker({k: "n", id: id}), inh = "";
+  p = p || (featOf.n[id] ? featOf.n[id].properties : {});
+  if (!m && x.n && open.indexOf(id) < 0) { // свёрнутый регион показывает метки того, что внутри
+    descendants(id).some(function (d) { var dm = marker({k: "n", id: d}); if (dm) inh = " mi-" + dm; return dm; });
+  }
+  var parent = x.parent || "", focus = parent === (open.length ? open[open.length - 1] : "");
+  return "reg d" + Math.min(x.depth, 3) + " t" + (p.tone || 0) + " s" + (p.shade || 0) +
+    " k-" + (x.kind || "area") + (open.indexOf(id) >= 0 ? " exp" : focus ? " focus" : " ctx") + (m ? " m-" + m : inh);
+}
+function descendants(id) {
+  var out = [];
+  (kidsOf[id] || []).forEach(function (c) { out.push(c); out = out.concat(descendants(c)); });
+  return out;
+}
+
+function hook(f, l) {
+  var id = f.properties.id;
+  featOf.n[id] = f; layerOf.n[id] = l;
+  l.bindTooltip(function () { return esc(idx[id].name) + (idx[id].n && open.indexOf(id) < 0 ? '<small>двойной клик — что внутри</small>' : ''); },
+    {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+  l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "n", id: id}, false); });
+  l.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); if (idx[id].n) expand(id); });
   l.on("mouseover", function () { var el = l.getElement(); if (el) el.classList.add("hov"); });
   l.on("mouseout", function () { var el = l.getElement(); if (el) el.classList.remove("hov"); });
 }
@@ -187,30 +195,40 @@ function hookRoad(f, l) {
   l.on("mouseout", function () { var v = roadLine[id] && roadLine[id].getElement(); if (v) v.classList.remove("rd-hov"); });
 }
 
-// Какой масштаб регионов сейчас показан
-function effLevel() {
-  if (view.mode === "roads") return 1; // в режиме дорог регионы — только бледный фон крупных областей
-  if (view.level !== "auto") return +view.level;
-  var z = map.getZoom();
-  return z < AUTO[0] ? 1 : z < AUTO[1] ? 2 : z < AUTO[2] ? 3 : 4;
-}
-
 function show(layer, on) { if (on) { if (!map.hasLayer(layer)) layer.addTo(map); } else if (map.hasLayer(layer)) map.removeLayer(layer); }
 
-// Всё, что зависит от масштаба, режима и уровня
+// Какие слои регионов на карте: верхний уровень и дети каждого раскрытого узла (глубже — поверх)
+function syncLayers() {
+  var want = [""].concat(open);
+  Object.keys(regLayer).forEach(function (p) { if (want.indexOf(p) < 0) show(regLayer[p], false); });
+  want.forEach(function (p) { if (regLayer[p] && map.hasLayer(regLayer[p])) map.removeLayer(regLayer[p]); });
+  want.forEach(function (p) { if (regLayer[p]) regLayer[p].addTo(map); });
+  refreshStyles(); drawSel();
+  document.getElementById("collapse").disabled = !open.length;
+}
+
+// Раскрыть узел: только его ветка, остальные свёрнуты
+function expand(id) {
+  if (!idx[id] || !idx[id].n) return;
+  var path = ancestors(id).concat([id]);
+  ensurePath(path).then(function () {
+    open = path; syncLayers();
+    var b = idx[id].bbox;
+    map.flyToBounds([[b[1], b[0]], [b[3], b[2]]], {padding: [30, 30], duration: 0.6});
+    if (!sel || sel.k !== "n" || sel.id !== id) select({k: "n", id: id}, false); else { renderPanel(); syncHash(); }
+    placeLabels();
+  });
+}
+// Свернуть до уровня, где виден узел id (или всё, если id не задан)
+function collapseTo(id) {
+  open = id ? ancestors(id) : [];
+  syncLayers(); placeLabels(); renderPanel(); syncHash();
+}
+
+// Всё, что зависит от масштаба и режима
 function refresh() {
-  var z = map.getZoom(), el = map.getContainer(), roads = view.mode === "roads", lv = effLevel();
-  el.className = el.className.replace(/\b(z\d+|mode-\w+|lv\d)\b/g, "").replace(/\s+/g, " ").trim() +
-    " z" + Math.floor(z) + " mode-" + view.mode + " lv" + lv;
-  if (lv !== cur) {
-    [1, 2, 3, 4].forEach(function (n) { show(regLayer[n], n === lv); labels[n].clearLayers(); show(labels[n], n === lv); });
-    cur = lv;
-  }
-  // поверх — границы всех более крупных масштабов: чем крупнее, тем толще
-  show(outline[1], lv >= 2 || roads);
-  show(outline[2], lv >= 3 && !roads);
-  show(outline[3], lv >= 4 && !roads);
-  // дороги: в режиме районов только фривеи (бледно) и вблизи большие улицы; в режиме дорог — всё и кликается
+  var z = map.getZoom(), el = map.getContainer(), roads = view.mode === "roads";
+  el.className = el.className.replace(/\b(z\d+|mode-\w+)\b/g, "").replace(/\s+/g, " ").trim() + " z" + Math.floor(z) + " mode-" + view.mode;
   show(roadVis.motorway, true);
   show(roadVis.primary, roads ? z >= 11 : z >= 13);
   show(roadVis.secondary, roads && z >= 13);
@@ -221,71 +239,67 @@ function refresh() {
   show(extra.creek, z >= 13);
   if (gridLabels) show(gridLabels, gridOn() && z >= 10.5);
   placeLabels();
-  updateControls();
+  document.querySelectorAll("#md button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-m") === view.mode ? "true" : "false"); });
 }
 
-// Подписи без наложения: важные (крупные) ставятся первыми, остальные — только если есть место.
-// В DOM лежат только видимые подписи; размер считается по ширине текста, без перерисовки страницы.
-var LBL_FONT = {1: [12.5, 700, 160, true], 2: [12, 650, 140, false], 3: [12, 600, 130, false], 4: [11, 500, 110, false]};
+// Подписи без наложения. Сначала выбранный регион, потом регионы раскрытой ветки (крупные раньше), потом соседи,
+// потом озёра и парки. В DOM лежат только видимые подписи; ширина считается по тексту, без перерисовки страницы.
 var measureCtx = document.createElement("canvas").getContext("2d");
-function labelSize(lv, info) {
-  var f = LBL_FONT[lv], big = lv === 4 && map.getZoom() >= 14, key = lv + (big ? "b" : "");
-  if (info.sz && info.sz.key === key) return info.sz;
-  var px = f[0] * (big ? 1.15 : 1);
-  measureCtx.font = f[1] + " " + px + "px 'Golos Text', sans-serif";
-  var txt = f[3] ? info.name.toUpperCase() : info.name, w = measureCtx.measureText(txt).width + (f[3] ? txt.length * px * 0.08 : 0);
-  info.sz = {key: key, w: Math.min(w, f[2]), h: Math.ceil(w / f[2]) * px * 1.2};
-  return info.sz;
+var LBL = {top: [12.5, 700, 170, true], focus: [12.5, 650, 140, false], ctx: [11.5, 600, 130, false], nat: [11.5, 500, 120, false]};
+function labelSize(x) {
+  if (x.sz) return x.sz;
+  var f = LBL[x.cls];
+  measureCtx.font = f[1] + " " + f[0] + "px 'Golos Text', sans-serif";
+  var txt = f[3] ? x.name.toUpperCase() : x.name, w = measureCtx.measureText(txt).width + (f[3] ? txt.length * f[0] * 0.08 : 0);
+  x.sz = {w: Math.min(w, f[2]), h: Math.ceil(w / f[2]) * f[0] * 1.2};
+  return x.sz;
+}
+var labelCache = {};
+function labelList() {
+  var list = [], last = open.length ? open[open.length - 1] : "";
+  [""].concat(open).forEach(function (p) {
+    (kidsOf[p] || []).forEach(function (id) {
+      if (open.indexOf(id) >= 0 || !featOf.n[id]) return;
+      var x = idx[id], cls = p === last ? (p === "" ? "top" : "focus") : (p === "" ? "top" : "ctx");
+      var key = id + "|" + cls;
+      list.push(labelCache[key] = labelCache[key] || {id: "n:" + id, name: x.name, ll: L.latLng(x.ly, x.lx), km2: x.km2, cls: cls,
+        rank: (p === last ? 1e6 : 0) + x.km2});
+    });
+  });
+  geo.nature.features.forEach(function (f) {
+    var p = f.properties, key = "nat:" + p.id;
+    list.push(labelCache[key] = labelCache[key] || {id: key, name: p.name, ll: L.latLng(p.ly, p.lx), km2: p.km2, cls: "nat", kind: p.kind, rank: -1e6 + p.km2});
+  });
+  return list.sort(function (a, b) { return b.rank - a.rank; });
 }
 function placeLabels() {
-  var lv = cur, z = map.getZoom(), placed = [], group = labels[lv], want = {};
-  if (!group) return;
+  if (!labelLayer) return;
+  var z = map.getZoom(), placed = [], want = {}, vis = map.getBounds().pad(0.1);
   var pxPerKm = 256 * Math.pow(2, z) / (40075 * Math.cos(32.8 * Math.PI / 180));
-  var minSide = lv === 1 ? 0 : 28, vis = map.getBounds().pad(0.1);
-  var selId = sel && LEVEL_OF[sel.k] === lv ? sel.id : null;
-  var list = labelInfo[lv];
+  var selId = sel && sel.k !== "r" ? skey(sel) : null, list = labelList();
   if (selId) list = list.filter(function (x) { return x.id === selId; }).concat(list.filter(function (x) { return x.id !== selId; }));
-  for (var i = 0; i < list.length && placed.length < 400; i++) {
+  for (var i = 0; i < list.length && placed.length < 300; i++) {
     var x = list[i];
     if (!vis.contains(x.ll)) continue;
-    if (x.id !== selId && Math.sqrt(x.km2) * pxPerKm < minSide) continue;
-    var sz = labelSize(lv, x), p = map.latLngToLayerPoint(x.ll), hit = false;
+    var side = Math.sqrt(x.km2) * pxPerKm, sz = labelSize(x);
+    if (x.id !== selId && (side < 26 || (x.cls === "nat" && side < sz.w * 0.7))) continue;
+    var p = map.latLngToLayerPoint(x.ll), hit = false;
     var b = [p.x - sz.w / 2 - 4, p.y - sz.h / 2 - 2, p.x + sz.w / 2 + 4, p.y + sz.h / 2 + 2];
     for (var j = 0; j < placed.length; j++) {
       var o = placed[j];
       if (b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]) { hit = true; break; }
     }
     if (hit) continue;
-    placed.push(b); want[x.id] = x;
+    placed.push(b); want[x.id + "|" + x.cls] = x;
   }
-  group.eachLayer(function (m) { if (!want[m.lid]) group.removeLayer(m); else delete want[m.lid]; });
-  Object.keys(want).forEach(function (id) {
-    var x = want[id], m = L.marker(x.ll, {pane: "labels", interactive: false, keyboard: false,
-      icon: L.divIcon({className: "lbl lbl" + lv + (x.kind ? " lk-" + x.kind : ""), html: "<span>" + esc(x.name) + "</span>", iconSize: null})});
-    m.lid = id; group.addLayer(m);
+  labelLayer.eachLayer(function (m) { if (!want[m.lid]) labelLayer.removeLayer(m); else delete want[m.lid]; });
+  Object.keys(want).forEach(function (k) {
+    var x = want[k], m = L.marker(x.ll, {pane: "labels", interactive: false, keyboard: false,
+      icon: L.divIcon({className: "lbl lbl-" + x.cls + (x.kind ? " lk-" + x.kind : ""), html: "<span>" + esc(x.name) + "</span>", iconSize: null})});
+    m.lid = k; labelLayer.addLayer(m);
   });
 }
 
-function updateControls() {
-  var eff = effLevel();
-  document.querySelectorAll("#lv button").forEach(function (b) {
-    var l = b.getAttribute("data-l");
-    b.setAttribute("aria-pressed", l === String(view.level) ? "true" : "false");
-    b.classList.toggle("eff", view.level === "auto" && l === String(eff));
-  });
-  document.querySelectorAll("#md button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-m") === view.mode ? "true" : "false"); });
-  document.getElementById("lv").classList.toggle("off", view.mode === "roads");
-}
-
-function setLevel(l) {
-  view.level = l; store(VIEW_KEY, JSON.stringify(view));
-  if (view.mode === "roads") { view.mode = "regions"; if (sel && sel.k === "r") clearSel(); }
-  if (l !== "auto") { // приблизить или отдалить, чтобы выбранный масштаб было удобно разглядывать
-    var r = ZOOM_FOR[+l], z = map.getZoom();
-    if (z < r[0] || z > r[1] + 1.5) map.flyTo(map.getCenter(), Math.min(Math.max(z, r[0]), r[1]), {duration: 0.4});
-  }
-  refresh();
-}
 function setMode(m) {
   view.mode = m; store(VIEW_KEY, JSON.stringify(view));
   if (sel && (sel.k === "r") !== (m === "roads")) clearSel();
@@ -319,28 +333,43 @@ function clearSel() {
   renderPanel(); syncHash(); placeLabels();
 }
 
+// Выбрать регион, озеро или дорогу. Регион, которого сейчас не видно, раскрывает путь к себе.
 function select(s, fly) {
-  if (!s || !featOf[s.k][s.id]) return;
+  if (s.k === "n") {
+    if (!idx[s.id]) return;
+    var anc = ancestors(s.id);
+    var visible = anc.every(function (a, i) { return open[i] === a; });
+    if (!visible || !featOf.n[s.id]) {
+      ensurePath(anc).then(function () { open = anc; syncLayers(); select(s, fly); });
+      return;
+    }
+  } else if (!featOf[s.k][s.id]) return;
   if ((s.k === "r") !== (view.mode === "roads")) { view.mode = s.k === "r" ? "roads" : "regions"; store(VIEW_KEY, JSON.stringify(view)); }
   sel = s; editing = false; status = "";
-  if (selLayer) map.removeLayer(selLayer);
-  selLayer = L.geoJSON(featOf[s.k][s.id], {pane: "sel", interactive: false, style: {className: s.k === "r" ? "selroad" : "selpath"}}).addTo(map);
-  map.getContainer().classList.toggle("has-sel", s.k !== "r");
-  var lv = LEVEL_OF[s.k];
-  // выбранный регион другого масштаба: в ручном режиме переключаем кнопку на его масштаб
-  if (lv && view.level !== "auto" && +view.level !== lv) { view.level = String(lv); store(VIEW_KEY, JSON.stringify(view)); }
+  drawSel();
   if (fly) {
-    var b = layerOf[s.k][s.id].getBounds(), r = lv ? ZOOM_FOR[lv] : [9, 13];
-    var z = Math.min(r[1], Math.max(r[0], map.getBoundsZoom(b, false, L.point(40, 40))));
-    map.flyTo(b.getCenter(), z, {duration: 0.6});
+    var b = layerOf[s.k][s.id].getBounds();
+    map.flyTo(b.getCenter(), Math.min(14, Math.max(9.5, map.getBoundsZoom(b, false, L.point(60, 60)))), {duration: 0.6});
   }
   refresh(); renderPanel(); syncHash();
   if (window.matchMedia("(max-width:900px)").matches && !fly) { try { panel.scrollIntoView({behavior: "smooth", block: "start"}); } catch (_) {} }
 }
 
+// Подсветка выбранного; раскрытый регион подсвечивается только контуром, чтобы были видны его части
+function drawSel() {
+  if (selLayer) map.removeLayer(selLayer);
+  selLayer = null;
+  if (!sel) return;
+  var cls = sel.k === "r" ? "selroad" : "selpath" + (sel.k === "n" && open.indexOf(sel.id) >= 0 ? " selopen" : "");
+  selLayer = L.geoJSON(featOf[sel.k][sel.id], {pane: "sel", interactive: false, style: {className: cls}}).addTo(map);
+  map.getContainer().classList.toggle("has-sel", sel.k !== "r");
+}
+
 function refreshStyles() {
-  ["a", "z", "d", "s"].forEach(function (k) {
-    Object.keys(layerOf[k]).forEach(function (id) { var el = layerOf[k][id].getElement(); if (el) el.setAttribute("class", regClass(k, props({k: k, id: id})) + " leaflet-interactive"); });
+  Object.keys(layerOf.n).forEach(function (id) { var el = layerOf.n[id].getElement(); if (el) el.setAttribute("class", regClass(id) + " leaflet-interactive"); });
+  Object.keys(layerOf.nat).forEach(function (id) {
+    var el = layerOf.nat[id].getElement(), m = marker({k: "nat", id: id});
+    if (el) el.setAttribute("class", "nat k-" + featOf.nat[id].properties.kind + (m ? " m-" + m : "") + " leaflet-interactive");
   });
 }
 
@@ -352,17 +381,12 @@ var ROAD_TYPES = {
   secondary: ["Районная улица", "Улица внутри района: две–четыре полосы, светофоры только на крупных перекрёстках. Ведёт к большим улицам и фривеям."]
 };
 
-function plural(n, one, few, many) {
-  var a = n % 10, b = n % 100;
-  return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 10 || b >= 20) ? few : many;
-}
-
 function roadPanel(p) {
   var t = ROAD_TYPES[p.cls] || ["Дорога", ""], facts = [];
   if (p.lanes) facts.push("Около " + p.lanes + " " + plural(p.lanes, "полосы", "полос", "полос") + " в каждую сторону.");
   if (p.speed) facts.push("Ограничение скорости " + p.speed + " миль в час, это около " + Math.round(p.speed * 1.609 / 5) * 5 + " км/ч.");
   if (p.km) facts.push("На карте около " + p.km + " км.");
-  var areas = (p.areas || []).filter(function (a) { return featOf.a[a]; });
+  var areas = (p.areas || []).filter(function (a) { return idx[a]; });
   return '<div class="pmeta"><span>' + esc(t[0]) + '</span>' + (p.toll ? '<span class="chip">платная</span>' : '') + '</div>' +
     '<h2>' + esc(p.ref || p.name) + '</h2>' +
     (p.ref && p.name ? '<p class="psum">' + esc(p.name) + '</p>' : '') +
@@ -372,37 +396,39 @@ function roadPanel(p) {
     (p.aka && p.aka.length ? '<p>На разных участках называется ещё ' + esc(p.aka.join(", ")) + '. Местные часто зовут фривеи по именам, а не по номерам.</p>' : '') +
     '</div>' +
     (areas.length ? '<div class="kids"><h3>Проходит через</h3><ul>' + areas.map(function (a) {
-      return '<li><button type="button" data-go="a:' + esc(a) + '">' + esc(featOf.a[a].properties.name) + '</button></li>'; }).join("") + '</ul></div>' : '') +
+      return '<li><button type="button" data-go="n:' + esc(a) + '">' + esc(idx[a].name) + '</button></li>'; }).join("") + '</ul></div>' : '') +
     '<p class="hint" style="margin-top:14px;font-size:12.5px">Полосы и скорость взяты из современных данных OpenStreetMap, в 2005 году где-то могло быть иначе.</p>' +
     '<div class="actions"><button class="btn" type="button" id="p-show">Показать на карте</button></div>';
 }
 
 // ---------- карточка региона ----------
+var INTRO = '<div class="pmeta"><span>Даллас, Форт-Уэрт и пригороды · весна 2005</span></div><h2>Карта районов</h2>' +
+  '<div class="pdet"><p>Сначала на карте только города и пригороды. Нажми на регион, и здесь откроется его описание.</p>' +
+  '<p>Чтобы заглянуть внутрь, дважды щёлкни по региону или нажми «Подробнее» в карточке: он разделится на части, а те — на районы. Раскрыта всегда одна ветка; «Свернуть всё» в шапке возвращает общий вид.</p>' +
+  '<p>Озёра, парки и заповедники видны всегда, их тоже можно открыть.</p>' +
+  '<p>Режим «Дороги» прячет регионы и показывает фривеи и большие улицы: по клику на дорогу видно, что это за дорога и где она проходит.</p>' +
+  '<p>К любому региону можно добавить свою метку и заметки: они хранятся только в твоём браузере.</p></div>';
+
+function crumbs(id) {
+  return ancestors(id).map(function (a) { return '<a href="#n/' + esc(a) + '" data-crumb="' + esc(a) + '">' + esc(idx[a].name) + '</a>'; });
+}
+
 function renderPanel() {
-  if (!sel) {
-    panel.innerHTML = '<div class="pmeta"><span>Даллас, Форт-Уэрт и пригороды · весна 2005</span></div><h2>Карта районов</h2>' +
-      '<div class="pdet"><p>Город поделён на регионы четырёх масштабов. <b>Крупный</b> — большие области вроде Восточного Далласа или Ирвинга, чтобы понять общий характер места. <b>Средний</b> — части областей. <b>Мелкий</b> — районы. <b>Детальный</b> — секторы по полтора–пять квадратных километров. Каждый масштаб вложен в предыдущий.</p>' +
-      '<p>В режиме «Авто» масштаб выбирается сам по приближению карты, а кнопками его можно закрепить. Нажми на регион, и здесь откроется описание.</p>' +
-      '<p>Режим «Дороги» прячет регионы и показывает фривеи и большие улицы: по клику на дорогу видно, что это за дорога и куда она ведёт.</p>' +
-      '<p>К любому региону можно добавить свою метку и заметки: они хранятся только в твоём браузере.</p></div>';
-    return;
-  }
+  if (!sel) { panel.innerHTML = INTRO; return; }
   if (sel.k === "r") {
     panel.innerHTML = roadPanel(featOf.r[sel.id].properties);
     var rs = sel;
     document.getElementById("p-show").addEventListener("click", function () { select(rs, true); });
     return;
   }
-  var s = sel, p = props(s), x = info(s), o = own(s) || {marker: "", label: "", notes: ""}, lv = LEVEL_OF[s.k];
-  var ll = labelPt[s.k][s.id] || [0, 0];
-  // цепочка: область › район
-  var crumbs = [], q = parentOf(s);
-  while (q) { crumbs.unshift('<a href="#' + q.k + '/' + esc(q.id) + '" data-go="' + q.k + ':' + esc(q.id) + '">' + esc(props(q).name) + '</a>'); q = parentOf(q); }
-  var meta = '<span>' + LEVELS[lv].one + (p.kind && KIND[p.kind] ? ' · ' + KIND[p.kind].toLowerCase() : '') + '</span>' + crumbs.join('<span>›</span>');
+  var s = sel, x = info(s), o = own(s) || {marker: "", label: "", notes: ""};
+  var node = s.k === "n" ? idx[s.id] : null, np = s.k === "nat" ? featOf.nat[s.id].properties : null;
+  var name = node ? node.name : np.name, km2 = node ? node.km2 : np.km2, ll = node ? [node.ly, node.lx] : [np.ly, np.lx];
+  var meta = '<span>' + (node ? kindLabel(s.id) : NATKIND[np.kind]) + '</span>' + (node ? crumbs(s.id).join('<span>›</span>') : '');
 
   if (editing) {
     var mopts = MARKS.map(function (m) { return '<option value="' + m[0] + '"' + (m[0] === (o.marker || "") ? " selected" : "") + '>' + m[1] + '</option>'; }).join("");
-    panel.innerHTML = '<div class="pmeta">' + meta + '</div><h2>' + esc(p.name) + '</h2>' +
+    panel.innerHTML = '<div class="pmeta">' + meta + '</div><h2>' + esc(name) + '</h2>' +
       '<p class="psum">Эти пометки видишь только ты. Они хранятся в этом браузере.</p>' +
       '<form class="form" id="f"><div class="two"><div class="row"><label for="f-m">Моя метка</label><select id="f-m">' + mopts + '</select></div>' +
       '<div class="row"><label for="f-tag">Подпись</label><input id="f-tag" placeholder="например, Логово шерифа" value="' + esc(o.label) + '"></div></div>' +
@@ -431,42 +457,52 @@ function renderPanel() {
   var mineBlock = own(s) ? '<div class="mine"><h3>Мои пометки</h3>' +
     ((o.marker || o.label) ? '<div class="pmeta" style="margin-bottom:6px">' + (o.marker ? '<span class="chip m-' + o.marker + '">' + esc(MLABEL[o.marker]) + '</span>' : '') + (o.label ? '<span class="chip">' + esc(o.label) + '</span>' : '') + '</div>' : '') +
     (o.notes ? '<p>' + esc(o.notes) + '</p>' : '') + '</div>' : "";
-  // своего текста нет — показываем описание района, в который входит сектор
+  // своего текста нет — показываем описание ближайшего предка, у которого он есть
   var body = (x.details || "").trim() ? '<div class="pdet">' + paras(x.details) + '</div>' : "";
-  if (!body) {
-    var up = parentOf(s), ux = up ? info(up) : {};
-    body = up && (ux.details || "").trim()
-      ? '<div class="inherit"><h3>' + esc(LEVELS[LEVEL_OF[up.k]].one) + ' «' + esc(props(up).name) + '»</h3>' + paras(ux.details) + '</div>'
+  if (!body && node) {
+    var up = ancestors(s.id).reverse().filter(function (a) { return ((text.nodes[a] || {}).details || "").trim(); })[0];
+    body = up ? '<div class="inherit"><h3>' + esc(kindLabel(up)) + ' «' + esc(idx[up].name) + '»</h3>' + paras(text.nodes[up].details) + '</div>'
       : '<p class="hint">Описания пока нет.</p>';
   }
-  var kidsIds = children[s.k] ? children[s.k][s.id] : null;
-  var kk = {a: "z", z: "d", d: "s"}[s.k], kids = "";
-  if (kidsIds && kidsIds.length > 1) {
-    var list = kidsIds.slice().sort(function (a, b) { return props({k: kk, id: a}).name.localeCompare(props({k: kk, id: b}).name, "ru"); });
-    kids = '<div class="kids"><h3>' + LEVELS[LEVEL_OF[kk]].many + ' · ' + list.length + '</h3><ul>' + list.map(function (id) {
-      return '<li><button type="button" data-go="' + kk + ':' + esc(id) + '">' + esc(props({k: kk, id: id}).name) + '</button></li>'; }).join("") + '</ul></div>';
+  if (!body) body = '<p class="hint">Описания пока нет.</p>';
+  var isOpen = node && open.indexOf(s.id) >= 0, kids = "";
+  if (node && node.n) {
+    var list = (kidsOf[s.id] || []).slice().sort(function (a, b) { return idx[a].name.localeCompare(idx[b].name, "ru"); });
+    kids = '<div class="kids"><h3>Внутри · ' + list.length + '</h3><ul>' + list.map(function (id) {
+      return '<li><button type="button" data-go="n:' + esc(id) + '">' + esc(idx[id].name) + '</button></li>'; }).join("") + '</ul></div>';
   }
   var cells = ["core", "city", "fw"].map(function (b) { var c = gridCell(b, ll[0], ll[1]); return c ? GRIDS[b].label + " " + c : null; }).filter(Boolean);
   panel.innerHTML =
     '<div class="pmeta">' + meta + '</div>' +
-    '<h2>' + esc(p.name) + '</h2>' +
+    '<h2>' + esc(name) + '</h2>' +
     (chips ? '<div class="pmeta" style="margin-bottom:8px">' + chips + '</div>' : '') +
-    '<div class="pmeta" style="margin-bottom:12px"><span>≈ ' + String(p.km2).replace(".", ",") + ' км²</span><span>' + dist(ll) + '</span>' +
+    '<div class="pmeta" style="margin-bottom:12px"><span>≈ ' + String(km2).replace(".", ",") + ' км²</span><span>' + dist(ll) + '</span>' +
     (cells.length && gridOn() ? '<span>старая сетка: ' + esc(cells.join(", ")) + '</span>' : '') + '</div>' +
     (x.summary ? '<p class="psum">' + esc(x.summary) + '</p>' : "") + body +
-    (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Подробнее</summary><div class="pdet">' + paras(x.more) + '</div></details>' : "") +
+    (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Ещё</summary><div class="pdet">' + paras(x.more) + '</div></details>' : "") +
     (x.notes && x.notes.trim() ? '<div class="notes"><h3>Заметки мастера</h3><p>' + esc(x.notes) + '</p></div>' : "") +
     mineBlock +
-    '<div class="actions"><button class="btn primary" type="button" id="p-edit">' + (own(s) ? "Изменить мои пометки" : "Добавить свою пометку") + '</button>' +
+    '<div class="actions">' +
+    (node && node.n ? (isOpen ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Подробнее</button>') : '') +
+    '<button class="btn" type="button" id="p-edit">' + (own(s) ? "Изменить мои пометки" : "Добавить свою пометку") + '</button>' +
     '<button class="btn" type="button" id="p-show">Показать на карте</button>' +
     (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' + kids;
   var pm = document.getElementById("p-more");
   if (pm) pm.addEventListener("toggle", function () { if (pm.open) moreOpen[skey(s)] = 1; else delete moreOpen[skey(s)]; });
+  var po = document.getElementById("p-open"); if (po) po.addEventListener("click", function () { expand(s.id); });
+  var pf = document.getElementById("p-fold"); if (pf) pf.addEventListener("click", function () { collapseTo(s.id); });
   document.getElementById("p-edit").addEventListener("click", function () { editing = true; status = ""; renderPanel(); var t = document.getElementById("f-notes"); if (t) t.focus(); });
   document.getElementById("p-show").addEventListener("click", function () { select(s, true); });
 }
 
 panel.addEventListener("click", function (e) {
+  var c = e.target.closest("[data-crumb]");
+  if (c) { // крошка: свернуть до этого региона и выбрать его
+    e.preventDefault();
+    var id = c.getAttribute("data-crumb");
+    collapseTo(id); select({k: "n", id: id}, false);
+    return;
+  }
   var t = e.target.closest("[data-go]"); if (!t) return;
   e.preventDefault();
   var g = t.getAttribute("data-go").split(":");
@@ -476,13 +512,11 @@ panel.addEventListener("click", function (e) {
 // ---------- поиск ----------
 function setupSearch() {
   var q = document.getElementById("q"), box = document.getElementById("results"), all = [];
-  [1, 2, 3, 4].forEach(function (lv) {
-    var k = LEVELS[lv].k;
-    geo[LEVELS[lv].file].features.forEach(function (f) {
-      var up = parentOf({k: k, id: f.properties.id});
-      all.push({k: k, id: f.properties.id, name: f.properties.name, sub: LEVELS[lv].one.toLowerCase() + (up ? " · " + props(up).name : ""), lv: lv});
-    });
+  Object.keys(idx).forEach(function (id) {
+    var a = ancestors(id);
+    all.push({k: "n", id: id, name: idx[id].name, sub: kindLabel(id).toLowerCase() + (a.length ? " · " + idx[a[a.length - 1]].name : ""), lv: idx[id].depth});
   });
+  geo.nature.features.forEach(function (f) { all.push({k: "nat", id: f.properties.id, name: f.properties.name, sub: NATKIND[f.properties.kind].toLowerCase(), lv: 4}); });
   geo.roads.features.forEach(function (f) {
     var p = f.properties; if (!p.id || p.cls === "secondary") return;
     all.push({k: "r", id: p.id, name: roadTitle(p), sub: ROAD_TYPES[p.cls][0].toLowerCase(), lv: 5});
@@ -546,22 +580,29 @@ function renderTools() {
   });
 }
 
-// Файл этой карты ({items}) или старой карты в клетку ({cells: {"city:D5": …}}): клетка ложится на район в её центре.
+// Файл этой карты ({items}), прежней карты в четыре масштаба (ключи «d:<район>») или старой карты в клетку ({cells: {"city:D5": …}}).
 function importFile(p) {
   var n = 0;
+  function put(key, src) {
+    var dst = mine.items[key] || {marker: "", label: "", notes: ""};
+    dst.marker = src.marker || dst.marker || "";
+    dst.label = src.label || dst.label || "";
+    if (src.notes && (dst.notes || "").indexOf(src.notes) < 0) dst.notes = (dst.notes ? dst.notes + "\n\n" : "") + src.notes;
+    mine.items[key] = dst; n++;
+  }
   if (p && p.items && typeof p.items === "object") {
-    Object.keys(p.items).forEach(function (k) { var g = k.split(":"); if (featOf[g[0]] && featOf[g[0]][g.slice(1).join(":")]) { mine.items[k] = p.items[k]; n++; } });
-    saveMine(); return "Загружено пометок: " + n + ". Совпадающие места заменены пометками из файла.";
+    Object.keys(p.items).forEach(function (k) {
+      var g = k.split(":"), id = g.slice(1).join(":");
+      if ((g[0] === "n" && idx[id]) || (g[0] === "nat" && featOf.nat[id])) put(k, p.items[k]);
+      else if (aliases[k]) put("n:" + aliases[k], p.items[k]);
+    });
+    saveMine(); return "Загружено пометок: " + n + ". Пометки прежних версий карты легли на регион в том же месте.";
   }
   if (p && p.cells && typeof p.cells === "object") {
     Object.keys(p.cells).forEach(function (k) {
-      var g = k.split(":"); if (!GRIDS[g[0]]) return;
-      var ll = cellCenter(g[0], g[1]), id = regionAt(3, ll[0], ll[1]); if (!id) return;
-      var src = p.cells[k], dst = mine.items["d:" + id] || {marker: "", label: "", notes: ""};
-      dst.marker = dst.marker || src.marker || "";
-      dst.label = dst.label || src.label || "";
-      if (src.notes) dst.notes = (dst.notes ? dst.notes + "\n\n" : "") + "[старая клетка " + k + "] " + src.notes;
-      mine.items["d:" + id] = dst; n++;
+      var to = aliases[k]; if (!to) return;
+      var src = p.cells[k];
+      put("n:" + to, {marker: src.marker, label: src.label, notes: src.notes ? "[старая клетка " + k + "] " + src.notes : ""});
     });
     saveMine(); return "Перенесено пометок со старой карты: " + n + ". Каждая клетка легла на район в её центре.";
   }
@@ -569,29 +610,49 @@ function importFile(p) {
 }
 
 // ---------- ссылки ----------
-// #a/<область>, #z/<часть области>, #d/<район>, #s/<сектор>, #r/<дорога>; старые ссылки #city-D5, #core-B4, #fw-E6 открывают район в центре клетки
-function syncHash() { try { history.replaceState(null, "", sel ? "#" + sel.k + "/" + sel.id : location.pathname); } catch (_) {} }
+// #n/<узел> (с «+» на конце — раскрытым), #nat/<озеро>, #r/<дорога>; ссылки прежних карт (#d/<район>, #city-D5) — по таблице aliases
+function syncHash() {
+  var h = sel ? "#" + sel.k + "/" + sel.id + (sel.k === "n" && open.indexOf(sel.id) >= 0 ? "+" : "") : "";
+  try { history.replaceState(null, "", h || location.pathname); } catch (_) {}
+}
 function readHash(fly) {
-  var h = location.hash || "", m = /^#([azdsr])\/(.+)$/.exec(h);
-  if (m) { select({k: m[1], id: decodeURIComponent(m[2])}, fly); return; }
-  m = /^#(city|core|fw)-([A-I])([1-9])$/.exec(h);
-  if (m) { var ll = cellCenter(m[1], m[2] + m[3]), id = regionAt(3, ll[0], ll[1]); if (id) select({k: "d", id: id}, fly); }
+  var h = decodeURIComponent(location.hash || ""), m = /^#(n|nat|r)\/([^+]+)(\+?)$/.exec(h);
+  if (m) {
+    if (m[1] === "n" && m[3] && idx[m[2]]) expand(m[2]);
+    else select({k: m[1], id: m[2]}, fly);
+    return;
+  }
+  m = /^#([azds])\/(.+)$/.exec(h) || /^#(city|core|fw)-([A-I][1-9])$/.exec(h);
+  if (m && aliases[m[1] + ":" + m[2]]) select({k: "n", id: aliases[m[1] + ":" + m[2]]}, fly);
 }
 
 // ---------- запуск ----------
-var files = ["l1", "l2", "l3", "l4", "labels", "roads", "water", "rail", "green"];
+var files = ["roads", "water", "rail", "green", "nature"];
 Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(function (r) { if (!r.ok) throw new Error(n); return r.json(); }); })
-  .concat([fetch("data/map.json", {cache: "no-cache"}).then(function (r) { return r.json(); })]))
+  .concat([fetch(TREE + "index.json").then(function (r) { return r.json(); }),
+    fetch(TREE + "aliases.json").then(function (r) { return r.json(); }),
+    fetch("data/map.json", {cache: "no-cache"}).then(function (r) { return r.json(); }),
+    fetch(TREE + "_root.geojson").then(function (r) { return r.json(); })]))
 .then(function (res) {
   files.forEach(function (n, i) { geo[n] = res[i]; });
-  text = res[files.length]; ["areas", "zones", "districts", "sectors"].forEach(function (k) { text[k] = text[k] || {}; });
+  res[files.length].forEach(function (x) { idx[x.id] = x; (kidsOf[x.parent] = kidsOf[x.parent] || []).push(x.id); });
+  aliases = res[files.length + 1];
+  text = res[files.length + 2]; text.nodes = text.nodes || {}; text.nature = text.nature || {};
   document.getElementById("loading").remove();
-  loadMine(); buildMap(); setupSearch(); renderTools(); renderPanel();
-  document.getElementById("lv").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setLevel(b.getAttribute("data-l")); });
+  loadMine(); buildMap();
+  loaded[""] = res[files.length + 3];
+  regLayer[""] = L.geoJSON(loaded[""], {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; }, onEachFeature: function (f, l) { hook(f, l); }});
+  syncLayers(); refresh(); setupSearch(); renderTools(); renderPanel();
   document.getElementById("md").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setMode(b.getAttribute("data-m")); });
+  document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); home(true); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !open.length) return;
+    var last = open[open.length - 1]; collapseTo(last); select({k: "n", id: last}, false);
+  });
   readHash(true);
   window.addEventListener("hashchange", function () { readHash(true); });
-}).catch(function () {
+}).catch(function (e) {
   document.getElementById("loading").textContent = "Не удалось загрузить данные карты. Если ты открыл файл прямо с диска, запусти локальный сервер (см. README).";
+  if (window.console) console.error(e);
 });
 })();

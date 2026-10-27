@@ -1,4 +1,4 @@
-"""Чтение таблиц data/*.tsv: области, города, районы, природные регионы, ручная мелкая нарезка."""
+"""Чтение таблиц data/*.tsv: города, дерево регионов, природный слой."""
 import pathlib
 
 DATA = pathlib.Path("data")
@@ -10,26 +10,18 @@ def rows(name):
             yield [c.strip() for c in line.split("\t")]
 
 
-def read_areas():
-    return {r[0]: r[1] for r in rows("areas.tsv")}
-
-
-def read_cities():
-    return {r[0]: {"ru": r[1], "area": r[2]} for r in rows("cities.tsv")}
-
-
-def read_seeds():
-    out = []
-    for r in rows("seeds.tsv"):
-        r += [""] * (7 - len(r))
-        out.append({"id": r[0], "area": r[1], "city": r[2], "lat": float(r[3]), "lon": float(r[4]),
-                    "name": r[5], "query": r[6]})
-    return out
-
-
 def read_natural():
     return [{"id": r[0], "kind": r[1], "names": r[2].split("|"), "name": r[3]} for r in rows("natural.tsv")]
 
 
-def read_seeds3():
-    return [{"id": r[0], "parent": r[1], "lat": float(r[2]), "lon": float(r[3]), "name": r[4]} for r in rows("seeds3.tsv")]
+
+def read_tree():
+    """Дерево регионов: id → {parent, kind, name, pts [(широта, долгота)], query}; порядок как в файле."""
+    out = {}
+    for r in rows("tree.tsv"):
+        r += [""] * (6 - len(r))
+        if r[0] in out:
+            raise SystemExit("tree.tsv: id %s повторяется" % r[0])
+        pts = [tuple(float(v) for v in p.split(",")) for p in r[4].split()]
+        out[r[0]] = {"parent": None if r[1] == "-" else r[1], "kind": r[2], "name": r[3], "pts": pts, "query": r[5]}
+    return out

@@ -22,14 +22,14 @@ td.id{font-family:var(--mono);font-size:12px;color:var(--muted)}
 <body>
 <div class="wrap">
   <h1>Список регионов</h1>
-  <p>Все регионы карты на четырёх масштабах: название, откуда оно взялось, родитель и ссылка на это место в Google Maps (по точке подписи). «Автоматически» значит, что название придумано программой по ближайшему району и стороне света. Неудачное название или принадлежность можно поправить в <code>data/overrides.tsv</code>.</p>
+  <p>Все регионы дерева: название, откуда взялась граница, родитель и ссылка на это место в Google Maps (по точке подписи). Уровень 1 — города и пригороды, глубже — их части, районы и знаковые места. Дерево задаётся вручную в <code>data/tree.tsv</code>, там же правятся названия и принадлежность.</p>
   <div class="bar">
     <input id="q" type="search" placeholder="Фильтр по названию или id">
-    <select id="lv"><option value="">Все масштабы</option><option value="1">Крупный · области</option><option value="2">Средний · части областей</option><option value="3" selected>Мелкий · районы</option><option value="4">Детальный · секторы</option></select>
+    <select id="lv"><option value="" selected>Все уровни</option><option value="1">1 · города и пригороды</option><option value="2">2 · части</option><option value="3">3 · районы</option><option value="4">4 · ещё глубже</option></select>
     <span id="count" class="status"></span>
     <a href="./">← к карте</a>
   </div>
-  <div class="tablewrap"><table><thead><tr><th>Название</th><th>id</th><th>Родитель</th><th>км²</th><th>Откуда название</th><th>Где</th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="tablewrap"><table><thead><tr><th>Название</th><th>id</th><th>Родитель</th><th>км²</th><th>Граница</th><th>Где</th></tr></thead><tbody id="rows"></tbody></table></div>
 </div>
 <script>
 (function () {
@@ -41,9 +41,9 @@ td.id{font-family:var(--mono);font-size:12px;color:var(--muted)}
     document.getElementById("count").textContent = "показано: " + list.length;
     rows.innerHTML = list.slice(0, 1500).map(function (r) {
       var link = "https://www.google.com/maps/@" + r.lat + "," + r.lon + "," + (r.level === 1 ? 11 : r.level === 2 ? 12 : r.level === 3 ? 13 : 14) + "z";
-      var hash = "#" + ({1: "a", 2: "z", 3: "d", 4: "s"})[r.level] + "/" + r.id;
+      var hash = "#n/" + r.id;
       return "<tr><td><a href=\"./" + hash + "\">" + esc(r.name) + "</a></td><td class=\"id\">" + esc(r.id) + "</td><td>" + esc(names[r.parent] || r.parent) +
-        "</td><td>" + r.km2 + "</td><td class=\"" + (r.source === "автоматически" ? "src-auto" : "") + "\">" + esc(r.source) + "</td><td><a href=\"" + link + "\" target=\"_blank\" rel=\"noopener\">Google Maps</a></td></tr>";
+        "</td><td>" + r.km2 + "</td><td class=\"" + "" + "\">" + esc(r.source) + "</td><td><a href=\"" + link + "\" target=\"_blank\" rel=\"noopener\">Google Maps</a></td></tr>";
     }).join("");
   }
   fetch("data/geo/review.json").then(function (r) { return r.json(); }).then(function (d) {
