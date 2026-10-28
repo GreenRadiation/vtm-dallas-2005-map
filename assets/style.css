@@ -48,7 +48,7 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .search{position:relative;flex:0 1 280px;min-width:180px}
 .search input{width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg)}
 .search input:focus{outline:2px solid var(--accent);outline-offset:-1px}
-.results{position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;max-height:min(60vh,440px);overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.results{position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;max-height:min(60vh,440px);overflow:auto;overscroll-behavior:contain;background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .results button{all:unset;box-sizing:border-box;display:block;width:100%;padding:7px 10px;cursor:pointer;font-size:14px}
 .results button small{color:var(--muted);margin-left:6px}
 .results button .snip{display:block;margin-top:2px;font-size:12px;line-height:1.35;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -67,13 +67,16 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 @media (max-width:620px){.brand{flex-basis:100%}.search{flex:1 1 100%}.seg button{padding:6px 9px;font-size:12px}}
 
 /* ---------- карта и карточка ---------- */
-.main{display:grid;grid-template-columns:minmax(0,1fr) 420px;height:calc(100vh - 66px);min-height:520px}
+/* Страница сама не прокручивается: шапка сверху, карта и карточка на всю оставшуюся высоту, листаются только они */
+#root{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 420px}
 .mapbox{position:relative;min-width:0;border-right:1px solid var(--line)}
 #map{position:absolute;inset:0;background:var(--sea);font-family:var(--body)}
 .loading{position:absolute;inset:auto 0 50% 0;text-align:center;color:var(--muted);margin:0}
-.panel{overflow:auto;padding:18px 20px 28px;background:var(--paper)}
+.panel{overflow:auto;overscroll-behavior:contain;padding:18px 20px 28px;background:var(--paper)}
 @media (max-width:900px){
-  .main{grid-template-columns:minmax(0,1fr);height:auto}
+  #root{height:auto}
+  .main{grid-template-columns:minmax(0,1fr)}
   .mapbox{height:62vh;min-height:360px;border-right:0;border-bottom:1px solid var(--line)}
   .panel{overflow:visible}
 }
@@ -180,8 +183,8 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .hint{color:var(--muted);font-size:13.5px}
 
 /* ---------- подвал ---------- */
-.foot{padding:14px 16px 28px;display:grid;gap:10px;font-size:13px;color:var(--muted);max-width:1180px}
-.foot p{margin:0}
+.about{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.about p{margin:6px 0 0}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .sw{width:14px;height:14px;display:inline-block}
@@ -298,7 +301,7 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .mine h3 .sw{display:inline-block;width:12px;height:12px;border-radius:3px}
 .linkbtn{margin-left:auto;border:0;background:none;color:var(--muted);font:inherit;font-size:11px;text-transform:none;letter-spacing:0;text-decoration:underline;cursor:pointer}
 .slots-pick{position:relative}
-.slots-pop{position:absolute;top:calc(100% + 6px);right:0;z-index:1200;width:320px;max-width:calc(100vw - 16px);max-height:calc(100vh - 90px);overflow:auto;background:var(--paper);
+.slots-pop{position:absolute;top:calc(100% + 6px);right:0;z-index:1200;width:320px;max-width:calc(100vw - 16px);max-height:calc(100vh - 90px);overflow:auto;overscroll-behavior:contain;background:var(--paper);
   border:1px solid var(--line);border-radius:8px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:13px}
 .slots-pop[hidden]{display:none}
 .sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
