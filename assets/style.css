@@ -237,7 +237,7 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .dart-tun{stroke-opacity:.6}
 .dart-st{fill:var(--paper);stroke:var(--ink);stroke-width:2;fill-opacity:1}
 .dart-st.big{stroke-width:2.6}
-.leaflet-tooltip.dart-tip{max-width:260px;white-space:normal}
+.leaflet-tooltip.dart-tip{width:max-content;max-width:280px;white-space:normal}
 .dart-tip span{display:block;font-weight:500;font-size:12px;line-height:1.4;margin-top:3px}
 .dart-box{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;font-size:12.5px;line-height:1.45;
   max-width:280px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
@@ -245,6 +245,8 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .dart-box summary{cursor:pointer;color:var(--muted)}
 .dart-box summary b{color:var(--ink);font-weight:700}
 .dart-box p{margin:6px 0 0}
+.dart-box .hours{margin:6px 0 0;padding:5px 7px;border-radius:6px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.dart-box .hours b{font-weight:700}
 .dart-box ul{list-style:none;margin:8px 0 2px;padding:0;display:grid;gap:3px}
 .dart-box li{display:flex;align-items:center;gap:7px}
 .dart-box svg{flex:none;overflow:visible}
@@ -254,6 +256,6 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .dart-box svg .dart-st{stroke-width:1.8}
 
 /* границы Далласа и Форт-Уэрта — вдвое толще прочих, видны всегда */
-.cityline{fill:none;stroke:var(--rline);stroke-width:3.6;stroke-opacity:.9;stroke-linejoin:round}
+.cityline{fill:none;stroke:var(--rline);stroke-width:10.8;stroke-opacity:.8;stroke-linejoin:round}
 
 @media (max-width:620px){.map-side{right:6px;top:6px}.lens-legend{max-width:190px;font-size:12px}.dart-box{max-width:220px;font-size:12px}}

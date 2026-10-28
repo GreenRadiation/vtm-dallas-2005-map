@@ -394,9 +394,9 @@ var DART_LINE = {red: "Красная линия: Уэстморленд — П�
 var DART_CODE = {R: "красная", B: "синяя", T: "TRE"};
 var DART_TEXT = [
   "DART — городской транспорт Далласа и соседних пригородов: автобусы и две линии лёгкого метро, красная и синяя. В центре поезда идут прямо по улице, дальше — по своим путям, а под Центральным шоссе — в тоннеле.",
-  "Поезда ходят примерно с пяти утра до часу ночи: днём каждые 10 минут, вечером раз в 20. Ночью поездов нет, только редкие автобусы и такси.",
+  "Днём поезд приходит каждые 10 минут, вечером раз в 20. С часу ночи до пяти утра поездов нет, только редкие автобусы и такси.",
   "Турникетов нет: билет берут в автомате на платформе, контролёры проверяют выборочно. На станциях и в поездах дежурит своя полиция DART, но камеры есть не везде, а ночные платформы на окраинах пустые и тёмные.",
-  "TRE — пригородный поезд до Форт-Уэрта: по будням с утра до позднего вечера, по субботам реже, по воскресеньям не ходит. По Макинни-авеню в Аптауне катается старинный трамвай M-Line."];
+  "TRE — пригородный поезд до Форт-Уэрта. По Макинни-авеню в Аптауне катается старинный трамвай M-Line."];
 var dartLayer = null, dartReady = null, dartEl = null;
 function dartLayers(fc) {
   var g = L.layerGroup(), lines = fc.features.filter(function (f) { return f.properties.kind === "line"; });
@@ -430,7 +430,8 @@ function renderDartBox() {
     document.querySelector(".map-side").appendChild(dartEl);
     L.DomEvent.disableClickPropagation(dartEl); L.DomEvent.disableScrollPropagation(dartEl);
     var sw = function (cls) { return '<svg width="22" height="10" aria-hidden="true"><line x1="2" y1="5" x2="20" y2="5" class="' + cls + '"/></svg>'; };
-    dartEl.innerHTML = "<summary><b>DART</b> — поезда весной 2005</summary>" + DART_TEXT.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
+    dartEl.innerHTML = "<summary><b>DART</b> — поезда весной 2005</summary>" +
+      '<p class="hours"><b>Метро:</b> каждый день примерно с 5:00 до 1:00 ночи.<br><b>TRE:</b> по будням примерно с 5:30 до 23:00, в субботу реже, в воскресенье не ходит.</p>' + DART_TEXT.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
       '<ul><li>' + sw("dart-red") + 'красная линия</li><li>' + sw("dart-blue") + 'синяя линия</li><li>' + sw("dart-red") .replace("</svg>", '<line x1="2" y1="5" x2="20" y2="5" class="dart-blue dart-dash"/></svg>') +
       'обе линии</li><li>' + sw("dart-tre") + 'TRE до Форт-Уэрта</li><li>' + sw("dart-red dart-tun") + 'под землёй</li>' +
       '<li><svg width="22" height="10" aria-hidden="true"><circle cx="11" cy="5" r="4" class="dart-st"/></svg>станция — наведи, чтобы узнать подробнее</li></ul>';
