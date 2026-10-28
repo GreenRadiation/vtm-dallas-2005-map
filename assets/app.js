@@ -1587,8 +1587,9 @@ function renderNoteForm(s, name, meta) {
     '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
     '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Сюжетные зацепки, NPC, что угодно своё">' + esc(r.text) + '</textarea>' + MD_HINT + '</div>' +
     moveRow(slot.id) +
-    '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
-    (slot.regions[k] ? confirmBtn("f-del", "Удалить заметку") : "") + '<span class="status">' + esc(status) + '</span></div></form>';
+    '<div class="actions" id="f-acts"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
+    (slot.regions[k] ? confirmBtn("f-del", "Удалить заметку") : "") + '<span class="status">' + esc(status) + '</span></div>' +
+    '<div class="actions" id="f-ask" hidden></div></form>';
   var ed = bindTagEd(slot, st, function () {}), ci = document.getElementById("f-color");
   function custom() { panel.querySelector('input[name="f-rc"][value="c"]').checked = true; }
   ci.addEventListener("input", custom);
@@ -1596,16 +1597,35 @@ function renderNoteForm(s, name, meta) {
   var fs = document.getElementById("f-slot");
   if (fs) fs.addEventListener("change", function () { noteSlot = fs.value; confirmDel = false; renderPanel(); });
   var target = bindMove(slot, function (to) {
-    return (to.regions[k] ? "В слоте «" + to.name + "» уже есть заметка к этому региону: тексты и теги объединятся. " : "") +
+    return (to.regions[k] ? "В слоте «" + to.name + "» уже есть заметка к этому региону: при сохранении спрошу, объединить их или заменить. " : "") +
       (to.on ? "" : "Слот «" + to.name + "» скрыт: заметку будет видно, когда его покажешь в меню «Метки».");
+  });
+  // В целевом слоте уже есть заметка к региону: сначала спросить — объединить, заменить или отменить
+  var mode = "", acts = document.getElementById("f-acts"), ask = document.getElementById("f-ask"), hint = document.getElementById("f-move-hint");
+  function unask() { mode = ""; ask.hidden = true; ask.innerHTML = ""; acts.hidden = false; hint.hidden = !hint.textContent; }
+  document.getElementById("f-move").addEventListener("change", unask);
+  function askMove(to) {
+    acts.hidden = true; ask.hidden = false; hint.hidden = true; // вопрос повторяет подсказку под списком
+    ask.innerHTML = '<p class="ask-q">В слоте «' + esc(to.name) + '» уже есть заметка к этому региону. Что сделать?</p>' +
+      '<button class="btn primary" type="button" data-mode="merge">Объединить</button>' +
+      '<button class="btn" type="button" data-mode="replace">Заменить ту заметку</button><button class="btn" type="button" data-mode="">Отмена</button>';
+    ask.querySelector("button").focus();
+  }
+  ask.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-mode]"); if (!b) return;
+    mode = b.getAttribute("data-mode");
+    if (!mode) { unask(); return; }
+    document.getElementById("f").requestSubmit();
   });
   document.getElementById("f").addEventListener("submit", function (e) {
     e.preventDefault(); ed.flush();
+    var m = document.getElementById("f-move"), busy = slotOf(m.value);
+    if (busy && busy !== slot && busy.regions[k] && !mode) { askMove(busy); return; }
     var next = {color: panel.querySelector('input[name="f-rc"]:checked').value ? ci.value : "", tags: st.tags.slice(),
       text: document.getElementById("f-text").value.replace(/\r/g, "").trim()};
     var to = target(), old = to !== slot && to.regions[k];
     st.tags.forEach(function (t) { to.tags[t] = ed.color(t); });
-    if (old) { // в слоте уже есть заметка к региону — объединяем
+    if (old && mode === "merge") { // тексты подряд, теги без повторов, свой цвет — переносимой заметки, если задан
       next = {color: next.color || old.color, tags: old.tags.concat(next.tags.filter(function (t) { return old.tags.indexOf(t) < 0; })),
         text: [old.text, next.text].filter(Boolean).join("\n\n")};
     }
