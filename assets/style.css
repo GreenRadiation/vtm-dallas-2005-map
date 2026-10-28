@@ -110,7 +110,8 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .nat.k-green{fill:var(--park-strong);fill-opacity:.9;stroke:var(--green-ink);stroke-opacity:.35}
 .nat:hover{stroke:var(--sel);stroke-width:2;stroke-opacity:1}
 .reg.hov{stroke:var(--sel);stroke-width:2.2;fill-opacity:1}
-.has-sel .reg{opacity:.72}
+/* приглушаем весь слой регионов разом: прозрачность на каждом контуре заставляет браузер рисовать их по одному */
+.has-sel .leaflet-reg-pane{opacity:.72}
 /* границы старших масштабов поверх: области — толсто, районы (на мелком масштабе) — средне */
 .outl{fill:none;stroke:var(--aline);stroke-linejoin:round}
 .outl1{stroke-width:3}
@@ -134,7 +135,7 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 /* подписи: области — разреженными заглавными, как регионы на картах стран; районы и секторы — обычным шрифтом */
 .lbl{pointer-events:none!important;background:none;border:0}
 .lbl span{display:block;transform:translate(-50%,-50%);width:max-content;text-align:center;line-height:1.15;color:var(--ink);
-  text-shadow:0 0 2px var(--halo),0 0 4px var(--halo),0 0 6px var(--halo)}
+  text-shadow:-1px -1px 0 var(--halo),1px -1px 0 var(--halo),-1px 1px 0 var(--halo),1px 1px 0 var(--halo),0 0 3px var(--halo)}
 .lbl-top span{font-weight:700;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;max-width:170px;color:var(--label-a)}
 .lbl-focus span{font-weight:650;font-size:12.5px;max-width:140px}
 .lbl-ctx span{font-weight:600;font-size:11.5px;max-width:130px;opacity:.7}
