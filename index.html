@@ -18,6 +18,7 @@
     <div class="search"><input id="q" type="search" placeholder="Найти район или город" autocomplete="off" aria-label="Поиск по районам"><div class="results" id="results" hidden></div></div>
     <div class="ctl">
       <button class="btn" type="button" id="collapse" disabled title="Вернуться к городам и пригородам">Свернуть всё</button>
+      <div class="slots-pick" id="slots"><button class="btn" type="button" id="slots-btn" aria-haspopup="true" aria-expanded="false">Метки</button><div class="slots-pop" id="slots-pop" hidden></div></div>
       <label class="tog lens-pick">Линза <select id="lens" aria-label="Линза карты"><option value="">нет</option><option value="wealth">достаток</option><option value="people">жители</option><option value="street">улица</option><option value="eyes">глаза</option><option value="night">ночная жизнь</option><option value="build">застройка</option><option value="police">полиция</option></select></label>
       <label class="tog" title="Линии поездов и станции 2005 года"><input type="checkbox" id="dart-tog"> DART</label>
       <label class="tog" title="Показать сразу самые мелкие районы, без раскрытия"><input type="checkbox" id="leaf-tog"> Все районы</label>
@@ -25,19 +26,14 @@
     </div>
   </header>
   <main class="main">
-    <div class="mapbox"><div id="map" aria-label="Карта районов"></div><div class="map-side"></div><p class="loading" id="loading">Загружаю карту…</p></div>
+    <div class="mapbox"><div id="map" aria-label="Карта районов"></div><div class="map-side"></div><p class="place-hint" id="place-hint" hidden>Нажми на карту, где поставить метку · Esc — отмена</p><p class="loading" id="loading">Загружаю карту…</p></div>
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </main>
   <footer class="foot">
     <div class="legend">
-      <span><i class="sw" style="background:var(--haven-bg);box-shadow:inset 0 0 0 2px var(--haven)"></i>убежище</span>
-      <span><i class="sw" style="background:var(--ally-bg);box-shadow:inset 0 0 0 2px var(--ally)"></i>союзники</span>
-      <span><i class="sw" style="background:var(--hostile-bg);box-shadow:inset 0 0 0 2px var(--hostile)"></i>враждебность</span>
-      <span><i class="sw" style="background:var(--imp-bg);box-shadow:inset 0 0 0 2px var(--imp)"></i>важное место</span>
       <span><i class="sw" style="background:var(--water)"></i>озеро</span>
       <span><i class="sw" style="background:var(--park-strong)"></i>природная зона</span>
     </div>
-    <div class="tools" id="tools"></div>
     <p><a href="review.html">Список всех регионов</a> — с названиями, откуда они взялись, и ссылками на Google Maps для сверки.</p>
     <p>Подложка нарисована по данным OpenStreetMap и переписи США 2000 года. Что появилось после весны 2005 года, мы стараемся с карты убирать. Границы регионов игровые: они примерно идут по городской черте и крупным дорогам, но сглажены для удобства. Мелкие городки внутри больших городов показаны как их часть, а об этом сказано в описании.</p>
   </footer>

@@ -16,7 +16,6 @@ var STORE_KEY = "vtm-dallas-2005-map.personal.v1";
 var VIEW_KEY = "vtm-dallas-2005-map.view";
 var BOUNDS = [[32.58, -97.55], [33.08, -96.50]];
 var ORIGIN = [32.8005, -96.8277]; // отель Anatole, от него считаются расстояния
-var MARKS = [["", "Без метки"], ["haven", "Убежище"], ["ally", "Союзники"], ["hostile", "Враждебность"], ["important", "Важное место"]];
 var MLABEL = {haven: "Убежище", ally: "Союзники", hostile: "Враждебность", important: "Важное место"};
 var NATKIND = {water: "Озеро", green: "Природная зона"};
 // Сетки старой карты: чтобы показать клетки поверх
@@ -27,16 +26,16 @@ var GRIDS = {
 };
 var LET = "ABCDEFGHI";
 
-var geo = {}, text = {nodes: {}, nature: {}}, census = {nodes: {}}, mine = {items: {}}, aliases = {};
+var geo = {}, text = {nodes: {}, nature: {}}, census = {nodes: {}}, aliases = {};
 var idx = {}, kidsOf = {}; // узел по id; дети по id родителя ("" — верхний уровень)
 var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
 var open = []; // раскрытая ветка: путь от верхнего уровня
-var view = {leaves: false, lens: "", dart: false}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
+var view = {leaves: false, lens: "", dart: false, chron: true}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
 var sel = null; // {k: "n" | "nat", id}
-var editing = false, status = "", toolStatus = "", confirmWipe = false, moreOpen = {};
+var editing = false, status = "", moreOpen = {};
 var map, featOf = {n: {}, nat: {}}, layerOf = {n: {}, nat: {}}, labelLayer, natLayer;
 var selLayer = null, gridLayer, gridLabels, extra = {}, lensLayer = null, lensReady = null;
-var panel = document.getElementById("panel"), toolsEl = document.getElementById("tools");
+var panel = document.getElementById("panel");
 
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (ch) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[ch]; }); }
 function paras(t) {
@@ -44,8 +43,6 @@ function paras(t) {
 }
 function skey(s) { return s.k + ":" + s.id; }
 function info(s) { return (s.k === "nat" ? text.nature[s.id] : text.nodes[s.id]) || {}; }
-function own(s) { return mine.items[skey(s)] || null; }
-function marker(s) { var o = own(s); return (o && o.marker) || info(s).marker || ""; }
 function store(key, val) { try { localStorage.setItem(key, val); } catch (_) {} }
 function load(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
 function isOpen(id) { return view.leaves ? !!(idx[id] && idx[id].n) : open.indexOf(id) >= 0; }
@@ -55,23 +52,215 @@ function nameOf(s) {
   var f = featOf[s.k][s.id]; return f ? f.properties.name : "";
 }
 
-// ---------- личное хранилище ----------
-// Ключи: «n:<узел>», «nat:<озеро или парк>». Пометки старых карт («d:<район>» и т. п.) переносятся по таблице aliases.
-function loadMine() {
-  try { var raw = load(STORE_KEY); if (raw) { var p = JSON.parse(raw); if (p && p.items) mine = p; } } catch (_) {}
-  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; view.lens = LENS[v.lens] ? v.lens : ""; view.dart = !!v.dart; } catch (_) {}
-  var moved = 0;
-  Object.keys(mine.items).forEach(function (k) {
-    if (/^(n|nat):/.test(k)) return;
-    var to = aliases[k];
-    if (to && !mine.items["n:" + to]) { mine.items["n:" + to] = mine.items[k]; moved++; }
-    if (to) delete mine.items[k];
-  });
-  if (moved) saveMine();
+// ---------- метки: слоты ----------
+// Слот — набор меток одного автора: точки на карте и заметки к регионам. Слоты лежат в браузере, каждый сохраняется
+// в файл и загружается отдельно: мастер раздаёт свои метки слотом, игрок обновляет его файлом, не трогая свои.
+// Слот: {id, name, on, tags: {тег: цвет}, pins: [{id, ll: [широта, долгота], icon, color, title, tags: [], text}],
+//        regions: {"n:<узел>" | "nat:<озеро или парк>": {color, tags: [], text}}}
+var MARKS_KEY = "vtm-dallas-2005-map.marks.v2", FILE_FORMAT = "vtm-dallas-2005-marks";
+var PALETTE = ["#d6453a", "#e8892b", "#e3c22f", "#4c9a47", "#2a9187", "#3a74cc", "#7b5ccc", "#c4509b", "#8a6a2c", "#5f6876"];
+var OLD = {haven: ["home", "#2f8a46"], ally: ["users", "#1f7368"], hostile: ["skull", "#b0242d"], important: ["star", "#a86a00"]};
+var marks = {active: "", slots: []}, chron = null; // chron — встроенный слот «Метки хроники» из data/map.json, только смотреть
+var placing = false, draft = null, isNewPin = false, noteSlot = "", confirmDel = false;
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+function allSlots() { return (chron && chron.pins.length ? [chron] : []).concat(marks.slots); }
+function slotOf(id) { return allSlots().filter(function (x) { return x.id === id; })[0] || null; }
+function activeSlot() { return slotOf(marks.active) || marks.slots[0] || null; }
+function newSlot(name) { var s = {id: uid(), name: name, on: true, tags: {}, pins: [], regions: {}}; marks.slots.push(s); return s; }
+function pinOf(s) { var slot = s && slotOf(s.slot); return slot ? slot.pins.filter(function (p) { return p.id === s.id; })[0] || null : null; }
+function validKey(k) { var g = k.split(":"), id = g.slice(1).join(":"); return (g[0] === "n" && !!idx[id]) || (g[0] === "nat" && !!natFeat(id)); }
+function natFeat(id) { return geo.nature.features.filter(function (f) { return f.properties.id === id; })[0] || null; }
+function keyName(k) { var g = k.split(":"), id = g.slice(1).join(":"); return g[0] === "n" ? idx[id].name : natFeat(id).properties.name; }
+function keyCenter(k) { var g = k.split(":"), id = g.slice(1).join(":"), p = g[0] === "n" ? idx[id] : natFeat(id).properties; return [p.ly, p.lx]; }
+function fixKey(k) { return validKey(k) ? k : aliases[k] && idx[aliases[k]] ? "n:" + aliases[k] : null; }
+function tagsColored(slot, list) { // теги без цвета получают следующий цвет палитры
+  list.forEach(function (t) { if (!slot.tags[t]) slot.tags[t] = PALETTE[Object.keys(slot.tags).length % PALETTE.length]; });
 }
-function saveMine() {
-  try { mine.updated = new Date().toISOString(); localStorage.setItem(STORE_KEY, JSON.stringify(mine)); return true; }
+function counts(s) {
+  var p = s.pins.length, r = Object.keys(s.regions).length;
+  return p || r ? [p ? p + " " + plural(p, "метка", "метки", "меток") : "", r ? r + " " + plural(r, "регион", "региона", "регионов") : ""].filter(Boolean).join(", ") : "пусто";
+}
+function plural(n, a, b, c) { var m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 10 || h >= 20) ? b : c; }
+
+// Пометки первой версии ({items: {"n:…": {marker, label, notes}}}): с меткой — точка в центре региона, без — заметка к региону
+function fromOld(items) {
+  var out = {tags: {}, pins: [], regions: {}};
+  Object.keys(items || {}).forEach(function (k0) {
+    var k = fixKey(k0), o = items[k0] || {}; if (!k) return;
+    var notes = String(o.notes || "").trim(), label = String(o.label || "").trim(), m = OLD[o.marker];
+    if (m) {
+      out.tags[MLABEL[o.marker]] = m[1];
+      out.pins.push({id: uid(), ll: keyCenter(k), icon: m[0], color: m[1], title: label || keyName(k), tags: [MLABEL[o.marker]], text: notes});
+    } else if (label || notes) {
+      var r = out.regions[k] = out.regions[k] || {color: "", tags: [], text: ""};
+      if (label && r.tags.indexOf(label) < 0) r.tags.push(label);
+      if (notes) r.text = (r.text ? r.text + "\n\n" : "") + notes;
+      tagsColored(out, r.tags);
+    }
+  });
+  return out;
+}
+// Содержимое слота из файла или хранилища: всё проверяем, лишнее отбрасываем
+function cleanSlot(p) {
+  var hex = /^#[0-9a-f]{6}$/i, out = {tags: {}, pins: [], regions: {}}, seen = {};
+  function str(v, n) { return String(v == null ? "" : v).slice(0, n); }
+  function tags(a) { return (Array.isArray(a) ? a : []).map(function (t) { return str(t, 40).trim(); }).filter(function (t, i, all) { return t && all.indexOf(t) === i; }).slice(0, 12); }
+  Object.keys(p.tags || {}).forEach(function (t) { var c = p.tags[t]; t = str(t, 40).trim(); if (t) out.tags[t] = hex.test(c) ? c : PALETTE[9]; });
+  (Array.isArray(p.pins) ? p.pins : []).forEach(function (q) {
+    var ll = q && q.ll; if (!Array.isArray(ll) || !isFinite(ll[0]) || !isFinite(ll[1])) return;
+    var id = str(q.id, 20) || uid(); if (seen[id]) id = uid(); seen[id] = 1;
+    out.pins.push({id: id, ll: [+ll[0], +ll[1]], icon: PIN[q.icon] ? q.icon : "dot", color: hex.test(q.color) ? q.color : PALETTE[0],
+      title: str(q.title, 120), tags: tags(q.tags), text: str(q.text, 20000)});
+  });
+  Object.keys(p.regions || {}).forEach(function (k0) {
+    var r = p.regions[k0] || {}, k = fixKey(k0); if (!k) return;
+    out.regions[k] = {color: hex.test(r.color) ? r.color : "", tags: tags(r.tags), text: str(r.text, 20000)};
+  });
+  out.pins.forEach(function (q) { tagsColored(out, q.tags); });
+  Object.keys(out.regions).forEach(function (k) { tagsColored(out, out.regions[k].tags); });
+  return out;
+}
+// Файл: этой системы, первой версии этой карты ({items}) или старой карты в клетку ({cells})
+function slotFromFile(p) {
+  if (p && p.format === FILE_FORMAT) return {name: String(p.name || "").slice(0, 60), body: cleanSlot(p)};
+  if (p && p.items && typeof p.items === "object") return {name: "", body: fromOld(p.items)};
+  if (p && p.cells && typeof p.cells === "object") {
+    var items = {};
+    Object.keys(p.cells).forEach(function (k) {
+      var to = aliases[k], c = p.cells[k] || {}; if (!to) return;
+      items["n:" + to] = {marker: c.marker, label: c.label, notes: c.notes ? "[старая клетка " + k + "] " + c.notes : ""};
+    });
+    return {name: "", body: fromOld(items)};
+  }
+  throw new Error("bad");
+}
+
+function loadMine() {
+  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; view.lens = LENS[v.lens] ? v.lens : ""; view.dart = !!v.dart; view.chron = v.chron !== false; } catch (_) {}
+  var raw = null;
+  try { raw = JSON.parse(load(MARKS_KEY) || "null"); } catch (_) {}
+  if (raw && Array.isArray(raw.slots)) {
+    raw.slots.forEach(function (s) {
+      var c = cleanSlot(s || {}); c.id = String(s.id || uid()).slice(0, 20); c.name = String(s.name || "Слот").slice(0, 60); c.on = s.on !== false;
+      marks.slots.push(c);
+    });
+    marks.active = raw.active || "";
+  } else { // первый запуск: переносим пометки первой версии в слот «Мои метки»
+    var old = null;
+    try { old = JSON.parse(load(STORE_KEY) || "null"); } catch (_) {}
+    var s = newSlot("Мои метки"), c = old && old.items ? fromOld(old.items) : null;
+    if (c) { s.tags = c.tags; s.pins = c.pins; s.regions = c.regions; }
+    marks.active = s.id; saveMarks();
+  }
+  if (!slotOf(marks.active)) marks.active = marks.slots.length ? marks.slots[0].id : "";
+  chron = {id: "chron", name: "Метки хроники", fixed: true, on: view.chron, tags: {}, pins: [], regions: {}};
+  ["nodes", "nature"].forEach(function (sec) {
+    Object.keys(text[sec]).forEach(function (id) {
+      var x = text[sec][id], m = OLD[x.marker], k = (sec === "nodes" ? "n:" : "nat:") + id;
+      if (!m || !validKey(k)) return;
+      chron.tags[MLABEL[x.marker]] = m[1];
+      chron.pins.push({id: "c-" + id, ll: keyCenter(k), icon: m[0], color: m[1], title: x.label || keyName(k), tags: [MLABEL[x.marker]], text: ""});
+    });
+  });
+}
+function saveMarks() {
+  try { localStorage.setItem(MARKS_KEY, JSON.stringify({active: marks.active, slots: marks.slots})); return true; }
   catch (_) { return false; }
+}
+// Заметки видимых слотов к региону и цвет, которым его красить (активный слот главнее)
+function regionNotes(k) {
+  return allSlots().filter(function (s) { return s.on && s.regions[k]; }).map(function (s) { return {slot: s, r: s.regions[k]}; });
+}
+function regionColor(k) {
+  var a = activeSlot(), c = "";
+  allSlots().forEach(function (s) { if (s.on && s.regions[k] && s.regions[k].color) c = s.regions[k].color; });
+  return a && a.on && a.regions[k] && a.regions[k].color || c;
+}
+function tagChips(slot, list) {
+  return (list || []).length ? '<div class="tchips">' + list.map(function (t) { return '<span class="tchip" style="--c:' + (slot.tags[t] || PALETTE[9]) + '">' + esc(t) + '</span>'; }).join("") + '</div>' : "";
+}
+
+// ---------- метки: точки на карте ----------
+// Значки — линии в духе Tabler Icons (MIT)
+var PIN = {
+  dot: ["M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"],
+  home: ["M5 12l-2 0l9 -9l9 9l-2 0", "M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7", "M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"],
+  glass: ["M8 21h8", "M12 15v6", "M12 5m-7 0a7 2 0 1 0 14 0a7 2 0 1 0 -14 0", "M5 5v.388c0 .432 .126 .853 .362 1.206l5 7.509c.633 .951 1.88 1.183 2.785 .517c.191 -.141 .358 -.316 .491 -.517l5 -7.509c.236 -.353 .362 -.774 .362 -1.206v-.388"],
+  building: ["M3 21l18 0", "M9 8l1 0", "M9 12l1 0", "M9 16l1 0", "M14 8l1 0", "M14 12l1 0", "M14 16l1 0", "M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"],
+  eye: ["M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0", "M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"],
+  star: ["M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"],
+  users: ["M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0", "M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2", "M16 3.13a4 4 0 0 1 0 7.75", "M21 21v-2a4 4 0 0 0 -3 -3.85"],
+  skull: ["M12 4c4.418 0 8 3.358 8 7.5c0 1.901 -.755 3.637 -2 4.96v2.54a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-2.54c-1.245 -1.322 -2 -3.058 -2 -4.96c0 -4.142 3.582 -7.5 8 -7.5z", "M10 17v3", "M14 17v3", "M9 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M15 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"],
+  drop: ["M7.502 19.423c2.602 2.105 6.395 2.105 8.996 0c2.602 -2.105 3.262 -5.708 1.566 -8.546l-4.89 -7.26c-.42 -.625 -1.287 -.803 -1.936 -.397a1.376 1.376 0 0 0 -.41 .397l-4.893 7.26c-1.695 2.838 -1.035 6.441 1.567 8.546z"],
+  heart: ["M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"],
+  shield: ["M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"],
+  crown: ["M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z"],
+  flag: ["M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9z", "M5 21v-7"],
+  key: ["M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z", "M15 9h.01"],
+  alert: ["M12 9v4", "M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z", "M12 16h.01"],
+  moon: ["M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"],
+  cross: ["M12 3v18", "M7 8h10"],
+  coin: ["M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0", "M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1 -1.8 -1", "M12 7v10"],
+  blade: ["M20 4v5l-9 7l-4 4l-3 -3l4 -4l7 -9z", "M6.5 11.5l6 6"],
+  question: ["M8 8a3.5 3 0 0 1 3.5 -3h1a3.5 3 0 0 1 3.5 3a3 3 0 0 1 -2 3a3 4 0 0 0 -2 4", "M12 19l0 .01"]
+};
+var PIN_NAME = {dot: "точка", home: "дом", glass: "бокал", building: "здание", eye: "глаз", star: "звезда", users: "люди", skull: "череп",
+  drop: "капля", heart: "сердце", shield: "щит", crown: "корона", flag: "флаг", key: "ключ", alert: "опасность", moon: "луна",
+  cross: "крест", coin: "деньги", blade: "клинок", question: "вопрос"};
+var pinLayer = null;
+function pinSvg(name) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (PIN[name] || PIN.dot).map(function (d) { return '<path d="' + d + '"/>'; }).join("") + '</svg>'; }
+function isLight(hex) { var n = parseInt(hex.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) > 160; }
+function pinHtml(p) { return '<span class="pinb' + (isLight(p.color) ? " lt" : "") + '" style="background:' + p.color + '">' + pinSvg(p.icon) + '</span>'; }
+function drawPins() {
+  if (!pinLayer) pinLayer = L.layerGroup().addTo(map);
+  pinLayer.clearLayers();
+  var list = [];
+  allSlots().forEach(function (slot) { if (slot.on) slot.pins.forEach(function (p) { list.push([slot, p]); }); });
+  if (draft && sel && sel.k === "pin" && isNewPin) list.push([slotOf(sel.slot), draft]);
+  list.forEach(function (q) {
+    var slot = q[0], p = q[1], on = sel && sel.k === "pin" && sel.slot === slot.id && sel.id === p.id, drag = on && editing;
+    if (on && draft) p = draft;
+    var m = L.marker(p.ll, {pane: "pins", keyboard: false, draggable: drag, zIndexOffset: on ? 1000 : 0, riseOnHover: true,
+      icon: L.divIcon({className: "pin" + (on ? " on" : "") + (drag ? " drag" : ""), html: pinHtml(p), iconSize: [26, 26], iconAnchor: [13, 13]})});
+    m.bindTooltip("<b>" + esc(p.title || "Метка") + "</b><small>" + esc((p.tags.length ? p.tags.join(", ") + " · " : "") + slot.name) + "</small>",
+      {direction: "top", className: "tip", offset: [0, -14]});
+    m.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) selectPin(slot.id, q[1].id, false); });
+    m.on("dragend", function () { var ll = m.getLatLng(); if (draft) draft.ll = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)]; });
+    pinLayer.addLayer(m);
+  });
+}
+function selectPin(slotId, id, fly) {
+  var p = pinOf({slot: slotId, id: id}); if (!p) return;
+  placeStop(); sel = {k: "pin", slot: slotId, id: id}; editing = false; draft = null; isNewPin = false; status = ""; confirmDel = false;
+  drawSel(); drawPins(); renderPanel(); syncHash(); placeLabels();
+  if (fly) map.flyTo(p.ll, Math.max(map.getZoom(), 13), {duration: 0.6});
+}
+// Регион под точкой: самый глубокий из загруженных
+function regionAt(ll) {
+  var best = null;
+  Object.keys(featOf.n).forEach(function (id) { if ((!best || idx[id].depth > idx[best].depth) && inFeat(featOf.n[id], ll[1], ll[0])) best = id; });
+  return best;
+}
+// Поставить метку: кнопка в карточке включает режим, следующий клик по карте ставит точку; правый клик ставит сразу
+function placeStart() {
+  placing = true; map.getContainer().classList.add("placing");
+  var h = document.getElementById("place-hint"); if (h) h.hidden = false;
+}
+function placeStop() {
+  placing = false; map.getContainer().classList.remove("placing");
+  var h = document.getElementById("place-hint"); if (h) h.hidden = true;
+}
+function placeAt(ll) {
+  if (!placing) return false;
+  placeStop();
+  var slot = activeSlot();
+  if (!slot) { slot = newSlot("Мои метки"); marks.active = slot.id; saveMarks(); renderSlots(); }
+  sel = {k: "pin", slot: slot.id, id: uid()}; editing = true; isNewPin = true; status = ""; confirmDel = false;
+  draft = {id: sel.id, ll: [+ll.lat.toFixed(6), +ll.lng.toFixed(6)], icon: "dot", color: PALETTE[0], title: "", tags: [], text: ""};
+  drawSel(); drawPins(); renderPanel(); syncHash();
+  var t = document.getElementById("f-title"); if (t) t.focus();
+  return true;
 }
 
 // ---------- мелочи ----------
@@ -328,12 +517,12 @@ function inRing(x, y, ring) {
   }
   return c;
 }
+function inFeat(f, x, y) {
+  var g = f.geometry, polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+  return polys.some(function (p) { return inRing(x, y, p[0]) && !p.slice(1).some(function (h) { return inRing(x, y, h); }); });
+}
 function leafAt(id, ll) {
-  var x = ll.lng, y = ll.lat;
-  return descendants(id).filter(function (d) { return !idx[d].n && featOf.n[d]; }).filter(function (d) {
-    var g = featOf.n[d].geometry, polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
-    return polys.some(function (p) { return inRing(x, y, p[0]) && !p.slice(1).some(function (h) { return inRing(x, y, h); }); });
-  })[0] || null;
+  return descendants(id).filter(function (d) { return !idx[d].n && featOf.n[d] && inFeat(featOf.n[d], ll.lng, ll.lat); })[0] || null;
 }
 function lensTip(s) {
   if (!view.lens) return "";
@@ -453,7 +642,7 @@ function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
     maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: 0.5})});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
-  [["land", 200], ["lens", 290], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["city", 345], ["sel", 430], ["dart", 435], ["grid", 440], ["labels", 450]].forEach(function (p) {
+  [["land", 200], ["lens", 290], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["city", 345], ["sel", 430], ["dart", 435], ["grid", 440], ["labels", 450], ["pins", 460]].forEach(function (p) {
     map.createPane(p[0]).style.zIndex = p[1];
   });
   ["lens", "city", "green", "water", "grid", "labels", "sel"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
@@ -469,12 +658,14 @@ function buildMap() {
     onEachFeature: function (f, l) {
       var id = f.properties.id; featOf.nat[id] = f; layerOf.nat[id] = l;
       l.bindTooltip(function () { return esc(f.properties.name) + lensTip({k: "nat", id: id}); }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
-      l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "nat", id: id}, false); });
+      l.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "nat", id: id}, false); });
     }}).addTo(map);
 
   labelLayer = L.layerGroup().addTo(map);
   buildGrid();
 
+  map.on("click", function (e) { placeAt(e.latlng); });
+  map.on("contextmenu", function (e) { placeStart(); placeAt(e.latlng); }); // правый клик (на телефоне — долгое нажатие) ставит метку
   map.on("zoomend", refresh);
   map.on("moveend", placeLabels);
   home(false);
@@ -507,14 +698,11 @@ function ensurePath(ids) { // загрузить файлы для всех уз
 }
 
 function regClass(id, p) {
-  var x = idx[id], m = marker({k: "n", id: id}), inh = "";
+  var x = idx[id];
   p = p || (featOf.n[id] ? featOf.n[id].properties : {});
-  if (!m && x.n && !isOpen(id)) { // свёрнутый регион показывает метки того, что внутри
-    descendants(id).some(function (d) { var dm = marker({k: "n", id: d}); if (dm) inh = " mi-" + dm; return dm; });
-  }
   var parent = x.parent || "", focus = view.leaves || parent === (open.length ? open[open.length - 1] : "");
   return "reg d" + Math.min(x.depth, 3) + " t" + (p.tone || 0) + " s" + (p.shade || 0) +
-    " k-" + (x.kind || "area") + (isOpen(id) ? " exp" : focus ? " focus" : " ctx") + (m ? " m-" + m : inh);
+    " k-" + (x.kind || "area") + (isOpen(id) ? " exp" : focus ? " focus" : " ctx") + (regionColor("n:" + id) ? " painted" : "");
 }
 function descendants(id) {
   var out = [];
@@ -535,7 +723,7 @@ function hook(f, l) {
     var lf = view.lens && idx[id].n && !isOpen(id) && lensLayer ? leafAt(id, e.latlng) : null;
     if (lf !== leaf) { leaf = lf; if (l.getTooltip()) l.getTooltip().update(); }
   });
-  l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "n", id: id}, false); });
+  l.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "n", id: id}, false); });
   l.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); if (idx[id].n) expand(id); });
   l.on("mouseover", function () { var el = l.getElement(); if (el) el.classList.add("hov"); });
   l.on("mouseout", function () { var el = l.getElement(); if (el) el.classList.remove("hov"); });
@@ -550,7 +738,7 @@ function syncLayers() {
   want.forEach(function (p) { if (regLayer[p] && map.hasLayer(regLayer[p])) map.removeLayer(regLayer[p]); });
   want.forEach(function (p) { if (regLayer[p]) regLayer[p].addTo(map); });
   refreshStyles(); drawSel();
-  document.getElementById("collapse").disabled = view.leaves || !open.length;
+  syncCollapse();
 }
 
 // Раскрыть узел: только его ветка, остальные свёрнуты. Карта не двигается, кроме перехода по ссылке (fly).
@@ -664,7 +852,7 @@ function buildGrid() {
 }
 
 function clearSel() {
-  sel = null; if (selLayer) map.removeLayer(selLayer); selLayer = null;
+  sel = null; editing = false; draft = null; isNewPin = false; if (selLayer) map.removeLayer(selLayer); selLayer = null; drawPins();
   map.getContainer().classList.remove("has-sel");
   renderPanel(); syncHash(); placeLabels();
 }
@@ -680,8 +868,8 @@ function select(s, fly) {
       return;
     }
   } else if (!featOf[s.k][s.id]) return;
-  sel = s; editing = false; status = "";
-  drawSel();
+  placeStop(); sel = s; editing = false; status = ""; draft = null; isNewPin = false; noteSlot = ""; confirmDel = false;
+  drawSel(); drawPins();
   if (fly) {
     var b = layerOf[s.k][s.id].getBounds();
     map.flyTo(b.getCenter(), Math.min(14, Math.max(9.5, map.getBoundsZoom(b, false, L.point(60, 60)))), {duration: 0.6});
@@ -694,7 +882,7 @@ function select(s, fly) {
 function drawSel() {
   if (selLayer) map.removeLayer(selLayer);
   selLayer = null;
-  if (!sel) return;
+  if (!sel || sel.k === "pin") { map.getContainer().classList.remove("has-sel"); return; }
   var cls = "selpath" + (sel.k === "n" && isOpen(sel.id) ? " selopen" : "");
   selLayer = L.geoJSON(featOf[sel.k][sel.id], {pane: "sel", interactive: false, style: {className: cls}}).addTo(map);
   map.getContainer().classList.add("has-sel");
@@ -703,12 +891,12 @@ function drawSel() {
 function refreshStyles() {
   Object.keys(layerOf.n).forEach(function (id) {
     var el = layerOf.n[id].getElement();
-    if (el) { el.setAttribute("class", regClass(id) + " leaflet-interactive"); el.style.fill = ""; }
+    if (el) { el.setAttribute("class", regClass(id) + " leaflet-interactive"); el.style.fill = regionColor("n:" + id); }
   });
   syncLensLeaves();
   Object.keys(layerOf.nat).forEach(function (id) {
-    var el = layerOf.nat[id].getElement(), m = marker({k: "nat", id: id});
-    if (el) { el.setAttribute("class", "nat k-" + featOf.nat[id].properties.kind + (m ? " m-" + m : "") + " leaflet-interactive"); paintLens(el, {k: "nat", id: id}); }
+    var el = layerOf.nat[id].getElement(), c = regionColor("nat:" + id);
+    if (el) { el.setAttribute("class", "nat k-" + featOf.nat[id].properties.kind + (c ? " painted" : "") + " leaflet-interactive"); el.style.fill = c; if (view.lens) paintLens(el, {k: "nat", id: id}); }
   });
 }
 
@@ -719,7 +907,8 @@ var INTRO = '<div class="pmeta"><span>Даллас, Форт-Уэрт и при�
   '<p>Озёра, парки и заповедники видны всегда, их тоже можно открыть.</p>' +
   '<p>«Линза» в шапке перекрашивает карту по одному признаку: достаток, кто живёт, опасность улиц, свидетели, ночная жизнь, застройка, полиция. Что значит цвет — в легенде в углу карты.</p>' +
   '<p>Кнопка «DART» показывает поезда 2005 года: линии лёгкого метро, пригородный поезд до Форт-Уэрта и станции.</p>' +
-  '<p>К любому региону можно добавить свою метку и заметки: они хранятся только в твоём браузере.</p></div>';
+  '<p>Метки — точки на карте со своим значком, цветом, тегами и текстом. Поставить: «Поставить метку» в карточке региона и клик по карте, или правый клик по карте. К региону можно добавить заметку и перекрасить его своим цветом.</p>' +
+  '<p>Метки лежат в слотах — меню «Метки» в шапке. Слот можно скрыть, сохранить в файл и загрузить у другого игрока или мастера: загрузка заменяет только этот слот. Всё хранится только в твоём браузере.</p></div>';
 
 function crumbs(id) {
   return ancestors(id).map(function (a) { return '<a href="#n/' + esc(a) + '" data-crumb="' + esc(a) + '">' + esc(idx[a].name) + '</a>'; });
@@ -727,42 +916,22 @@ function crumbs(id) {
 
 function renderPanel() {
   if (!sel) { panel.innerHTML = INTRO; return; }
-  var s = sel, x = info(s), o = own(s) || {marker: "", label: "", notes: ""};
+  if (sel.k === "pin") { renderPinPanel(); return; }
+  var s = sel, x = info(s);
   var node = s.k === "n" ? idx[s.id] : null, np = s.k === "nat" ? featOf.nat[s.id].properties : null;
   var name = node ? node.name : np.name, km2 = node ? node.km2 : np.km2, ll = node ? [node.ly, node.lx] : [np.ly, np.lx];
   var meta = '<span>' + (node ? kindLabel(s.id) : NATKIND[np.kind]) + '</span>' + (node ? crumbs(s.id).join('<span>›</span>') : '');
 
-  if (editing) {
-    var mopts = MARKS.map(function (m) { return '<option value="' + m[0] + '"' + (m[0] === (o.marker || "") ? " selected" : "") + '>' + m[1] + '</option>'; }).join("");
-    panel.innerHTML = '<div class="pmeta">' + meta + '</div><h2>' + esc(name) + '</h2>' +
-      '<p class="psum">Эти пометки видишь только ты. Они хранятся в этом браузере.</p>' +
-      '<form class="form" id="f"><div class="two"><div class="row"><label for="f-m">Моя метка</label><select id="f-m">' + mopts + '</select></div>' +
-      '<div class="row"><label for="f-tag">Подпись</label><input id="f-tag" placeholder="например, Логово шерифа" value="' + esc(o.label) + '"></div></div>' +
-      '<div class="row"><label for="f-notes">Мои заметки</label><textarea id="f-notes" rows="7" placeholder="Сюжетные зацепки, NPC, что угодно своё">' + esc(o.notes) + '</textarea></div>' +
-      '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
-      (own(s) ? '<button class="btn danger" type="button" id="f-del">Удалить мои пометки</button>' : '') +
-      '<span class="status">' + esc(status) + '</span></div></form>';
-    document.getElementById("f").addEventListener("submit", function (e) {
-      e.preventDefault();
-      var next = {marker: document.getElementById("f-m").value, label: document.getElementById("f-tag").value.trim(),
-        notes: document.getElementById("f-notes").value.replace(/\r/g, "").trim()};
-      if (!next.marker && !next.label && !next.notes) delete mine.items[skey(s)]; else mine.items[skey(s)] = next;
-      if (saveMine()) { editing = false; status = "Сохранено в этом браузере"; }
-      else status = "Браузер не дал сохранить. Возможно, включён приватный режим.";
-      refreshStyles(); renderPanel(); renderTools();
-    });
-    document.getElementById("f-cancel").addEventListener("click", function () { editing = false; status = ""; renderPanel(); });
-    var del = document.getElementById("f-del");
-    if (del) del.addEventListener("click", function () { delete mine.items[skey(s)]; saveMine(); editing = false; status = "Мои пометки удалены"; refreshStyles(); renderPanel(); renderTools(); });
-    return;
-  }
+  if (editing) { renderNoteForm(s, name, meta); return; }
 
   var chips = "";
   if (x.marker && MLABEL[x.marker]) chips += '<span class="chip m-' + x.marker + '">' + esc(MLABEL[x.marker]) + '</span>';
   if (x.label) chips += '<span class="chip">' + esc(x.label) + '</span>';
-  var mineBlock = own(s) ? '<div class="mine"><h3>Мои пометки</h3>' +
-    ((o.marker || o.label) ? '<div class="pmeta" style="margin-bottom:6px">' + (o.marker ? '<span class="chip m-' + o.marker + '">' + esc(MLABEL[o.marker]) + '</span>' : '') + (o.label ? '<span class="chip">' + esc(o.label) + '</span>' : '') + '</div>' : '') +
-    (o.notes ? '<p>' + esc(o.notes) + '</p>' : '') + '</div>' : "";
+  var act = activeSlot(), mineBlock = regionNotes(skey(s)).map(function (q) {
+    return '<div class="mine"><h3>' + (q.r.color ? '<i class="sw" style="background:' + q.r.color + '"></i>' : "") + esc(q.slot.name) +
+      (q.slot.fixed ? "" : '<button type="button" class="linkbtn" data-note="' + esc(q.slot.id) + '">изменить</button>') + '</h3>' +
+      tagChips(q.slot, q.r.tags) + (q.r.text ? '<p>' + esc(q.r.text) + '</p>' : "") + '</div>';
+  }).join("");
   // своего текста нет — показываем описание ближайшего предка, у которого он есть
   var body = (x.details || "").trim() ? '<div class="pdet">' + paras(x.details) + '</div>' : "";
   if (!body && node) {
@@ -790,7 +959,8 @@ function renderPanel() {
     mineBlock +
     '<div class="actions">' +
     (node && node.n && !view.leaves ? (opened ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Раскрыть</button>') : '') +
-    '<button class="btn" type="button" id="p-edit">' + (own(s) ? "Изменить мои пометки" : "Добавить свою пометку") + '</button>' +
+    '<button class="btn" type="button" id="p-note">' + (act && act.regions[skey(s)] ? "Изменить заметку" : "Заметка к региону") + '</button>' +
+    '<button class="btn" type="button" id="p-pin" title="Потом нажми на карту, где поставить точку">Поставить метку</button>' +
     '<button class="btn" type="button" id="p-show">Показать на карте</button>' +
     (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' + kids;
   bindTags();
@@ -798,7 +968,10 @@ function renderPanel() {
   if (pm) pm.addEventListener("toggle", function () { if (pm.open) moreOpen[skey(s)] = 1; else delete moreOpen[skey(s)]; });
   var po = document.getElementById("p-open"); if (po) po.addEventListener("click", function () { expand(s.id); });
   var pf = document.getElementById("p-fold"); if (pf) pf.addEventListener("click", function () { collapseTo(s.id); });
-  document.getElementById("p-edit").addEventListener("click", function () { editing = true; status = ""; renderPanel(); var t = document.getElementById("f-notes"); if (t) t.focus(); });
+  function note(id) { editing = true; noteSlot = id || ""; status = ""; confirmDel = false; renderPanel(); var t = document.getElementById("f-text"); if (t) t.focus(); }
+  document.getElementById("p-note").addEventListener("click", function () { note(""); });
+  panel.querySelectorAll("[data-note]").forEach(function (b) { b.addEventListener("click", function () { note(b.getAttribute("data-note")); }); });
+  document.getElementById("p-pin").addEventListener("click", placeStart);
   document.getElementById("p-show").addEventListener("click", function () { select(s, true); });
 }
 
@@ -848,74 +1021,282 @@ function setupSearch() {
   document.addEventListener("click", function (e) { if (!e.target.closest(".search")) box.hidden = true; });
 }
 
-// ---------- личные пометки: файл ----------
-function renderTools() {
-  var n = Object.keys(mine.items).length;
-  toolsEl.innerHTML =
-    '<span class="status">Мои пометки: ' + n + '</span>' +
-    '<button class="btn small" type="button" id="t-exp"' + (n ? '' : ' disabled') + '>Скачать файлом</button>' +
-    '<label class="btn small" for="t-imp" style="cursor:pointer">Загрузить из файла</label><input type="file" id="t-imp" accept="application/json,.json" hidden>' +
-    (n ? (confirmWipe
-      ? '<button class="btn small danger" type="button" id="t-wipe2">Да, удалить все</button><button class="btn small" type="button" id="t-wipe0">Не удалять</button>'
-      : '<button class="btn small danger" type="button" id="t-wipe">Удалить все мои пометки</button>') : '') +
-    (toolStatus ? '<span class="status">' + esc(toolStatus) + '</span>' : '');
-  var exp = document.getElementById("t-exp");
-  if (exp) exp.addEventListener("click", function () {
-    var blob = new Blob([JSON.stringify(mine, null, 1)], {type: "application/json"});
-    var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-    a.download = "moi-pometki-dallas-2005-rajony.json"; document.body.appendChild(a); a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-    toolStatus = "Файл скачан. Его можно загрузить в другом браузере или на другом устройстве."; renderTools();
+// ---------- карточка метки и формы ----------
+// Поле тегов: теги вписываются вручную (Enter или запятая), у каждого свой цвет; цвет тега общий для всего слота
+function tagEdHtml(slot) {
+  return '<div class="taged"><span class="tlist" id="f-tlist"></span><input id="f-tagin" list="f-taglist" placeholder="новый тег, Enter" autocomplete="off">' +
+    '<datalist id="f-taglist">' + Object.keys(slot.tags).map(function (t) { return '<option value="' + esc(t) + '">'; }).join("") + '</datalist></div>';
+}
+function bindTagEd(slot, st, onchange) { // st: {tags: [], colors: {}}
+  var box = document.getElementById("f-tlist"), inp = document.getElementById("f-tagin");
+  function col(t) { return st.colors[t] || slot.tags[t] || PALETTE[(Object.keys(slot.tags).length + st.tags.indexOf(t)) % PALETTE.length]; }
+  function draw() {
+    box.innerHTML = st.tags.map(function (t, i) {
+      return '<span class="tchip ed" style="--c:' + col(t) + '"><input type="color" value="' + col(t) + '" data-i="' + i + '" title="Цвет тега «' + esc(t) + '»">' +
+        esc(t) + '<button type="button" data-x="' + i + '" aria-label="Убрать тег ' + esc(t) + '">×</button></span>';
+    }).join("");
+  }
+  function add() {
+    var v = inp.value.replace(/,/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+    inp.value = "";
+    if (!v || st.tags.indexOf(v) >= 0 || st.tags.length >= 12) return;
+    st.tags.push(v); st.colors[v] = col(v); draw(); onchange();
+  }
+  inp.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(); }
+    else if (e.key === "Backspace" && !inp.value && st.tags.length) { st.tags.pop(); draw(); onchange(); }
   });
-  document.getElementById("t-imp").addEventListener("change", function (e) {
-    var f = e.target.files && e.target.files[0]; if (!f) return;
-    var rd = new FileReader();
-    rd.onload = function () {
-      try { toolStatus = importFile(JSON.parse(rd.result)); } catch (_) { toolStatus = "Этот файл не похож на файл пометок с этой карты."; }
-      refreshStyles(); renderPanel(); renderTools();
-    };
-    rd.readAsText(f);
+  inp.addEventListener("change", add);
+  box.addEventListener("click", function (e) { var b = e.target.closest("[data-x]"); if (b) { st.tags.splice(+b.getAttribute("data-x"), 1); draw(); onchange(); } });
+  box.addEventListener("input", function (e) {
+    var i = e.target.getAttribute("data-i"); if (i == null) return;
+    st.colors[st.tags[+i]] = e.target.value; e.target.parentNode.style.setProperty("--c", e.target.value); onchange();
   });
-  var w = document.getElementById("t-wipe"); if (w) w.addEventListener("click", function () { confirmWipe = true; renderTools(); });
-  var w0 = document.getElementById("t-wipe0"); if (w0) w0.addEventListener("click", function () { confirmWipe = false; renderTools(); });
-  var w2 = document.getElementById("t-wipe2"); if (w2) w2.addEventListener("click", function () {
-    mine = {items: {}}; saveMine(); confirmWipe = false; toolStatus = "Все мои пометки удалены."; refreshStyles(); renderPanel(); renderTools();
+  draw();
+  return {flush: add, color: col};
+}
+function slotOptions(cur) {
+  return marks.slots.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === cur ? " selected" : "") + '>' + esc(s.name) + '</option>'; }).join("");
+}
+function confirmBtn(id, label) {
+  return confirmDel ? '<button class="btn danger" type="button" id="' + id + '2">Да, удалить</button><button class="btn" type="button" id="' + id + '0">Не удалять</button>'
+    : '<button class="btn danger" type="button" id="' + id + '">' + label + '</button>';
+}
+function bindConfirm(id, act) {
+  var a = document.getElementById(id), y = document.getElementById(id + "2"), n = document.getElementById(id + "0");
+  if (a) a.addEventListener("click", function () { confirmDel = true; renderPanel(); });
+  if (n) n.addEventListener("click", function () { confirmDel = false; renderPanel(); });
+  if (y) y.addEventListener("click", function () { confirmDel = false; act(); });
+}
+function afterMarks(msg) {
+  status = saveMarks() ? msg : "Браузер не дал сохранить. Возможно, включён приватный режим.";
+  refreshStyles(); drawPins(); renderPanel(); renderSlots();
+}
+
+function renderPinPanel() {
+  var slot = slotOf(sel.slot), p = isNewPin ? draft : pinOf(sel);
+  if (!slot || !p) { sel = null; renderPanel(); return; }
+  var reg = regionAt(p.ll), where = reg ? '<a href="#n/' + esc(reg) + '" data-go="n:' + esc(reg) + '">' + esc(idx[reg].name) + '</a>' : "";
+  if (!editing) {
+    panel.innerHTML = '<div class="pmeta"><span>Метка</span><span>' + esc(slot.name) + '</span>' + where + '</div>' +
+      '<h2 class="pinh">' + pinHtml(p) + esc(p.title || "Без названия") + '</h2>' + tagChips(slot, p.tags) +
+      (p.text ? '<div class="pdet">' + paras(p.text) + '</div>' : '<p class="hint">Текста нет.</p>') +
+      '<div class="actions">' + (slot.fixed ? "" : '<button class="btn primary" type="button" id="p-edit">Изменить</button>') +
+      '<button class="btn" type="button" id="p-show">Показать на карте</button>' + (slot.fixed ? "" : confirmBtn("p-del", "Удалить метку")) +
+      (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' +
+      (slot.fixed ? '<p class="hint">Общая метка хроники с карты. Скрыть её можно в меню «Метки».</p>' : "");
+    var pe = document.getElementById("p-edit");
+    if (pe) pe.addEventListener("click", function () { editing = true; draft = JSON.parse(JSON.stringify(p)); status = ""; drawPins(); renderPanel(); });
+    document.getElementById("p-show").addEventListener("click", function () { map.flyTo(p.ll, Math.max(map.getZoom(), 14), {duration: 0.6}); });
+    bindConfirm("p-del", function () {
+      slot.pins = slot.pins.filter(function (q) { return q.id !== p.id; });
+      sel = null; afterMarks(""); syncHash();
+    });
+    return;
+  }
+  var st = {tags: draft.tags.slice(), colors: {}};
+  panel.innerHTML = '<div class="pmeta"><span>' + (isNewPin ? "Новая метка" : "Метка") + '</span>' + where + '</div>' +
+    '<h2 class="pinh" id="f-head">' + pinHtml(draft) + esc(draft.title || "Без названия") + '</h2>' +
+    '<form class="form" id="f">' +
+    '<div class="row"><label for="f-title">Название</label><input id="f-title" maxlength="120" placeholder="например, Убежище котерии" value="' + esc(draft.title) + '"></div>' +
+    '<div class="row"><label>Значок</label><div class="icgrid">' + Object.keys(PIN).map(function (k) {
+      return '<button type="button" class="icb" data-ic="' + k + '" aria-pressed="' + (k === draft.icon) + '" title="' + esc(PIN_NAME[k]) + '">' + pinSvg(k) + '</button>'; }).join("") + '</div></div>' +
+    '<div class="row"><label for="f-color">Цвет</label><div class="colrow"><input type="color" id="f-color" value="' + draft.color + '">' +
+      PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>' +
+    '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
+    '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Кто здесь, что случилось, зацепки">' + esc(draft.text) + '</textarea></div>' +
+    (marks.slots.length > 1 ? '<div class="row"><label for="f-slot">Слот</label><select id="f-slot">' + slotOptions(slot.id) + '</select></div>' : '') +
+    '<p class="hint">Метку можно перетащить по карте мышью или пальцем.</p>' +
+    '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
+    (isNewPin ? "" : confirmBtn("f-del", "Удалить метку")) + '<span class="status">' + esc(status) + '</span></div></form>';
+  function head() { var h = document.getElementById("f-head"); h.innerHTML = pinHtml(draft) + esc(draft.title || "Без названия"); drawPins(); }
+  var ed = bindTagEd(slot, st, function () { draft.tags = st.tags.slice(); });
+  document.getElementById("f-title").addEventListener("input", function (e) { draft.title = e.target.value; head(); });
+  panel.querySelector(".icgrid").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ic]"); if (!b) return;
+    draft.icon = b.getAttribute("data-ic");
+    panel.querySelectorAll(".icb").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); head();
+  });
+  var ci = document.getElementById("f-color");
+  ci.addEventListener("input", function () { draft.color = ci.value; head(); });
+  panel.querySelector(".colrow").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) { draft.color = ci.value = b.getAttribute("data-c"); head(); } });
+  document.getElementById("f-text").addEventListener("input", function (e) { draft.text = e.target.value; });
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault(); ed.flush();
+    var fs = document.getElementById("f-slot"), to = slotOf(fs ? fs.value : slot.id) || slot;
+    var p2 = {id: draft.id, ll: draft.ll, icon: draft.icon, color: draft.color, title: draft.title.trim().slice(0, 120), tags: st.tags.slice(),
+      text: draft.text.replace(/\r/g, "").trim()};
+    st.tags.forEach(function (t) { to.tags[t] = ed.color(t); });
+    var i = slot.pins.map(function (q) { return q.id; }).indexOf(p2.id);
+    if (to === slot && i >= 0) slot.pins[i] = p2;
+    else { slot.pins = slot.pins.filter(function (q) { return q.id !== p2.id; }); to.pins.push(p2); }
+    sel = {k: "pin", slot: to.id, id: p2.id}; editing = false; draft = null; isNewPin = false;
+    afterMarks("Сохранено в этом браузере");
+  });
+  document.getElementById("f-cancel").addEventListener("click", function () {
+    var was = isNewPin; editing = false; draft = null; isNewPin = false; status = "";
+    if (was) { sel = null; syncHash(); }
+    drawPins(); renderPanel();
+  });
+  bindConfirm("f-del", function () {
+    slot.pins = slot.pins.filter(function (q) { return q.id !== draft.id; });
+    sel = null; editing = false; draft = null; afterMarks(""); syncHash();
   });
 }
 
-// Файл этой карты ({items}), прежней карты в четыре масштаба (ключи «d:<район>») или старой карты в клетку ({cells: {"city:D5": …}}).
-function importFile(p) {
-  var n = 0;
-  function put(key, src) {
-    var dst = mine.items[key] || {marker: "", label: "", notes: ""};
-    dst.marker = src.marker || dst.marker || "";
-    dst.label = src.label || dst.label || "";
-    if (src.notes && (dst.notes || "").indexOf(src.notes) < 0) dst.notes = (dst.notes ? dst.notes + "\n\n" : "") + src.notes;
-    mine.items[key] = dst; n++;
+// Заметка к региону в выбранном слоте: свой цвет заливки (или «не менять»), теги, текст
+function renderNoteForm(s, name, meta) {
+  var slot = slotOf(noteSlot) || activeSlot(), k = skey(s);
+  if (!slot) { slot = newSlot("Мои метки"); marks.active = noteSlot = slot.id; saveMarks(); renderSlots(); }
+  var r = slot.regions[k] || {color: "", tags: [], text: ""}, st = {tags: r.tags.slice(), colors: {}};
+  panel.innerHTML = '<div class="pmeta">' + meta + '</div><h2>' + esc(name) + '</h2>' +
+    '<p class="psum">Заметка хранится в этом браузере, в слоте «' + esc(slot.name) + '».</p>' +
+    '<form class="form" id="f">' +
+    (marks.slots.length > 1 ? '<div class="row"><label for="f-slot">Слот</label><select id="f-slot">' + slotOptions(slot.id) + '</select></div>' : '') +
+    '<div class="row"><label>Цвет региона</label><div class="colrow"><label class="rad"><input type="radio" name="f-rc" value=""' + (r.color ? "" : " checked") + '> не менять</label>' +
+      '<label class="rad"><input type="radio" name="f-rc" value="c"' + (r.color ? " checked" : "") + '> свой</label><input type="color" id="f-color" value="' + (r.color || PALETTE[0]) + '">' +
+      PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>' +
+    '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
+    '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Сюжетные зацепки, NPC, что угодно своё">' + esc(r.text) + '</textarea></div>' +
+    '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
+    (slot.regions[k] ? confirmBtn("f-del", "Удалить заметку") : "") + '<span class="status">' + esc(status) + '</span></div></form>';
+  var ed = bindTagEd(slot, st, function () {}), ci = document.getElementById("f-color");
+  function custom() { panel.querySelector('input[name="f-rc"][value="c"]').checked = true; }
+  ci.addEventListener("input", custom);
+  panel.querySelector(".colrow").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) { ci.value = b.getAttribute("data-c"); custom(); } });
+  var fs = document.getElementById("f-slot");
+  if (fs) fs.addEventListener("change", function () { noteSlot = fs.value; confirmDel = false; renderPanel(); });
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault(); ed.flush();
+    var next = {color: panel.querySelector('input[name="f-rc"]:checked').value ? ci.value : "", tags: st.tags.slice(),
+      text: document.getElementById("f-text").value.replace(/\r/g, "").trim()};
+    st.tags.forEach(function (t) { slot.tags[t] = ed.color(t); });
+    if (!next.color && !next.tags.length && !next.text) delete slot.regions[k]; else slot.regions[k] = next;
+    editing = false; afterMarks("Сохранено в этом браузере");
+  });
+  document.getElementById("f-cancel").addEventListener("click", function () { editing = false; status = ""; renderPanel(); });
+  bindConfirm("f-del", function () { delete slot.regions[k]; editing = false; afterMarks("Заметка удалена"); });
+}
+
+// ---------- меню «Метки»: слоты ----------
+// Список слотов: глаз — показать или скрыть, имя — писать новые метки сюда, карандаш — окно слота (название, файл, удаление)
+var slotUi = {open: false, edit: "", confirm: "", pending: null, msg: ""};
+var EYE_ON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/></svg>';
+var EYE_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828"/><path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87"/><path d="M3 3l18 18"/></svg>';
+var PENCIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/></svg>';
+
+function renderSlots() {
+  var pop = document.getElementById("slots-pop"), btn = document.getElementById("slots-btn");
+  if (!pop) return;
+  btn.setAttribute("aria-expanded", slotUi.open ? "true" : "false");
+  pop.hidden = !slotUi.open;
+  if (!slotUi.open) return;
+  var r = btn.getBoundingClientRect(), w = Math.min(320, window.innerWidth - 16);
+  pop.style.right = Math.min(0, Math.round(r.right - w - 8)) + "px"; // у левого края экрана окно сдвигается вправо
+  var s = slotUi.edit && slotOf(slotUi.edit);
+  if (s) {
+    var n = s.pins.length + Object.keys(s.regions).length;
+    pop.innerHTML = '<div class="sp-head"><b>Слот</b><button type="button" class="ib" data-done title="Готово">×</button></div>' +
+      '<label class="sp-name">Название<input id="se-name" maxlength="60" value="' + esc(s.name) + '"></label>' +
+      '<p class="lg-tip">' + esc(counts(s)) + '</p>' +
+      (slotUi.pending ? '<p class="sp-warn">Заменить всё содержимое слота «' + esc(s.name) + '» метками из файла' + (slotUi.pending.name ? " «" + esc(slotUi.pending.name) + "»" : "") +
+        ' (' + esc(counts(slotUi.pending.body)) + ')?</p><div class="sp-act"><button class="btn small danger" type="button" data-imp-yes>Да, заменить</button><button class="btn small" type="button" data-imp-no>Не заменять</button></div>'
+      : '<div class="sp-act"><button class="btn small" type="button" data-exp' + (n ? "" : " disabled") + '>Сохранить в файл</button>' +
+        '<label class="btn small" for="se-imp">Загрузить из файла</label><input type="file" id="se-imp" accept="application/json,.json" hidden>' +
+        (slotUi.confirm === s.id ? '<button class="btn small danger" type="button" data-del-yes>Да, удалить слот</button><button class="btn small" type="button" data-del-no>Не удалять</button>'
+          : '<button class="btn small danger" type="button" data-del>Удалить слот</button>') + '</div>') +
+      '<p class="lg-tip">Загрузка заменяет всё, что было в слоте: так обновляют метки мастера или другого игрока, не трогая свои.</p>' +
+      (slotUi.msg ? '<p class="sp-msg">' + esc(slotUi.msg) + '</p>' : "") +
+      '<div class="sp-act"><button class="btn small primary" type="button" data-done>Готово</button></div>';
+    return;
   }
-  if (p && p.items && typeof p.items === "object") {
-    Object.keys(p.items).forEach(function (k) {
-      var g = k.split(":"), id = g.slice(1).join(":");
-      if ((g[0] === "n" && idx[id]) || (g[0] === "nat" && featOf.nat[id])) put(k, p.items[k]);
-      else if (aliases[k]) put("n:" + aliases[k], p.items[k]);
-    });
-    saveMine(); return "Загружено пометок: " + n + ". Пометки прежних версий карты легли на регион в том же месте.";
-  }
-  if (p && p.cells && typeof p.cells === "object") {
-    Object.keys(p.cells).forEach(function (k) {
-      var to = aliases[k]; if (!to) return;
-      var src = p.cells[k];
-      put("n:" + to, {marker: src.marker, label: src.label, notes: src.notes ? "[старая клетка " + k + "] " + src.notes : ""});
-    });
-    saveMine(); return "Перенесено пометок со старой карты: " + n + ". Каждая клетка легла на район в её центре.";
-  }
-  throw new Error("bad");
+  pop.innerHTML = '<div class="sp-head"><b>Слоты меток</b></div><ul class="sp-list">' + allSlots().map(function (x) {
+    var act = x.id === marks.active;
+    return '<li class="' + (act ? "act" : "") + (x.on ? "" : " off") + '">' +
+      '<button type="button" class="ib" data-eye="' + esc(x.id) + '" title="' + (x.on ? "Скрыть слот на карте" : "Показать слот на карте") + '" aria-pressed="' + x.on + '">' + (x.on ? EYE_ON : EYE_OFF) + '</button>' +
+      '<button type="button" class="sn" data-act="' + esc(x.id) + '"' + (x.fixed ? " disabled" : "") + '>' + esc(x.name) +
+        '<small>' + esc(counts(x)) + (act ? " · сюда пишутся новые" : x.fixed ? " · общие, только смотреть" : "") + '</small></button>' +
+      (x.fixed ? '<span class="ib"></span>' : '<button type="button" class="ib" data-edit="' + esc(x.id) + '" title="Изменить слот">' + PENCIL + '</button>') + '</li>';
+  }).join("") + '</ul><button type="button" class="btn small" data-add>+ Добавить новый</button>' +
+    '<p class="lg-tip">Глаз — показать или скрыть слот. Нажми на имя, чтобы новые метки писались в этот слот. Карандаш — название, файл, удаление.</p>';
+}
+function setSlotsOpen(on) { slotUi.open = on; slotUi.edit = ""; slotUi.confirm = ""; slotUi.pending = null; slotUi.msg = ""; renderSlots(); }
+function slotsChanged() { saveMarks(); refreshStyles(); drawPins(); renderPanel(); renderSlots(); }
+function exportSlot(s) {
+  var body = {format: FILE_FORMAT, version: 2, name: s.name, exported: new Date().toISOString(), tags: s.tags, pins: s.pins, regions: s.regions};
+  var blob = new Blob([JSON.stringify(body, null, 1)], {type: "application/json"});
+  var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = (s.name.replace(/[^\wа-яё -]/gi, "").trim().replace(/\s+/g, "-") || "metki") + "-dallas-2005.json";
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function applyImport(s, got) {
+  s.tags = got.body.tags; s.pins = got.body.pins; s.regions = got.body.regions;
+  if (got.name && (/^Новый слот/.test(s.name) || !s.name)) s.name = got.name;
+  if (sel && sel.k === "pin" && sel.slot === s.id) { sel = null; editing = false; draft = null; syncHash(); }
+  slotUi.pending = null; slotUi.msg = "Загружено: " + counts(s) + ".";
+  slotsChanged();
+}
+function setupSlots() {
+  var btn = document.getElementById("slots-btn"), pop = document.getElementById("slots-pop");
+  btn.addEventListener("click", function (e) { e.stopPropagation(); setSlotsOpen(!slotUi.open); });
+  pop.addEventListener("click", function (e) {
+    e.stopPropagation();
+    var b = e.target.closest("button,[data-eye]"); if (!b || b.disabled) return;
+    var s = slotUi.edit && slotOf(slotUi.edit), id;
+    if ((id = b.getAttribute("data-eye"))) {
+      var x = slotOf(id); x.on = !x.on;
+      if (x.fixed) { view.chron = x.on; store(VIEW_KEY, JSON.stringify(view)); }
+      if (!x.on && sel && sel.k === "pin" && sel.slot === id) { sel = null; editing = false; draft = null; syncHash(); }
+      slotsChanged();
+    } else if ((id = b.getAttribute("data-act"))) { marks.active = id; noteSlot = ""; slotsChanged(); }
+    else if ((id = b.getAttribute("data-edit"))) { slotUi.edit = id; slotUi.msg = ""; renderSlots(); }
+    else if (b.hasAttribute("data-add")) {
+      var n = newSlot("Новый слот " + (marks.slots.length));
+      if (!activeSlot() || marks.slots.length === 1) marks.active = n.id;
+      saveMarks(); slotUi.edit = n.id; slotUi.msg = ""; renderSlots();
+      var inp = document.getElementById("se-name"); if (inp) { inp.focus(); inp.select(); }
+    }
+    else if (b.hasAttribute("data-done")) { slotUi.edit = ""; slotUi.confirm = ""; slotUi.pending = null; slotUi.msg = ""; renderSlots(); }
+    else if (s && b.hasAttribute("data-exp")) { exportSlot(s); slotUi.msg = "Файл скачан. Его можно отправить другому игроку или мастеру."; renderSlots(); }
+    else if (s && b.hasAttribute("data-del")) { slotUi.confirm = s.id; renderSlots(); }
+    else if (b.hasAttribute("data-del-no")) { slotUi.confirm = ""; renderSlots(); }
+    else if (s && b.hasAttribute("data-del-yes")) {
+      marks.slots = marks.slots.filter(function (x) { return x !== s; });
+      if (marks.active === s.id) marks.active = marks.slots.length ? marks.slots[0].id : "";
+      if (sel && sel.k === "pin" && sel.slot === s.id) { sel = null; editing = false; draft = null; syncHash(); }
+      slotUi.edit = ""; slotUi.confirm = ""; slotsChanged();
+    }
+    else if (s && b.hasAttribute("data-imp-yes")) applyImport(s, slotUi.pending);
+    else if (b.hasAttribute("data-imp-no")) { slotUi.pending = null; renderSlots(); }
+  });
+  pop.addEventListener("input", function (e) {
+    var s = slotOf(slotUi.edit);
+    if (s && e.target.id === "se-name") { s.name = e.target.value.slice(0, 60) || "Без названия"; saveMarks(); drawPins(); renderPanel(); }
+  });
+  pop.addEventListener("change", function (e) {
+    var s = slotOf(slotUi.edit), f = e.target.files && e.target.files[0];
+    if (!s || e.target.id !== "se-imp" || !f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var got = null;
+      try { got = slotFromFile(JSON.parse(rd.result)); } catch (_) { slotUi.msg = "Этот файл не похож на файл меток с этой карты."; renderSlots(); return; }
+      if (s.pins.length || Object.keys(s.regions).length) { slotUi.pending = got; slotUi.msg = ""; renderSlots(); }
+      else applyImport(s, got);
+    };
+    rd.readAsText(f);
+  });
+  document.addEventListener("click", function (e) { if (slotUi.open && !e.target.closest("#slots-pop")) setSlotsOpen(false); });
+  window.addEventListener("resize", function () { if (slotUi.open) renderSlots(); });
+  renderSlots();
 }
 
 // ---------- ссылки ----------
 // #n/<узел> (с «+» на конце — раскрытым), #nat/<озеро>; ссылки прежних карт (#d/<район>, #city-D5) — по таблице aliases
+function syncCollapse() { document.getElementById("collapse").disabled = view.leaves || (!open.length && !sel); }
 function syncHash() {
-  var h = sel ? "#" + sel.k + "/" + sel.id + (sel.k === "n" && open.indexOf(sel.id) >= 0 ? "+" : "") : "";
+  syncCollapse();
+  var h = sel && sel.k !== "pin" ? "#" + sel.k + "/" + sel.id + (sel.k === "n" && open.indexOf(sel.id) >= 0 ? "+" : "") : "";
   try { history.replaceState(null, "", h || location.pathname); } catch (_) {}
 }
 function readHash(fly) {
@@ -949,7 +1330,7 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   regLayer[""] = L.geoJSON(loaded[""], {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; }, onEachFeature: function (f, l) { hook(f, l); }});
   L.geoJSON({type: "FeatureCollection", features: loaded[""].features.filter(function (f) { return f.properties.id === "dallas" || f.properties.id === "fortworth"; })},
     {pane: "city", interactive: false, style: {className: "cityline"}}).addTo(map);
-  syncLayers(); refresh(); setupSearch(); renderTools(); renderPanel();
+  syncLayers(); refresh(); setupSearch(); setupSlots(); drawPins(); renderPanel();
   var lt = document.getElementById("leaf-tog");
   function setLeaves(on) {
     view.leaves = on; lt.checked = on; store(VIEW_KEY, JSON.stringify(view));
@@ -964,8 +1345,10 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   if (view.lens) setLens(view.lens);
   document.getElementById("dart-tog").addEventListener("change", function (e) { setDart(e.target.checked); });
   if (view.dart) setDart(true);
-  document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); });
+  document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); clearSel(); }); // и выбор снимаем, чтобы ссылка не тянула к региону
   document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && placing) { placeStop(); return; }
+    if (e.key === "Escape" && slotUi.open) { setSlotsOpen(false); return; }
     if (e.key !== "Escape" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !open.length || view.leaves) return;
     var last = open[open.length - 1]; collapseTo(last); select({k: "n", id: last}, false);
   });
