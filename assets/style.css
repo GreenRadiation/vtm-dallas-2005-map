@@ -88,7 +88,8 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 }
 
 /* ---------- слои карты ---------- */
-/* Классы на контейнере карты ставит app.js: z9…z16 (масштаб), has-sel (что-то выбрано). */
+/* Классы на контейнере карты ставит app.js: z9…z16 (масштаб), has-sel (что-то выбрано).
+   Векторные слои рисуются на холсте: классы ниже не висят на элементах, app.js читает из них цвета и толщины (cssStyle). */
 .leaflet-container{background:var(--sea);outline:0}
 .land{fill:var(--land);stroke:none;fill-opacity:1}
 
@@ -107,7 +108,7 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .nat{stroke-width:1;stroke-linejoin:round}
 .nat.k-water{fill:var(--water);fill-opacity:1;stroke:var(--water-ink);stroke-opacity:.35}
 .nat.k-green{fill:var(--park-strong);fill-opacity:.9;stroke:var(--green-ink);stroke-opacity:.35}
-.nat:hover{stroke:var(--sel);stroke-width:2;stroke-opacity:1}
+.nat.hov{stroke:var(--sel);stroke-width:2;stroke-opacity:1}
 .reg.hov{stroke:var(--sel);stroke-width:2.2;fill-opacity:1}
 /* границы старших масштабов поверх: области — толсто, районы (на мелком масштабе) — средне */
 .outl{fill:none;stroke:var(--aline);stroke-linejoin:round}

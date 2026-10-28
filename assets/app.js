@@ -567,8 +567,8 @@ function tagVal(s, k) {
 }
 function raceHex(i) { return getComputedStyle(document.documentElement).getPropertyValue(["--race-w", "--race-h", "--race-b", "--race-a", "--race-o"][i]).trim(); }
 
-// Полосатые заливки: SVG-узоры в слое регионов, создаются по требованию
-var patterns = {};
+// Полосатые заливки, создаются по требованию: SVG-узор для легенды и такой же узор холста для карты (canvasPat)
+var patterns = {}, canvasPat = {};
 function stripes(parts) { // parts: [[цвет, доля], ...]
   var key = parts.map(function (p) { return p[0] + p[1]; }).join("|");
   if (patterns[key]) return "url(#" + patterns[key] + ")";
@@ -582,8 +582,14 @@ function stripes(parts) { // parts: [[цвет, доля], ...]
   }
   holder.firstChild.insertAdjacentHTML("beforeend", '<pattern id="' + id + '" patternUnits="userSpaceOnUse" width="' + W + '" height="' + W + '" patternTransform="rotate(45)">' + body + '</pattern>');
   patterns[key] = id;
+  var cnv = document.createElement("canvas"), cx = cnv.getContext("2d");
+  cnv.width = cnv.height = W; x = 0;
+  parts.forEach(function (p) { var w = W * p[1] / total; cx.fillStyle = p[0]; cx.fillRect(x, 0, w + 0.3, W); x += w; });
+  canvasPat[id] = cx.createPattern(cnv, "repeat");
+  if (canvasPat[id].setTransform) canvasPat[id].setTransform(new DOMMatrix().rotate(45));
   return "url(#" + id + ")";
 }
+function fillOf(f) { var m = /^url\(#(\w+)\)$/.exec(f || ""); return m ? canvasPat[m[1]] : f; }
 // Чем закрасить регион в текущей линзе: {fill, text} или null — нет данных
 function lensPaint(s) {
   var L0 = LENS[view.lens];
@@ -615,10 +621,10 @@ function lensPaint(s) {
   if (v == null) return null;
   return {fill: L0.colors[v - L0.from], text: L0.label(v)};
 }
-function paintLens(el, s) {
+function lensFill(s) {
   var p = view.lens ? lensPaint(s) : null;
   // у озёр и парков без данных оставляем их обычный цвет
-  el.style.fill = !view.lens || (!p && s.k === "nat") ? "" : p ? p.fill : stripes([["#d9d9d9", 50], ["#f2f2f2", 50]]);
+  return !view.lens || (!p && s.k === "nat") ? "" : p ? p.fill : stripes([["#d9d9d9", 50], ["#f2f2f2", 50]]);
 }
 // Линза красит самые мелкие области: слой всех листьев лежит под регионами, а у регионов заливка прозрачная,
 // так что видны границы раскрытой ветки, а цвет — по листьям
@@ -627,12 +633,12 @@ function syncLensLeaves() {
   lensReady = lensReady || ensureAll().then(function () {
     var feats = [];
     Object.keys(loaded).forEach(function (p) { loaded[p].features.forEach(function (f) { if (!idx[f.properties.id].n) feats.push(f); }); });
-    lensLayer = L.geoJSON({type: "FeatureCollection", features: feats}, {pane: "lens", interactive: false, style: {className: "lensleaf"}});
+    lensLayer = L.geoJSON({type: "FeatureCollection", features: feats}, {pane: "vec", interactive: false, style: cssStyle("lensleaf")});
   });
   lensReady.then(function () {
     if (!view.lens) return;
     show(lensLayer, true);
-    lensLayer.eachLayer(function (l) { var el = l.getElement(); if (el) paintLens(el, {k: "n", id: l.feature.properties.id}); });
+    lensLayer.eachLayer(function (l) { paint(l, "lensleaf", lensFill({k: "n", id: l.feature.properties.id})); });
   });
 }
 // Лист под курсором внутри свёрнутого региона — для подсказки в режиме линзы
@@ -717,7 +723,7 @@ function setupTheme() {
   document.getElementById("theme-btn").addEventListener("click", function () {
     var t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     store(THEME_KEY, t); setTheme(t);
-    if (view.lens && map) { refreshStyles(); renderLegend(); } // цвета групп жителей берутся из темы
+    if (map) { restyleAll(); if (view.lens) renderLegend(); } // цвета слоёв карты берутся из темы
   });
 }
 
@@ -733,9 +739,9 @@ var DART_TEXT = [
   "TRE — пригородный поезд до Форт-Уэрта. По Макинни-авеню в Аптауне катается старинный трамвай M-Line."];
 var dartLayer = null, dartReady = null, dartEl = null;
 function dartLayers(fc) {
-  var g = L.layerGroup(), lines = fc.features.filter(function (f) { return f.properties.kind === "line"; });
+  var g = L.featureGroup(), lines = fc.features.filter(function (f) { return f.properties.kind === "line"; });
   function draw(f, cls, tip) {
-    var l = L.geoJSON(f, {pane: "dart", interactive: !!tip, style: {className: cls}});
+    var l = L.geoJSON(f, {pane: "vec", interactive: !!tip, style: cssStyle(cls, true)});
     if (tip) l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
     l.addTo(g);
   }
@@ -750,7 +756,7 @@ function dartLayers(fc) {
     var p = f.properties;
     if (p.kind !== "station") return;
     var c = f.geometry.coordinates, big = p.lines.length > 1;
-    L.circleMarker([c[1], c[0]], {pane: "dart", radius: big ? 6.5 : 4.5, className: "dart-st" + (big ? " big" : "")})
+    L.circleMarker([c[1], c[0]], L.extend({pane: "vec", radius: big ? 6.5 : 4.5}, cssStyle("dart-st" + (big ? " big" : ""))))
       .bindTooltip(function () { return "<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
         (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>" + tripTip({k: "st"}, [c[1], c[0]]); }, {direction: "top", className: "tip dart-tip", offset: [0, -6]})
       .on("click", function (e) { L.DomEvent.stopPropagation(e); e.target.openTooltip(); })
@@ -787,15 +793,18 @@ function setDart(on) {
 // копим их и применяем, как только анимация кончится. Проекция: меркатор каждой вершины считается один раз,
 // при зуме остаётся умножение (раньше на каждом шаге зума заново считались синусы и логарифмы всех вершин).
 // Запас отрисовки: Leaflet рисует векторные слои с запасом в 10% экрана за краями и дорисовывает только когда
-// отпустишь мышь, поэтому при перетаскивании и отдалении были видны пустые куски. Рисуем с запасом SVG_PAD
-// экрана с каждой стороны (у каждой панели свой SVG), а при перетаскивании за запас дорисовываем на ходу (followDrag).
-var SVG_PAD = 1;
+// отпустишь мышь, поэтому при перетаскивании и отдалении были видны пустые куски. Рисуем с запасом VEC_PAD
+// экрана с каждой стороны, а при перетаскивании за запас дорисовываем на ходу (followDrag).
+var VEC_PAD = 0.5;
 (function () {
-  L.Map.prototype._createRenderer = function (o) { return L.svg(L.extend({padding: SVG_PAD}, o)); };
+  L.Map.prototype._createRenderer = function (o) { return L.canvas(L.extend({padding: VEC_PAD}, o)); };
   var W = L.Map.ScrollWheelZoom.prototype, perform = W._performZoom;
   W._performZoom = function () {
     var m = this._map;
     if (m._animatingZoom) { if (!this._queued) { this._queued = true; m.once("zoomend", function () { this._queued = false; this._performZoom(); }, this); } return; }
+    // не больше 0,75 уровня зума за шаг: если страница подвисла (например, окно только что развернули), накопленная
+    // прокрутка иначе срабатывает одним прыжком через весь город
+    this._delta = Math.max(-100, Math.min(100, this._delta)); // ±100 — до 0,75 уровня, запаса холста хватает
     perform.call(this);
   };
   L.Polyline.prototype._projectLatlngs = function (latlngs, result, bounds) {
@@ -813,23 +822,23 @@ var SVG_PAD = 1;
 
 function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
-    maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: SVG_PAD})});
+    maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, preferCanvas: true});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
-  [["land", 200], ["lens", 290], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["city", 345], ["sel", 430], ["dart", 435], ["grid", 440], ["pins", 445], ["labels", 450]].forEach(function (p) {
-    map.createPane(p[0]).style.zIndex = p[1];
-  });
-  ["lens", "city", "green", "water", "grid", "labels", "sel"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
+  // все векторные слои — на одном холсте в панели vec (события мыши получает только верхний холст), порядок задаёт stack()
+  [["vec", 300], ["pins", 445], ["labels", 450]].forEach(function (p) { map.createPane(p[0]).style.zIndex = p[1]; });
+  map.getPane("labels").style.pointerEvents = "none";
 
-  L.rectangle(BOUNDS, {pane: "land", className: "land", interactive: false}).addTo(map);
-  L.geoJSON(geo.green, {pane: "green", interactive: false, style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
-  L.geoJSON(geo.water, {pane: "water", interactive: false, filter: function (f) { return f.properties.cls !== "creek"; },
-    style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
-  extra.creek = L.geoJSON(geo.water, {pane: "water", interactive: false, filter: function (f) { return f.properties.cls === "creek"; }, style: {className: "creek"}});
+  extra.land = L.rectangle(BOUNDS, L.extend({pane: "vec", interactive: false}, cssStyle("land"))).addTo(map);
+  extra.green = L.geoJSON(geo.green, {pane: "vec", interactive: false, style: geoStyle()}).addTo(map);
+  extra.water = L.geoJSON(geo.water, {pane: "vec", interactive: false, filter: function (f) { return f.properties.cls !== "creek"; }, style: geoStyle()}).addTo(map);
+  extra.creek = L.geoJSON(geo.water, {pane: "vec", interactive: false, filter: function (f) { return f.properties.cls === "creek"; }, style: geoStyle()});
 
   // озёра и парки: всегда видны и кликаются
-  natLayer = L.geoJSON(geo.nature, {pane: "nat", style: function (f) { return {className: "nat k-" + f.properties.kind}; },
+  natLayer = L.geoJSON(geo.nature, {pane: "vec", style: function (f) { return cssStyle("nat k-" + f.properties.kind); },
     onEachFeature: function (f, l) {
       var id = f.properties.id; featOf.nat[id] = f; layerOf.nat[id] = l;
+      l.on("mouseover", function () { l._hov = true; styleNat(id); });
+      l.on("mouseout", function () { l._hov = false; styleNat(id); });
       l.bindTooltip(function () { return esc(f.properties.name) + lensTip({k: "nat", id: id}) + tripTip({k: "nat", id: id}, [f.properties.ly, f.properties.lx]); }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
       l.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "nat", id: id}, false); });
     }}).addTo(map);
@@ -843,7 +852,47 @@ function buildMap() {
   map.on("moveend", placeLabels);
   map.on("move", followDrag);
   home(false);
+  stack();
   window.vtmMap = map; // для отладки из консоли
+}
+
+// Холст не знает CSS-классов, поэтому стиль слоя читается из style.css: на невидимый пробный <path> внутри карты
+// вешаются классы слоя, а поверх — умолчания Leaflet атрибутами, как было в SVG. Кеш — по классам, масштабу, линзе и теме.
+var probe = null, styleCache = {};
+function cssStyle(cls, line) {
+  var box = map.getContainer(), key = (line ? "l " : "a ") + cls + "|" + (box.className.match(/\b(z\d+|lensed|has-sel)\b/g) || []).join(" ") + "|" + document.documentElement.dataset.theme;
+  if (styleCache[key]) return styleCache[key];
+  if (!probe) {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("aria-hidden", "true"); svg.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none";
+    probe = svg.appendChild(document.createElementNS(ns, "path")); box.appendChild(svg);
+  }
+  [["stroke", "#3388ff"], ["stroke-width", "3"], ["stroke-opacity", "1"], ["stroke-linecap", "round"], ["stroke-linejoin", "round"],
+    ["fill", line ? "none" : "#3388ff"], ["fill-opacity", "0.2"], ["fill-rule", "evenodd"]].forEach(function (a) { probe.setAttribute(a[0], a[1]); });
+  probe.setAttribute("class", cls);
+  var c = getComputedStyle(probe), op = +c.opacity, dash = c.strokeDasharray;
+  return styleCache[key] = {cls: cls, stroke: c.stroke !== "none", color: c.stroke, weight: parseFloat(c.strokeWidth), opacity: +c.strokeOpacity * op,
+    fill: c.fill !== "none", fillColor: c.fill, fillOpacity: +c.fillOpacity * op, fillRule: c.fillRule,
+    dashArray: dash && dash !== "none" ? dash.replace(/px/g, "") : null, lineCap: c.strokeLinecap, lineJoin: c.strokeLinejoin};
+}
+function geoStyle() { return function (f) { return cssStyle(f.properties.cls, /LineString/.test(f.geometry.type)); }; }
+// Перекрасить слой по классам; fill — своя заливка (цвет игрока или линзы) поверх цвета из CSS, если заливка вообще есть
+function paint(l, cls, fill) {
+  var st = L.extend({}, cssStyle(cls, l instanceof L.Polyline && !(l instanceof L.Polygon)));
+  if (fill && st.fill) st.fillColor = fillOf(fill);
+  st.over = fill || "";
+  l.setStyle(st);
+}
+function restyle(l) { if (l.eachLayer) l.eachLayer(restyle); else if (l.options && l.options.cls) paint(l, l.options.cls, l.options.over); }
+// Порядок слоёв на холсте: суша, линза, регионы (глубже — выше), природа, граница городов, выделение, DART, сетка
+function stack() {
+  [lensLayer, extra.land].forEach(function (g) { if (g && map.hasLayer(g)) g.bringToBack(); });
+  [extra.green, extra.water, extra.creek, natLayer, extra.city, selLayer, extra.hov, dartLayer, gridLayer].forEach(function (g) { if (g && map.hasLayer(g) && g.bringToFront) g.bringToFront(); });
+}
+// Все стили заново: после смены темы
+function restyleAll() {
+  [extra.land, extra.green, extra.water, extra.creek, extra.city, selLayer, extra.hov, dartLayer, gridLayer].forEach(function (g) { if (g) restyle(g); });
+  refreshStyles();
 }
 
 // Карту утащили почти за нарисованный запас: перерисовать слои сейчас, не дожидаясь конца перетаскивания
@@ -851,7 +900,7 @@ var followAt = 0;
 function followDrag() {
   var now = Date.now();
   if (map._animatingZoom || now - followAt < 80) return;
-  var size = map.getSize(), m = size.multiplyBy(SVG_PAD / 3);
+  var size = map.getSize(), m = size.multiplyBy(VEC_PAD / 3);
   var need = L.bounds(map.containerPointToLayerPoint(m.multiplyBy(-1)), map.containerPointToLayerPoint(size.add(m)));
   var rs = Object.keys(map._paneRenderers).map(function (k) { return map._paneRenderers[k]; }).concat(map._renderer ? [map._renderer] : []);
   // только когда масштаб не меняется: при перелёте по поиску вершины спроецированы на старый масштаб
@@ -868,7 +917,7 @@ function ensureKids(parent) {
   if (loaded[parent]) return Promise.resolve(loaded[parent]);
   return fetch(TREE + (parent || "_root") + ".geojson").then(function (r) { if (!r.ok) throw new Error(parent); return r.json(); }).then(function (fc) {
     loaded[parent] = fc;
-    regLayer[parent] = L.geoJSON(fc, {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; },
+    regLayer[parent] = L.geoJSON(fc, {pane: "vec", style: function (f) { return cssStyle(regClass(f.properties.id, f.properties)); },
       onEachFeature: function (f, l) { hook(f, l); }});
     return fc;
   });
@@ -912,11 +961,11 @@ function hook(f, l) {
   });
   l.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "n", id: id}, false); });
   l.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); if (idx[id].n) expand(id); });
-  l.on("mouseover", function () { var el = l.getElement(); if (el) el.classList.add("hov"); });
-  l.on("mouseout", function () { var el = l.getElement(); if (el) el.classList.remove("hov"); });
+  l.on("mouseover", function () { l._hov = true; styleReg(id); });
+  l.on("mouseout", function () { l._hov = false; styleReg(id); });
 }
 
-function show(layer, on) { if (on) { if (!map.hasLayer(layer)) layer.addTo(map); } else if (map.hasLayer(layer)) map.removeLayer(layer); }
+function show(layer, on) { if (on) { if (!map.hasLayer(layer)) { layer.addTo(map); stack(); } } else if (map.hasLayer(layer)) map.removeLayer(layer); }
 
 // Какие слои регионов на карте: верхний уровень и дети каждого раскрытого узла (глубже — поверх)
 function syncLayers() {
@@ -924,7 +973,7 @@ function syncLayers() {
   Object.keys(regLayer).forEach(function (p) { if (want.indexOf(p) < 0) show(regLayer[p], false); });
   want.forEach(function (p) { if (regLayer[p] && map.hasLayer(regLayer[p])) map.removeLayer(regLayer[p]); });
   want.forEach(function (p) { if (regLayer[p]) regLayer[p].addTo(map); });
-  refreshStyles(); drawSel();
+  refreshStyles(); drawSel(); stack();
   syncCollapse();
 }
 
@@ -948,8 +997,9 @@ function collapseTo(id) {
 
 // Всё, что зависит от масштаба
 function refresh() {
-  var z = map.getZoom(), el = map.getContainer();
-  el.className = el.className.replace(/z\d+/g, "").replace(/\s+/g, " ").trim() + " z" + Math.floor(z);
+  var z = map.getZoom(), el = map.getContainer(), was = el.className;
+  el.className = el.className.replace(/\bz\d+\b/g, "").replace(/\s+/g, " ").trim() + " z" + Math.floor(z);
+  if (el.className !== was) { restyle(extra.water); restyle(extra.creek); } // толщина рек зависит от масштаба
   show(extra.creek, z >= 13);
   if (gridLabels) show(gridLabels, gridOn() && z >= 10.5);
   placeLabels();
@@ -1019,13 +1069,13 @@ function placeLabels() {
 
 function gridOn() { return load("vtm-dallas-2005-map.grid") === "1"; }
 function buildGrid() {
-  gridLayer = L.layerGroup(); gridLabels = L.layerGroup();
+  gridLayer = L.featureGroup(); gridLabels = L.layerGroup();
   ["city", "fw"].forEach(function (b) {
     var G = GRIDS[b], dx = (G.e - G.w) / G.cols, dy = (G.n - G.s) / G.rows;
-    for (var c = 0; c <= G.cols; c++) gridLayer.addLayer(L.polyline([[G.n, G.w + c * dx], [G.s, G.w + c * dx]], {pane: "grid", className: "grid", interactive: false}));
-    for (var r = 0; r <= G.rows; r++) gridLayer.addLayer(L.polyline([[G.n - r * dy, G.w], [G.n - r * dy, G.e]], {pane: "grid", className: "grid", interactive: false}));
+    for (var c = 0; c <= G.cols; c++) gridLayer.addLayer(L.polyline([[G.n, G.w + c * dx], [G.s, G.w + c * dx]], L.extend({pane: "vec", interactive: false}, cssStyle("grid", true))));
+    for (var r = 0; r <= G.rows; r++) gridLayer.addLayer(L.polyline([[G.n - r * dy, G.w], [G.n - r * dy, G.e]], L.extend({pane: "vec", interactive: false}, cssStyle("grid", true))));
     for (c = 0; c < G.cols; c++) for (r = 0; r < G.rows; r++)
-      gridLabels.addLayer(L.marker([G.n - r * dy - dy * 0.12, G.w + c * dx + dx * 0.1], {pane: "grid", interactive: false, keyboard: false,
+      gridLabels.addLayer(L.marker([G.n - r * dy - dy * 0.12, G.w + c * dx + dx * 0.1], {pane: "labels", interactive: false, keyboard: false,
         icon: L.divIcon({className: "lbl lbl-g", html: "<span>" + (b === "fw" ? "ФУ " : "") + LET[c] + (r + 1) + "</span>", iconSize: null})}));
   });
   var t = document.getElementById("grid-tog");
@@ -1071,20 +1121,25 @@ function drawSel() {
   selLayer = null;
   if (!sel || sel.k === "pin") { map.getContainer().classList.remove("has-sel"); return; }
   var cls = "selpath" + (sel.k === "n" && isOpen(sel.id) ? " selopen" : "");
-  selLayer = L.geoJSON(featOf[sel.k][sel.id], {pane: "sel", interactive: false, style: {className: cls}}).addTo(map);
+  selLayer = L.geoJSON(featOf[sel.k][sel.id], {pane: "vec", interactive: false, style: cssStyle(cls)}).addTo(map);
+  stack();
   map.getContainer().classList.add("has-sel");
 }
 
+function styleReg(id) {
+  var l = layerOf.n[id];
+  if (!l) return;
+  l.options.interactive = !isOpen(id); // раскрытый узел — только контур, клики идут его детям
+  paint(l, regClass(id) + (l._hov ? " hov" : ""), regionColor("n:" + id));
+}
+function styleNat(id) {
+  var l = layerOf.nat[id], c = regionColor("nat:" + id), s = {k: "nat", id: id};
+  if (l) paint(l, "nat k-" + featOf.nat[id].properties.kind + (c ? " painted" : "") + (l._hov ? " hov" : ""), view.lens ? lensFill(s) : c);
+}
 function refreshStyles() {
-  Object.keys(layerOf.n).forEach(function (id) {
-    var el = layerOf.n[id].getElement();
-    if (el) { el.setAttribute("class", regClass(id) + " leaflet-interactive"); el.style.fill = regionColor("n:" + id); }
-  });
+  Object.keys(layerOf.n).forEach(styleReg);
   syncLensLeaves();
-  Object.keys(layerOf.nat).forEach(function (id) {
-    var el = layerOf.nat[id].getElement(), c = regionColor("nat:" + id);
-    if (el) { el.setAttribute("class", "nat k-" + featOf.nat[id].properties.kind + (c ? " painted" : "") + " leaflet-interactive"); el.style.fill = c; if (view.lens) paintLens(el, {k: "nat", id: id}); }
-  });
+  Object.keys(layerOf.nat).forEach(styleNat);
 }
 
 // ---------- карточка региона ----------
@@ -1301,14 +1356,14 @@ function setupSearch() {
   }
   // Наведение на результат обводит его на карте; карта при этом не двигается
   var hov = null, hovKey = "";
-  function unhover() { hovKey = ""; if (hov) { map.removeLayer(hov); hov = null; } }
+  function unhover() { hovKey = ""; if (hov) { map.removeLayer(hov); hov = extra.hov = null; } }
   function hide() { box.hidden = true; unhover(); }
   function hover(b) {
-    var k = b.getAttribute("data-k"), id = b.getAttribute("data-id"), key = k + ":" + id, opt = {pane: "sel", interactive: false, style: {className: "hovpath"}};
+    var k = b.getAttribute("data-k"), id = b.getAttribute("data-id"), key = k + ":" + id, opt = {pane: "vec", interactive: false, style: cssStyle("hovpath")};
     if (key === hovKey) return;
     unhover(); hovKey = key;
-    function draw(layer) { if (hovKey === key) hov = layer.addTo(map); }
-    if (k === "pin") { var p = pinOf({slot: b.getAttribute("data-slot"), id: id}); if (p) draw(L.circleMarker(p.ll, {pane: "sel", interactive: false, radius: 20, className: "hovpath"})); }
+    function draw(layer) { if (hovKey === key) { hov = extra.hov = layer.addTo(map); stack(); } }
+    if (k === "pin") { var p = pinOf({slot: b.getAttribute("data-slot"), id: id}); if (p) draw(L.circleMarker(p.ll, L.extend({pane: "vec", interactive: false, radius: 20}, cssStyle("hovpath")))); }
     else if (k === "nat") draw(L.geoJSON(featOf.nat[id], opt));
     else ensureKids(idx[id].parent || "").then(function (fc) {
       var f = fc.features.filter(function (f) { return f.properties.id === id; })[0];
@@ -1664,9 +1719,9 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   loadMine(); buildMap();
   loaded[""] = res[files.length + 3];
   if (res[files.length + 4]) census = res[files.length + 4];
-  regLayer[""] = L.geoJSON(loaded[""], {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; }, onEachFeature: function (f, l) { hook(f, l); }});
-  L.geoJSON({type: "FeatureCollection", features: loaded[""].features.filter(function (f) { return f.properties.id === "dallas" || f.properties.id === "fortworth"; })},
-    {pane: "city", interactive: false, style: {className: "cityline"}}).addTo(map);
+  regLayer[""] = L.geoJSON(loaded[""], {pane: "vec", style: function (f) { return cssStyle(regClass(f.properties.id, f.properties)); }, onEachFeature: function (f, l) { hook(f, l); }});
+  extra.city = L.geoJSON({type: "FeatureCollection", features: loaded[""].features.filter(function (f) { return f.properties.id === "dallas" || f.properties.id === "fortworth"; })},
+    {pane: "vec", interactive: false, style: cssStyle("cityline")}).addTo(map);
   syncLayers(); refresh(); setupSearch(); setupSlots(); setupRef(); drawPins(); renderPanel();
   var lt = document.getElementById("leaf-tog");
   function setLeaves(on) {
