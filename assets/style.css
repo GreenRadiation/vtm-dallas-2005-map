@@ -48,9 +48,13 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .search{position:relative;flex:0 1 280px;min-width:180px}
 .search input{width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg)}
 .search input:focus{outline:2px solid var(--accent);outline-offset:-1px}
-.results{position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;max-height:320px;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.results{position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;max-height:min(60vh,440px);overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .results button{all:unset;box-sizing:border-box;display:block;width:100%;padding:7px 10px;cursor:pointer;font-size:14px}
 .results button small{color:var(--muted);margin-left:6px}
+.results button .snip{display:block;margin-top:2px;font-size:12px;line-height:1.35;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.results button mark{background:var(--imp-bg);color:inherit;border-radius:2px}
+.results button .pinb{display:inline-flex;width:18px;height:18px;vertical-align:-4px;margin-right:6px}
+.results button .pinb svg{width:11px;height:11px}
 .results button:hover,.results button:focus-visible{background:var(--bg)}
 .seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden}
 .seg button{border:0;background:var(--paper);padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer}

@@ -349,7 +349,7 @@ function censusOf(id) {
   return c && c.hh >= 300 && !/^(place|osm|aero)$/.test(x.kind) ? c : null;
 }
 function join(a) { return a.filter(Boolean).join(" "); }
-var tagTexts = [];
+var tagTexts = [], tagCells = [];
 function tagsBlock(s) {
   var t = info(s).tags || {}, n = t.notes || {}, cells = [], c = s.k === "n" ? censusOf(s.id) : null, h;
   // клетка: [название, значение в табличке, заголовок подсказки, текст подсказки, широкая ли]
@@ -388,6 +388,7 @@ function tagsBlock(s) {
     var p = POLICE[t.police] || [t.police, ""];
     cells.push(["Полиция", '<small>' + esc(p[0]) + '</small>', POLICE[t.police] ? "" : t.police, join([p[1], n.police])]);
   }
+  tagCells = cells;
   tagTexts = cells.map(function (q) { return "<b>" + esc(q[0]) + (q[2] ? " — " + esc(q[2]) : "") + ".</b> " + esc(q[3]); });
   if (!cells.length) return "";
   return '<div class="tags">' + cells.map(function (q, i) {
@@ -991,20 +992,133 @@ panel.addEventListener("click", function (e) {
 });
 
 // ---------- поиск ----------
+// Одна строка ищет по всему: сначала названия, потом теги, потом тексты описаний; в каждом свои и чужие метки и заметки.
+// Слова сравниваются без окончаний («тюрьма» найдёт «тюрьмы», «тюрьмой»), длинные — ещё и с одной опечаткой («тюрем»).
+function norm(s) { return String(s || "").toLowerCase().replace(/ё/g, "е").replace(/[-‐\s]+/g, " "); }
+var WORD = /[a-zа-я0-9]+/g;
+var ENDING = /(иями|ями|ами|ого|его|ому|ему|ыми|ими|иях|ях|ах|ией|ей|ой|ий|ый|ая|яя|ое|ее|ую|юю|ом|ем|ам|ям|ов|ев|ы|и|а|я|о|е|у|ю|ь|й)$/;
+function stem(w) {
+  if (w.length < 4) return w;
+  var s = w.replace(ENDING, "");
+  return s.length >= 3 ? s : w.slice(0, 3);
+}
+// Поле поиска: слово → [где впервые встретилось, сколько раз]
+function wordsOf(s) {
+  // норма без склейки пробелов, чтобы позиции совпадали с исходным текстом
+  var t = String(s || "").toLowerCase().replace(/ё/g, "е"), out = {}, m;
+  WORD.lastIndex = 0;
+  while ((m = WORD.exec(t))) { var w = out[m[0]]; if (w) w[1]++; else out[m[0]] = [m.index, 1]; }
+  return out;
+}
+// Расстояние Левенштейна, но не больше 2: дальше нам неважно
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  var prev = [], cur, i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    cur = [i];
+    for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+// Как слово запроса попало в поле: 2 — точно, 1 — с опечаткой, 0 — нет. Совпавшее слово кладём в hit.
+function matchWord(q, words, hit) {
+  var st = stem(q), fuzzy = st.length >= 5, best = 0;
+  for (var w in words) {
+    if (w.indexOf(q.length < 3 ? q : st) === 0) { hit.w = w; hit.at = words[w][0]; hit.n = (hit.n || 0) + words[w][1]; best = 2; }
+    else if (best < 1 && fuzzy && w[0] === st[0] && w.length >= st.length - 1) {
+      for (var k = st.length - 1; k <= st.length + 1; k++) if (lev(st, w.slice(0, k)) <= 1) { hit.w = w; hit.at = words[w][0]; best = 1; break; }
+    }
+  }
+  return best;
+}
+function snippet(src, at, len) {
+  var a = Math.max(0, at - 40), b = Math.min(src.length, at + len + 60);
+  while (a > 0 && /\S/.test(src[a - 1])) a--;
+  while (b < src.length && /\S/.test(src[b])) b++;
+  return (a > 0 ? "…" : "") + esc(src.slice(a, at)) + "<mark>" + esc(src.slice(at, at + len)) + "</mark>" + esc(src.slice(at + len, b)) + (b < src.length ? "…" : "");
+}
 function setupSearch() {
-  var q = document.getElementById("q"), box = document.getElementById("results"), all = [];
-  Object.keys(idx).forEach(function (id) {
-    var a = ancestors(id);
-    all.push({k: "n", id: id, name: idx[id].name, sub: kindLabel(id).toLowerCase() + (a.length ? " · " + idx[a[a.length - 1]].name : ""), lv: idx[id].depth});
-  });
-  geo.nature.features.forEach(function (f) { all.push({k: "nat", id: f.properties.id, name: f.properties.name, sub: NATKIND[f.properties.kind].toLowerCase(), lv: 4}); });
-  function norm(s) { return s.toLowerCase().replace(/ё/g, "е").replace(/[-‐\s]+/g, " "); }
+  var q = document.getElementById("q"), box = document.getElementById("results"), base = null;
+  // Тексты карты не меняются: собираем их один раз, при первом поиске
+  function field(src) { return {src: src, words: wordsOf(src)}; }
+  function regionTags(s) {
+    // в теги идут названия клеток и значения («Полиция — шериф»), в текст — пояснения к ним
+    var keep = [tagTexts, tagCells], lab = [], txt = [];
+    tagsBlock(s);
+    tagCells.forEach(function (q) {
+      var v = q[2] || q[1].replace(/<[^>]+>/g, "");
+      lab.push(q[0] + (v ? " — " + v : "")); if (q[3]) txt.push(q[3]);
+    });
+    tagTexts = keep[0]; tagCells = keep[1];
+    return [lab.join(". "), txt.join(" ")];
+  }
+  function buildBase() {
+    var out = [];
+    function add(s, name, sub, lv) {
+      var x = info(s), t = regionTags(s), n = (x.tags || {}).notes || {};
+      out.push({k: s.k, id: s.id, name: name, sub: sub, lv: lv, key: s.k + ":" + s.id,
+        f: [field(name), field(t[0]), field([x.summary, x.details, x.more, x.notes, t[1]].concat(Object.keys(n).map(function (k) { return n[k]; })).filter(Boolean).join("\n\n"))]});
+    }
+    Object.keys(idx).forEach(function (id) {
+      var a = ancestors(id);
+      add({k: "n", id: id}, idx[id].name, kindLabel(id).toLowerCase() + (a.length ? " · " + idx[a[a.length - 1]].name : ""), idx[id].depth);
+    });
+    geo.nature.features.forEach(function (f) { add({k: "nat", id: f.properties.id}, f.properties.name, NATKIND[f.properties.kind].toLowerCase(), 4); });
+    return out;
+  }
+  // Метки и заметки меняются, их собираем на каждый поиск: только из видимых слотов
+  function marksItems() {
+    var out = [], notes = {};
+    allSlots().filter(function (s) { return s.on; }).forEach(function (s) {
+      s.pins.forEach(function (p) {
+        out.push({k: "pin", slot: s.id, id: p.id, name: p.title || "Метка", sub: "метка · " + s.name, lv: 5, pin: p,
+          f: [field(p.title || ""), field(p.tags.join(". ")), field(p.text || "")]});
+      });
+      Object.keys(s.regions).forEach(function (k) {
+        var r = s.regions[k], o = notes[k] || (notes[k] = {tags: [], text: []});
+        o.tags = o.tags.concat(r.tags); if (r.text) o.text.push(r.text);
+      });
+    });
+    return {pins: out, notes: notes};
+  }
+  function find(v) {
+    // одна-две буквы ищем только в названиях: в текстах такое найдётся везде
+    var qs = norm(v).match(WORD) || [], m = marksItems(), hits = [], nf = norm(v).trim().length < 3 ? 1 : 3;
+    if (!qs.length) return hits;
+    base.concat(m.pins).forEach(function (x) {
+      var f = x.f;
+      var u = m.notes[x.key];
+      if (u) f = [f[0], field(f[1].src + ". " + u.tags.join(". ")), field(f[2].src + (f[2].src ? "\n\n" : "") + u.text.join("\n\n"))];
+      // каждое слово запроса ищем сначала в названии, потом в тегах, потом в тексте; ярус — худшее из найденных
+      var tier = 0, fuzzy = false, n = 0, show = null;
+      for (var i = 0; i < qs.length; i++) {
+        var got = 0, hit = {};
+        for (var j = 0; j < nf && !got; j++) { hit = {}; got = matchWord(qs[i], f[j].words, hit); if (got) { tier = Math.max(tier, j); if (j && (!show || j >= show.j)) show = {f: f[j], hit: hit, j: j}; } }
+        // название ищем и как подстроку: «эллум» в «Дип-Эллум»
+        if (!got && norm(x.name).indexOf(norm(v).trim()) >= 0) { got = 2; }
+        if (!got) return;
+        if (got === 1) fuzzy = true;
+        n += hit.n || 0;
+      }
+      hits.push({x: x, tier: tier, fuzzy: fuzzy, n: n, show: tier ? show : null, at: norm(x.name).indexOf(qs[0])});
+    });
+    return hits.sort(function (a, b) {
+      return a.tier - b.tier || a.fuzzy - b.fuzzy ||
+        (a.tier ? b.n - a.n : (a.at < 0 ? 99 : a.at) - (b.at < 0 ? 99 : b.at)) || a.x.lv - b.x.lv || a.x.name.length - b.x.name.length;
+    }).slice(0, 30);
+  }
   function showRes() {
-    var v = norm(q.value.trim());
+    var v = q.value.trim();
     if (!v) { box.hidden = true; return; }
-    var hits = all.filter(function (x) { return norm(x.name).indexOf(v) >= 0; })
-      .sort(function (a, b) { return norm(a.name).indexOf(v) - norm(b.name).indexOf(v) || a.lv - b.lv || a.name.length - b.name.length; }).slice(0, 14);
-    box.innerHTML = hits.length ? hits.map(function (x) { return '<button type="button" data-k="' + x.k + '" data-id="' + esc(x.id) + '">' + esc(x.name) + '<small>' + esc(x.sub) + '</small></button>'; }).join("")
+    if (!base) base = buildBase();
+    var hits = find(v);
+    box.innerHTML = hits.length ? hits.map(function (h) {
+      var x = h.x, sn = h.show ? snippet(h.show.f.src, h.show.hit.at, h.show.hit.w.length) : "";
+      return '<button type="button" data-k="' + x.k + '" data-id="' + esc(x.id) + '"' + (x.slot ? ' data-slot="' + esc(x.slot) + '"' : "") + '>' +
+        (x.pin ? pinHtml(x.pin) : "") + esc(x.name) + '<small>' + esc(x.sub) + '</small>' + (sn ? '<span class="snip">' + sn + '</span>' : "") + '</button>';
+    }).join("")
       : '<button type="button" disabled>Ничего не нашлось</button>';
     box.hidden = false;
   }
@@ -1017,7 +1131,8 @@ function setupSearch() {
   box.addEventListener("click", function (e) {
     var b = e.target.closest("button[data-id]"); if (!b) return;
     box.hidden = true; q.value = "";
-    select({k: b.getAttribute("data-k"), id: b.getAttribute("data-id")}, true);
+    if (b.getAttribute("data-k") === "pin") selectPin(b.getAttribute("data-slot"), b.getAttribute("data-id"), true);
+    else select({k: b.getAttribute("data-k"), id: b.getAttribute("data-id")}, true);
   });
   document.addEventListener("click", function (e) { if (!e.target.closest(".search")) box.hidden = true; });
 }
