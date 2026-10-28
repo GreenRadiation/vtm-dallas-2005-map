@@ -109,6 +109,7 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .outl3{stroke-width:1.5;stroke-opacity:.8}
 .selpath{fill:var(--accent);fill-opacity:.38;stroke:var(--accent);stroke-width:4;stroke-linejoin:round}
 .selpath.selopen{fill:none;stroke-width:3.5}
+.hovpath{fill:var(--accent);fill-opacity:.28;stroke:var(--accent);stroke-width:5;stroke-dasharray:10 6;stroke-linejoin:round}
 
 /* природа и вода на подложке (мелкие парки, аэродромы, все озёра — не кликаются, лежат поверх регионов) */
 .park{fill:var(--park);stroke:none;fill-opacity:.55}

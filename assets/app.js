@@ -1109,11 +1109,28 @@ function setupSearch() {
         (a.tier ? b.n - a.n : (a.at < 0 ? 99 : a.at) - (b.at < 0 ? 99 : b.at)) || a.x.lv - b.x.lv || a.x.name.length - b.x.name.length;
     }).slice(0, 30);
   }
+  // Наведение на результат обводит его на карте; карта при этом не двигается
+  var hov = null, hovKey = "";
+  function unhover() { hovKey = ""; if (hov) { map.removeLayer(hov); hov = null; } }
+  function hide() { box.hidden = true; unhover(); }
+  function hover(b) {
+    var k = b.getAttribute("data-k"), id = b.getAttribute("data-id"), key = k + ":" + id, opt = {pane: "sel", interactive: false, style: {className: "hovpath"}};
+    if (key === hovKey) return;
+    unhover(); hovKey = key;
+    function draw(layer) { if (hovKey === key) hov = layer.addTo(map); }
+    if (k === "pin") { var p = pinOf({slot: b.getAttribute("data-slot"), id: id}); if (p) draw(L.circleMarker(p.ll, {pane: "sel", interactive: false, radius: 20, className: "hovpath"})); }
+    else if (k === "nat") draw(L.geoJSON(featOf.nat[id], opt));
+    else ensureKids(idx[id].parent || "").then(function (fc) {
+      var f = fc.features.filter(function (f) { return f.properties.id === id; })[0];
+      if (f) draw(L.geoJSON(f, opt));
+    });
+  }
   function showRes() {
     var v = q.value.trim();
-    if (!v) { box.hidden = true; return; }
+    if (!v) { hide(); return; }
     if (!base) base = buildBase();
     var hits = find(v);
+    unhover();
     box.innerHTML = hits.length ? hits.map(function (h) {
       var x = h.x, sn = h.show ? snippet(h.show.f.src, h.show.hit.at, h.show.hit.w.length) : "";
       return '<button type="button" data-k="' + x.k + '" data-id="' + esc(x.id) + '"' + (x.slot ? ' data-slot="' + esc(x.slot) + '"' : "") + '>' +
@@ -1126,15 +1143,18 @@ function setupSearch() {
   q.addEventListener("focus", showRes);
   q.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { var b = box.querySelector("button[data-id]"); if (b) b.click(); }
-    if (e.key === "Escape") { box.hidden = true; q.blur(); }
+    if (e.key === "Escape") { hide(); q.blur(); }
   });
+  box.addEventListener("mouseover", function (e) { var b = e.target.closest("button[data-id]"); if (b) hover(b); });
+  box.addEventListener("focusin", function (e) { var b = e.target.closest("button[data-id]"); if (b) hover(b); });
+  box.addEventListener("mouseleave", unhover);
   box.addEventListener("click", function (e) {
     var b = e.target.closest("button[data-id]"); if (!b) return;
-    box.hidden = true; q.value = "";
+    hide(); q.value = "";
     if (b.getAttribute("data-k") === "pin") selectPin(b.getAttribute("data-slot"), b.getAttribute("data-id"), true);
     else select({k: b.getAttribute("data-k"), id: b.getAttribute("data-id")}, true);
   });
-  document.addEventListener("click", function (e) { if (!e.target.closest(".search")) box.hidden = true; });
+  document.addEventListener("click", function (e) { if (!e.target.closest(".search")) hide(); });
 }
 
 // ---------- карточка метки и формы ----------
