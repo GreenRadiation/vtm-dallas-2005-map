@@ -15,7 +15,6 @@ var GEO = "data/geo/", TREE = GEO + "tree/";
 var STORE_KEY = "vtm-dallas-2005-map.personal.v1";
 var VIEW_KEY = "vtm-dallas-2005-map.view";
 var BOUNDS = [[32.58, -97.55], [33.08, -96.50]];
-var ORIGIN = [32.8005, -96.8277]; // отель Anatole, от него считаются расстояния
 var MLABEL = {haven: "Убежище", ally: "Союзники", hostile: "Враждебность", important: "Важное место"};
 var NATKIND = {water: "Озеро", green: "Природная зона"};
 // Сетки старой карты: чтобы показать клетки поверх
@@ -30,7 +29,7 @@ var geo = {}, text = {nodes: {}, nature: {}}, census = {nodes: {}}, aliases = {}
 var idx = {}, kidsOf = {}; // узел по id; дети по id родителя ("" — верхний уровень)
 var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
 var open = []; // раскрытая ветка: путь от верхнего уровня
-var view = {leaves: false, lens: "", dart: false}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
+var view = {leaves: false, lens: "", dart: false, ref: null}; // leaves — режим проверки: все листья дерева сразу, без раскрытия; ref — точка отсчёта
 var sel = null; // {k: "n" | "nat", id}
 var editing = false, status = "", moreOpen = {};
 var map, featOf = {n: {}, nat: {}}, layerOf = {n: {}, nat: {}}, labelLayer, natLayer;
@@ -137,7 +136,8 @@ function slotFromFile(p) {
 }
 
 function loadMine() {
-  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; view.lens = LENS[v.lens] ? v.lens : ""; view.dart = !!v.dart; } catch (_) {}
+  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; view.lens = LENS[v.lens] ? v.lens : ""; view.dart = !!v.dart;
+    if (v.ref && /^(n|nat|pin)$/.test(v.ref.k)) view.ref = {k: v.ref.k, id: String(v.ref.id), slot: v.ref.slot ? String(v.ref.slot) : undefined}; } catch (_) {}
   var raw = null;
   try { raw = JSON.parse(load(MARKS_KEY) || "null"); } catch (_) {}
   if (raw && Array.isArray(raw.slots)) {
@@ -214,12 +214,14 @@ function drawPins() {
     if (on && draft) p = draft;
     var m = L.marker(p.ll, {pane: "pins", keyboard: false, draggable: drag, zIndexOffset: on ? 1000 : 0, riseOnHover: true,
       icon: L.divIcon({className: "pin" + (on ? " on" : "") + (drag ? " drag" : ""), html: pinHtml(p), iconSize: [26, 26], iconAnchor: [13, 13]})});
-    m.bindTooltip("<b>" + esc(p.title || "Метка") + "</b><small>" + esc((p.tags.length ? p.tags.join(", ") + " · " : "") + slot.name) + "</small>",
+    m.bindTooltip("<b>" + esc(p.title || "Метка") + "</b><small>" + esc((p.tags.length ? p.tags.join(", ") + " · " : "") + slot.name) + "</small>" +
+      tripTip({k: "pin", slot: slot.id, id: p.id}, p.ll),
       {direction: "top", className: "tip", offset: [0, -14]});
     m.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) selectPin(slot.id, q[1].id, false); });
     m.on("dragend", function () { var ll = m.getLatLng(); if (draft) draft.ll = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)]; });
     pinLayer.addLayer(m);
   });
+  renderRef(); // имя метки-отсчёта могло поменяться
 }
 function selectPin(slotId, id, fly) {
   var p = pinOf({slot: slotId, id: id}); if (!p) return;
@@ -273,10 +275,66 @@ function gridCell(b, lat, lon) {
   var G = GRIDS[b], c = Math.floor((lon - G.w) / ((G.e - G.w) / G.cols)), r = Math.floor((G.n - lat) / ((G.n - G.s) / G.rows));
   return (c >= 0 && c < G.cols && r >= 0 && r < G.rows) ? LET[c] + (r + 1) : null;
 }
-function dist(ll) {
-  var dx = (ll[1] - ORIGIN[1]) * 93.3, dy = (ll[0] - ORIGIN[0]) * 111, km = Math.sqrt(dx * dx + dy * dy);
-  if (km < 0.8) return "рядом с отелем Anatole";
-  return "≈ " + (km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)) + " км от отеля Anatole";
+
+// ---------- точка отсчёта ----------
+// Игрок делает точкой отсчёта регион или метку; от неё в карточках и подсказках пишется расстояние и время в пути.
+// Дорог на карте нет, поэтому путь по дорогам — прямая с поправкой на извилистость: по городу примерно × 1,4,
+// на дальних поездках по фривеям ближе к × 1,2. Время — ночью без пробок: по улицам около 30 км/ч, по фривеям до 90 км/ч.
+function refOf() {
+  var r = view.ref; if (!r) return null;
+  if (r.k === "pin") { var p = pinOf({slot: r.slot, id: r.id}); return p ? {ll: p.ll, name: p.title || "Метка"} : null; }
+  if (r.k === "n") return idx[r.id] ? {ll: [idx[r.id].ly, idx[r.id].lx], name: idx[r.id].name} : null;
+  var f = natFeat(r.id); return f ? {ll: [f.properties.ly, f.properties.lx], name: f.properties.name} : null;
+}
+function isRef(s) { var r = view.ref; return !!r && r.k === s.k && r.id === s.id && (s.k !== "pin" || r.slot === s.slot); }
+function setRef(s) {
+  view.ref = s && !isRef(s) ? {k: s.k, id: s.id, slot: s.slot} : null;
+  store(VIEW_KEY, JSON.stringify(view));
+  renderRef(); drawPins(); renderPanel();
+}
+function km1(k) { return k < 10 ? k.toFixed(1).replace(".", ",") : String(Math.round(k)); }
+function trip(ll) {
+  var r = refOf(); if (!r) return null;
+  var dx = (ll[1] - r.ll[1]) * 93.6, dy = (ll[0] - r.ll[0]) * 111, line = Math.sqrt(dx * dx + dy * dy), road = line * (1.2 + 0.2 * Math.max(0, 1 - line / 20));
+  var car = 2 + road / (30 + 60 * Math.min(1, road / 40)) * 60, walk = road / 5 * 60;
+  return {name: r.name, line: line, road: road, car: car, walk: walk};
+}
+function mins(m) {
+  if (m < 2) return "пара минут";
+  if (m < 15) return Math.round(m) + " мин";
+  if (m < 55) return Math.round(m / 5) * 5 + " мин";
+  var h = Math.floor((m + 5) / 60), r = Math.round((m - h * 60) / 10) * 10;
+  return h + " ч" + (r > 0 ? " " + r + " мин" : "");
+}
+// Строка в карточку: где отсчёт и сколько до него
+function tripLine(s, ll) {
+  var t = trip(ll); if (!t) return "";
+  if (isRef(s)) return '<p class="trip">Точка отсчёта: от неё считаются расстояния в карточках и подсказках.</p>';
+  if (t.line < 0.4) return '<p class="trip">Рядом с точкой отсчёта «' + esc(t.name) + '».</p>';
+  return '<p class="trip">До «' + esc(t.name) + '» ' + km1(t.line) + ' км по прямой, по дорогам около ' + km1(t.road) + ' км: ' +
+    mins(t.car) + ' на машине' + (t.road < 5 ? ", " + mins(t.walk) + " пешком" : "") + '.</p>';
+}
+// Короткая строка в подсказку на карте
+function tripTip(s, ll) {
+  var t = trip(ll); if (!t || isRef(s)) return "";
+  return "<small>" + (t.line < 0.4 ? "рядом с точкой отсчёта" : km1(t.road) + " км, " + mins(t.car) + " на машине") + "</small>";
+}
+// Плашка в шапке: от чего сейчас считаем; имя открывает точку, крестик убирает отсчёт
+function renderRef() {
+  var el = document.getElementById("ref"), r = refOf();
+  if (!el) return;
+  el.hidden = !r;
+  if (r) el.innerHTML = '<span>Отсчёт от</span><button type="button" class="ref-go" title="Открыть точку отсчёта">' + esc(r.name) + '</button>' +
+    '<button type="button" class="ib" data-ref-x title="Убрать точку отсчёта">×</button>';
+}
+function setupRef() {
+  var el = document.getElementById("ref");
+  el.addEventListener("click", function (e) {
+    var r = view.ref; if (!r) return;
+    if (e.target.closest("[data-ref-x]")) setRef(null);
+    else if (e.target.closest(".ref-go")) { if (r.k === "pin") selectPin(r.slot, r.id, true); else select({k: r.k, id: r.id}, true); }
+  });
+  renderRef();
 }
 // Как назвать узел в карточке
 function kindLabel(id) {
@@ -612,8 +670,8 @@ function dartLayers(fc) {
     if (p.kind !== "station") return;
     var c = f.geometry.coordinates, big = p.lines.length > 1;
     L.circleMarker([c[1], c[0]], {pane: "dart", radius: big ? 6.5 : 4.5, className: "dart-st" + (big ? " big" : "")})
-      .bindTooltip("<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
-        (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>", {direction: "top", className: "tip dart-tip", offset: [0, -6]})
+      .bindTooltip(function () { return "<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
+        (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>" + tripTip({k: "st"}, [c[1], c[0]]); }, {direction: "top", className: "tip dart-tip", offset: [0, -6]})
       .on("click", function (e) { L.DomEvent.stopPropagation(e); e.target.openTooltip(); })
       .addTo(g);
   });
@@ -663,7 +721,7 @@ function buildMap() {
   natLayer = L.geoJSON(geo.nature, {pane: "nat", style: function (f) { return {className: "nat k-" + f.properties.kind}; },
     onEachFeature: function (f, l) {
       var id = f.properties.id; featOf.nat[id] = f; layerOf.nat[id] = l;
-      l.bindTooltip(function () { return esc(f.properties.name) + lensTip({k: "nat", id: id}); }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+      l.bindTooltip(function () { return esc(f.properties.name) + lensTip({k: "nat", id: id}) + tripTip({k: "nat", id: id}, [f.properties.ly, f.properties.lx]); }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
       l.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "nat", id: id}, false); });
     }}).addTo(map);
 
@@ -722,7 +780,8 @@ function hook(f, l) {
   var leaf = null; // в линзе: лист под курсором, если регион свёрнут
   l.bindTooltip(function () {
     var closed = idx[id].n && !isOpen(id);
-    return esc(idx[id].name) + (leaf ? "<small>" + esc(idx[leaf].name) + "</small>" : "") + lensTip({k: "n", id: leaf || id}) +
+    var to = leaf || id;
+    return esc(idx[id].name) + (leaf ? "<small>" + esc(idx[leaf].name) + "</small>" : "") + lensTip({k: "n", id: to}) + tripTip({k: "n", id: to}, [idx[to].ly, idx[to].lx]) +
       (closed ? '<small>двойной клик — что внутри</small>' : '');
   }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
   l.on("mousemove", function (e) {
@@ -956,8 +1015,8 @@ function renderPanel() {
   panel.innerHTML =
     '<div class="pmeta">' + meta + '</div>' +
     '<h2>' + esc(name) + '</h2>' +
-    '<div class="pmeta" style="margin-bottom:12px"><span>≈ ' + String(km2).replace(".", ",") + ' км²</span><span>' + dist(ll) + '</span>' +
-    (cells.length && gridOn() ? '<span>старая сетка: ' + esc(cells.join(", ")) + '</span>' : '') + '</div>' +
+    '<div class="pmeta" style="margin-bottom:12px"><span>≈ ' + String(km2).replace(".", ",") + ' км²</span>' +
+    (cells.length && gridOn() ? '<span>старая сетка: ' + esc(cells.join(", ")) + '</span>' : '') + '</div>' + tripLine(s, ll) +
     tagsBlock(s) + (x.summary ? '<p class="psum">' + esc(x.summary) + '</p>' : "") + body +
     (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Подробнее</summary><div class="pdet">' + paras(x.more) + '</div></details>' : "") +
     (x.notes && x.notes.trim() ? '<div class="notes"><h3>Заметки мастера</h3><p>' + esc(x.notes) + '</p></div>' : "") +
@@ -966,7 +1025,7 @@ function renderPanel() {
     (node && node.n && !view.leaves ? (opened ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Раскрыть</button>') : '') +
     '<button class="btn" type="button" id="p-note">' + (act && act.regions[skey(s)] ? "Изменить заметку" : "Заметка к региону") + '</button>' +
     '<button class="btn" type="button" id="p-pin" title="Потом нажми на карту, где поставить точку">Поставить метку</button>' +
-    '<button class="btn" type="button" id="p-show">Показать на карте</button>' +
+    '<button class="btn" type="button" id="p-show">Показать на карте</button>' + refBtn(s) +
     (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' + kids;
   bindTags();
   var pm = document.getElementById("p-more");
@@ -978,7 +1037,13 @@ function renderPanel() {
   panel.querySelectorAll("[data-note]").forEach(function (b) { b.addEventListener("click", function () { note(b.getAttribute("data-note")); }); });
   document.getElementById("p-pin").addEventListener("click", placeStart);
   document.getElementById("p-show").addEventListener("click", function () { select(s, true); });
+  bindRef(s);
 }
+function refBtn(s) {
+  return '<button class="btn" type="button" id="p-ref" title="' + (isRef(s) ? "Больше не считать расстояния отсюда" : "Считать расстояния в других карточках отсюда") + '">' +
+    (isRef(s) ? "Убрать отсчёт" : "Отсчёт отсюда") + '</button>';
+}
+function bindRef(s) { var b = document.getElementById("p-ref"); if (b) b.addEventListener("click", function () { setRef(s); }); }
 
 panel.addEventListener("click", function (e) {
   var c = e.target.closest("[data-crumb]");
@@ -1227,13 +1292,13 @@ function renderPinPanel() {
   var where = '<span id="pin-where" class="crumbs"></span>';
   if (!editing) {
     panel.innerHTML = '<div class="pmeta"><span>Метка</span><span>' + esc(slot.name) + '</span>' + where + '</div>' +
-      '<h2 class="pinh">' + pinHtml(p) + esc(p.title || "Без названия") + '</h2>' + tagChips(slot, p.tags) +
+      '<h2 class="pinh">' + pinHtml(p) + esc(p.title || "Без названия") + '</h2>' + tagChips(slot, p.tags) + tripLine(sel, p.ll) +
       (p.text ? '<div class="pdet">' + paras(p.text) + '</div>' : '<p class="hint">Текста нет.</p>') +
       '<div class="actions"><button class="btn primary" type="button" id="p-edit">Изменить</button>' +
-      '<button class="btn" type="button" id="p-show">Показать на карте</button>' + confirmBtn("p-del", "Удалить метку") +
+      '<button class="btn" type="button" id="p-show">Показать на карте</button>' + refBtn(sel) + confirmBtn("p-del", "Удалить метку") +
       (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' +
       "";
-    fillWhere(p);
+    fillWhere(p); bindRef(sel);
     var pe = document.getElementById("p-edit");
     if (pe) pe.addEventListener("click", function () { editing = true; draft = JSON.parse(JSON.stringify(p)); status = ""; drawPins(); renderPanel(); });
     document.getElementById("p-show").addEventListener("click", function () { // раскрыть ветку до района с меткой, камеру не трогаем
@@ -1485,7 +1550,7 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   regLayer[""] = L.geoJSON(loaded[""], {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; }, onEachFeature: function (f, l) { hook(f, l); }});
   L.geoJSON({type: "FeatureCollection", features: loaded[""].features.filter(function (f) { return f.properties.id === "dallas" || f.properties.id === "fortworth"; })},
     {pane: "city", interactive: false, style: {className: "cityline"}}).addTo(map);
-  syncLayers(); refresh(); setupSearch(); setupSlots(); drawPins(); renderPanel();
+  syncLayers(); refresh(); setupSearch(); setupSlots(); setupRef(); drawPins(); renderPanel();
   var lt = document.getElementById("leaf-tog");
   function setLeaves(on) {
     view.leaves = on; lt.checked = on; store(VIEW_KEY, JSON.stringify(view));
