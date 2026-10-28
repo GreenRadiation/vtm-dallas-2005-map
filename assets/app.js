@@ -786,10 +786,16 @@ function setDart(on) {
 // Ускорения Leaflet. Колесо: шаги, пришедшие во время анимации зума, Leaflet выбрасывает, и карта «залипает» —
 // копим их и применяем, как только анимация кончится. Проекция: меркатор каждой вершины считается один раз,
 // при зуме остаётся умножение (раньше на каждом шаге зума заново считались синусы и логарифмы всех вершин).
+// Запас отрисовки: Leaflet рисует векторные слои с запасом в 10% экрана за краями и дорисовывает только когда
+// отпустишь мышь, поэтому при перетаскивании и отдалении были видны пустые куски. Рисуем с запасом SVG_PAD
+// экрана с каждой стороны (у каждой панели свой SVG), а при перетаскивании за запас дорисовываем на ходу (followDrag).
+var SVG_PAD = 1;
 (function () {
+  L.Map.prototype._createRenderer = function (o) { return L.svg(L.extend({padding: SVG_PAD}, o)); };
   var W = L.Map.ScrollWheelZoom.prototype, perform = W._performZoom;
   W._performZoom = function () {
-    if (this._map._animatingZoom) { this._timer = setTimeout(L.Util.bind(this._performZoom, this), 30); return; }
+    var m = this._map;
+    if (m._animatingZoom) { if (!this._queued) { this._queued = true; m.once("zoomend", function () { this._queued = false; this._performZoom(); }, this); } return; }
     perform.call(this);
   };
   L.Polyline.prototype._projectLatlngs = function (latlngs, result, bounds) {
@@ -807,7 +813,7 @@ function setDart(on) {
 
 function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
-    maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: 0.5})});
+    maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: SVG_PAD})});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
   [["land", 200], ["lens", 290], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["city", 345], ["sel", 430], ["dart", 435], ["grid", 440], ["pins", 445], ["labels", 450]].forEach(function (p) {
     map.createPane(p[0]).style.zIndex = p[1];
@@ -835,8 +841,21 @@ function buildMap() {
   map.on("contextmenu", function (e) { placeStart(); placeAt(e.latlng); }); // правый клик (на телефоне — долгое нажатие) ставит метку
   map.on("zoomend", refresh);
   map.on("moveend", placeLabels);
+  map.on("move", followDrag);
   home(false);
   window.vtmMap = map; // для отладки из консоли
+}
+
+// Карту утащили почти за нарисованный запас: перерисовать слои сейчас, не дожидаясь конца перетаскивания
+var followAt = 0;
+function followDrag() {
+  var now = Date.now();
+  if (map._animatingZoom || now - followAt < 80) return;
+  var size = map.getSize(), m = size.multiplyBy(SVG_PAD / 3);
+  var need = L.bounds(map.containerPointToLayerPoint(m.multiplyBy(-1)), map.containerPointToLayerPoint(size.add(m)));
+  var rs = Object.keys(map._paneRenderers).map(function (k) { return map._paneRenderers[k]; }).concat(map._renderer ? [map._renderer] : []);
+  // только когда масштаб не меняется: при перелёте по поиску вершины спроецированы на старый масштаб
+  rs.forEach(function (r) { if (r._bounds && r._zoom === map.getZoom() && !r._bounds.contains(need)) { r._update(); followAt = now; } });
 }
 
 function home(fly) {
