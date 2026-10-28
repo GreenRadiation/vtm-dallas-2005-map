@@ -132,8 +132,6 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 
 /* подписи: области — разреженными заглавными, как регионы на картах стран; районы и секторы — обычным шрифтом */
 .lbl{pointer-events:none!important;background:none;border:0}
-/* метки и подписи не прячутся на время зума: их панели масштабируются целиком (app.js, zoomanim) */
-.leaflet-zoom-anim :is(.leaflet-pins-pane,.leaflet-labels-pane) .leaflet-zoom-hide{visibility:visible}
 .lbl span{display:block;transform:translate(-50%,-50%);width:max-content;text-align:center;line-height:1.15;color:var(--ink);
   text-shadow:-1px -1px 0 var(--halo),1px -1px 0 var(--halo),-1px 1px 0 var(--halo),1px 1px 0 var(--halo),0 0 3px var(--halo)}
 .lbl-top span{font-weight:700;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;max-width:170px;color:var(--label-a)}
