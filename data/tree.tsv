@@ -410,3 +410,10 @@ fw-oldwedgwood	fw-wedgwood		Старый Уэджвуд	32.6630,-97.3880	Wedgwoo
 fw-wedgwoodeast	fw-wedgwood		Уэджвуд-Ист	32.6620,-97.3580	Wedgwood East, Fort Worth
 fw-candleridge	fw-wedgwood		Кэндлридж	32.6380,-97.3860	Candleridge, Fort Worth
 fw-meadowcreek	fw-wedgwood		Медоу-Крик	32.6290,-97.3610	Meadowcreek, Fort Worth
+# Коппелл и Аддисон
+coppell-old	coppell		Старый Коппелл	32.9600,-97.0050 32.9800,-97.0000	Old Town Coppell
+coppell-riverchase	coppell		Риверчейз	32.9600,-96.9550	Riverchase Golf Club, Coppell
+coppell-warehouses	coppell		Склады у DFW	32.9420,-96.9900 32.9500,-96.9960	Freeport Parkway, Coppell
+addison-circle	addison		Аддисон-Серкл	32.9589,-96.8296 32.9660,-96.8210	Addison Circle, Addison
+addison-beltline	addison		Белт-Лайн	32.9530,-96.8420	Belt Line Road, Addison
+addison-airport	addison	aero:Addison	Аэропорт Аддисон		Addison Airport

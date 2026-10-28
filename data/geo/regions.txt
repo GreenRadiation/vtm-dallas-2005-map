@@ -1,333 +1,339 @@
-dallas	Даллас	city:Dallas	901.1 км²
-  dal-downtown	Даунтаун	-	12.3 км²
-    dt-main	Деловой центр	-	0.7 км²
-    westend	Вест-Энд	-	0.5 км²
+dallas	Даллас	city:Dallas	915.6 км²
+  dal-downtown	Даунтаун	-	12.9 км²
+    dt-main	Деловой центр	-	1.2 км²
+    westend	Вест-Энд	-	0.6 км²
     dealey	Дили-Плаза	place	0.5 км²
     reunion	Реюньон	-	1.8 км²
-    cityhall	Мэрия	-	0.6 км²
+    cityhall	Мэрия	-	0.7 км²
     arts	Арт-дистрикт	-	0.7 км²
     farmersmarket	Фармерс-маркет	-	0.6 км²
-    cedars	Седарс	-	6.9 км²
-  dal-oaklawn	Оук-Лон	-	11.9 км²
-    uptown	Аптаун	-	3.1 км²
-    statethomas	Стейт-Томас	-	0.8 км²
-    victory	Виктори	-	1.2 км²
-    turtlecreek	Тёртл-Крик	-	1.7 км²
-    cedarsprings	Сидар-Спрингс	-	3.6 км²
-    knox	Нокс-Хендерсон	-	1.5 км²
-  dal-medical	Медрайон	-	17.4 км²
-    parkland	Больница Паркленд	osm:Parkland Memorial Hospital	2.0 км²
-    utsw	UT Southwestern	osm:University of Texas Southwestern Medical Center|The University of Texas Southwestern Medical Center	4.3 км²
-    marketcenter	Маркет-Сентер	-	0.9 км²
-    anatole	Отель Anatole	place	0.9 км²
+    cedars	Седарс	-	6.7 км²
+  dal-oaklawn	Оук-Лон	-	12.4 км²
+    uptown	Аптаун	-	2.4 км²
+    statethomas	Стейт-Томас	-	0.9 км²
+    victory	Виктори	-	1.5 км²
+    turtlecreek	Тёртл-Крик	-	1.8 км²
+    cedarsprings	Сидар-Спрингс	-	4.2 км²
+    knox	Нокс-Хендерсон	-	1.6 км²
+  dal-medical	Медрайон	-	17.2 км²
+    parkland	Больница Паркленд	osm:Parkland Memorial Hospital	1.6 км²
+    utsw	UT Southwestern	osm:University of Texas Southwestern Medical Center|The University of Texas Southwestern Medical Center	4.2 км²
+    marketcenter	Маркет-Сентер	-	1.2 км²
+    anatole	Отель Anatole	place	0.7 км²
     design	Дизайн-дистрикт	-	4.1 км²
-    stemmons	Стеммонс	-	5.3 км²
-  dal-east	Ист-Даллас	-	33.5 км²
-    deepellum	Дип-Эллам	-	1.8 км²
-    baylor	Бейлор	-	3.4 км²
-    swiss	Свисс-авеню	-	5.0 км²
-    lowergreenville	Лоуэр-Гринвилл	-	2.8 км²
-    mstreets	М-Стритс	-	4.8 км²
-    mockingbird	Мокингберд-Стейшн	place	0.5 км²
-    lakewood	Лейквуд	-	10.2 км²
-    tenison	Тенисон-Парк	-	5.0 км²
-  dal-whiterock	Уайт-Рок	-	44.6 км²
-    foresthills	Форест-Хиллс	-	11.0 км²
+    stemmons	Стеммонс	-	5.5 км²
+  dal-east	Ист-Даллас	-	32.9 км²
+    deepellum	Дип-Эллам	-	1.2 км²
+    baylor	Бейлор	-	3.8 км²
+    swiss	Свисс-авеню	-	5.9 км²
+    lowergreenville	Лоуэр-Гринвилл	-	3.2 км²
+    mstreets	М-Стритс	-	4.3 км²
+    mockingbird	Мокингберд-Стейшн	place	0.7 км²
+    lakewood	Лейквуд	-	9.2 км²
+    tenison	Тенисон-Парк	-	4.6 км²
+  dal-whiterock	Уайт-Рок	-	44.7 км²
+    foresthills	Форест-Хиллс	-	12.2 км²
     arboretum	Дендрарий	place	0.6 км²
-    casalinda	Каса-Линда	-	14.7 км²
-    casaview	Каса-Вью	-	8.1 км²
-    laprada	Ла-Прада	-	10.1 км²
-  dal-lakehighlands	Лейк-Хайлендс	-	36.5 км²
-    lh-old	Старый Лейк-Хайлендс	-	12.3 км²
-    lh-center	Центр Лейк-Хайлендс	-	8.1 км²
-    lh-forestaudelia	Форест-Оделия	-	7.3 км²
-    lh-richland	Колледж Ричленд	osm:Dallas College Richland Campus	5.0 км²
-    lh-ti	Texas Instruments	-	3.9 км²
-  dal-prestonhollow	Престон-Холлоу	-	29.8 км²
-    prestoncenter	Престон-Сентер	-	2.9 км²
-    prestonhollow	Старый Престон-Холлоу	-	15.9 км²
-    prestonroyal	Престон-Ройал	-	11.0 км²
-  dal-north	Северный Даллас	-	41.8 км²
-    northpark	НортПарк	-	4.5 км²
-    vickery	Викери-Медоу	-	28.4 км²
-      fivepoints	Файв-Пойнтс	-	12.3 км²
-      thevillage	Виллидж	-	8.6 км²
-      presbyterian	Пресвитерианская больница	osm:Texas Health Presbyterian Hospital Dallas	2.6 км²
-      merrimanpark	Мерримен-Парк	-	4.9 км²
-    forestlane	Форест-Лейн	-	8.9 км²
-  dal-farnorth	Дальний север	-	62.0 км²
-    galleria	Галерея	-	4.8 км²
-    prestonwood	Престонвуд	-	29.4 км²
-      oldprestonwood	Старый Престонвуд	-	12.3 км²
-      northwoodhills	Нортвуд-Хиллс	-	11.6 км²
-      renner	Реннер	-	5.5 км²
-    benttree	Бент-Три	-	27.7 км²
-      oldbenttree	Старый Бент-Три	-	8.1 км²
-      prestontrail	Престон-Трейл	-	8.0 км²
-      prestonhighlands	Престон-Хайлендс	-	7.8 км²
-      timberglen	Тимберглен	-	3.0 км²
-      frankford	Кладбище Франкфорд	place	0.7 км²
-  dal-lovefield	Лав-Филд	-	72.7 км²
-    lovefield	Аэропорт Лав-Филд	aero:Love Field	18.4 км²
-    bachman	Бахман	-	6.8 км²
-    bluffview	Блафвью	-	8.5 км²
-    harryhines	Гарри-Хайнс	-	19.0 км²
-    koreatown	Корейский квартал	-	20.0 км²
-  dal-west	Уэст-Даллас	-	57.9 км²
-    labajada	Ла-Бахада	-	10.0 км²
-    cementcity	Семент-Сити	-	8.0 км²
-    eagleford	Игл-Форд	-	10.9 км²
-    irvingblvd	Ирвинг-бульвар	-	12.9 км²
-    arcadia	Аркадия-Парк	-	16.1 км²
-  dal-oakcliff	Оук-Клифф	-	41.1 км²
+    casalinda	Каса-Линда	-	13.0 км²
+    casaview	Каса-Вью	-	7.8 км²
+    laprada	Ла-Прада	-	11.1 км²
+  dal-lakehighlands	Лейк-Хайлендс	-	41.7 км²
+    lh-old	Старый Лейк-Хайлендс	-	15.2 км²
+    lh-center	Центр Лейк-Хайлендс	-	9.3 км²
+    lh-forestaudelia	Форест-Оделия	-	8.3 км²
+    lh-richland	Колледж Ричленд	osm:Dallas College Richland Campus	5.8 км²
+    lh-ti	Texas Instruments	-	3.0 км²
+  dal-prestonhollow	Престон-Холлоу	-	30.8 км²
+    prestoncenter	Престон-Сентер	-	3.0 км²
+    prestonhollow	Старый Престон-Холлоу	-	17.9 км²
+    prestonroyal	Престон-Ройал	-	9.9 км²
+  dal-north	Северный Даллас	-	39.6 км²
+    northpark	НортПарк	-	3.2 км²
+    vickery	Викери-Медоу	-	28.1 км²
+      fivepoints	Файв-Пойнтс	-	12.4 км²
+      thevillage	Виллидж	-	8.3 км²
+      presbyterian	Пресвитерианская больница	osm:Texas Health Presbyterian Hospital Dallas	2.4 км²
+      merrimanpark	Мерримен-Парк	-	5.0 км²
+    forestlane	Форест-Лейн	-	8.2 км²
+  dal-farnorth	Дальний север	-	64.2 км²
+    galleria	Галерея	-	5.9 км²
+    prestonwood	Престонвуд	-	28.8 км²
+      oldprestonwood	Старый Престонвуд	-	11.9 км²
+      northwoodhills	Нортвуд-Хиллс	-	11.5 км²
+      renner	Реннер	-	5.4 км²
+    benttree	Бент-Три	-	29.6 км²
+      oldbenttree	Старый Бент-Три	-	3.3 км²
+      prestontrail	Престон-Трейл	-	9.2 км²
+      prestonhighlands	Престон-Хайлендс	-	9.0 км²
+      timberglen	Тимберглен	-	7.1 км²
+      frankford	Кладбище Франкфорд	place	1.0 км²
+  dal-lovefield	Лав-Филд	-	71.4 км²
+    lovefield	Аэропорт Лав-Филд	aero:Love Field	17.3 км²
+    bachman	Бахман	-	9.4 км²
+    bluffview	Блафвью	-	8.4 км²
+    harryhines	Гарри-Хайнс	-	14.4 км²
+    koreatown	Корейский квартал	-	22.0 км²
+  dal-west	Уэст-Даллас	-	58.0 км²
+    labajada	Ла-Бахада	-	10.2 км²
+    cementcity	Семент-Сити	-	7.6 км²
+    eagleford	Игл-Форд	-	11.1 км²
+    irvingblvd	Ирвинг-бульвар	-	12.0 км²
+    arcadia	Аркадия-Парк	-	17.2 км²
+  dal-oakcliff	Оук-Клифф	-	41.7 км²
     bishoparts	Бишоп-Артс	-	2.4 км²
-    winnetka	Виннетка-Хайтс	-	2.2 км²
-    lakecliff	Лейк-Клифф	-	3.1 км²
-    kessler	Кесслер-Парк	-	2.7 км²
-    stevens	Стивенс-Парк	-	4.3 км²
-    jefferson	Джефферсон-бульвар	-	2.7 км²
-    zoo	Зоопарк	-	10.2 км²
-    elmwood	Элмвуд	-	5.0 км²
-    westmoreland	Уэстморленд	-	8.5 км²
-  dal-soakcliff	Южный Оук-Клифф	-	28.4 км²
+    winnetka	Виннетка-Хайтс	-	2.3 км²
+    lakecliff	Лейк-Клифф	-	2.9 км²
+    kessler	Кесслер-Парк	-	2.4 км²
+    stevens	Стивенс-Парк	-	4.6 км²
+    jefferson	Джефферсон-бульвар	-	3.2 км²
+    zoo	Зоопарк	-	10.7 км²
+    elmwood	Элмвуд	-	4.2 км²
+    westmoreland	Уэстморленд	-	8.9 км²
+  dal-soakcliff	Южный Оук-Клифф	-	32.3 км²
     wynnewood	Уиннвуд	-	9.1 км²
-    kiest	Кист-Парк	-	7.5 км²
-    vahospital	Госпиталь ветеранов	-	11.8 км²
-  dal-southwest	Юго-запад Далласа	-	127.0 км²
-    redbird	Ред-Бёрд	-	27.5 км²
-    redbirdairport	Аэропорт Ред-Бёрд	aero:Dallas Executive	34.7 км²
-    mountaincreek	Маунтин-Крик	-	54.7 км²
-    hensley	Хенсли-Филд	osm:Hensley Field Service Center	10.0 км²
-  dal-south	Юг Далласа	-	125.3 км²
-    fairpark	Фэр-Парк	osm:Texas State Fair Grounds	4.3 км²
-    expopark	Экспо-Парк	-	1.2 км²
-    jubilee	Джубили-Парк	-	9.8 км²
-    southdallas	Саут-Даллас	-	5.2 км²
-    bonton	Бонтон	-	4.8 км²
-    cedarcrest	Сидар-Крест	-	18.0 км²
-    trinityforest	Тринити-Форест	-	34.7 км²
-    highlandhills	Хайленд-Хиллс	-	23.3 км²
-    i20south	За I-20	-	23.9 км²
-  dal-southeast	Юго-восток Далласа	-	139.3 км²
-    pleasantgrove	Плезант-Гроув	-	21.7 км²
-    buckner	Бакнер-Террас	-	10.2 км²
-    urbandale	Урбандейл	-	21.6 км²
-    lakejune	Лейк-Джун	-	32.8 км²
-    kleberg	Клеберг	-	53.0 км²
-  dal-parkcities	Парк-Ситиз	group	19.6 км²
-    highlandpark	Хайленд-Парк	city:Highland Park	7.7 км²
-    universitypark	Юниверсити-Парк	city:University Park	10.8 км²
-    smu	Кампус SMU	osm:Southern Methodist University	1.1 км²
-fortworth	Форт-Уэрт	city:Fort Worth	1226.6 км²
-  fw-downtown	Даунтаун Форт-Уэрта	-	10.7 км²
-    fw-sundance	Сандэнс-сквер	-	4.1 км²
-    fw-watergardens	Уотер-Гарденс	-	2.6 км²
-    fw-samuels	Сэмюэлс-авеню	-	4.0 км²
-  fw-nearsouthside	Ниар-Саутсайд	-	14.4 км²
-    fw-medical	Медрайон Форт-Уэрта	-	3.3 км²
-    fw-jps	Больница JPS	osm:John Peter Smith Hospital	2.2 км²
-    fw-fairmount	Фэрмаунт	-	1.8 км²
-    fw-ryanplace	Райан-Плейс	-	7.1 км²
-  fw-westside	Вестсайд	-	167.3 км²
-    fw-cultural	Культурный район	-	4.0 км²
-    fw-willrogers	Уилл-Роджерс	osm:Will Rogers Memorial Center	3.5 км²
-    fw-arlingtonheights	Арлингтон-Хайтс	-	7.3 км²
-    fw-rivercrest	Ривер-Крест	-	4.8 км²
-    fw-como	Комо	-	11.8 км²
-    fw-ridglea	Риджли	-	6.3 км²
-    fw-lasvegastrail	Лас-Вегас-Трейл	-	32.9 км²
-    fw-nasjrb	Авиабаза	aero:Naval Air Station	17.6 км²
-    whitesettlement	Уайт-Сеттлмент	city:White Settlement	18.5 км²
-    fw-westedge	Западная окраина	-	60.7 км²
-  fw-north	Нортсайд	-	103.7 км²
-    fw-stockyards	Стокъярдс	-	9.5 км²
-    fw-billybobs	Billy Bob's	place	0.6 км²
-    fw-rosenheights	Розен-Хайтс	-	7.6 км²
-    fw-diamondhill	Даймонд-Хилл	-	16.7 км²
-    fw-meacham	Аэропорт Мичем	aero:Meacham	13.0 км²
-    fw-jacksboro	Джексборо-хайвей	-	5.0 км²
-    fw-marinecreek	Марин-Крик	-	9.3 км²
-    lakeworth	Лейк-Уэрт	city:Lake Worth	28.2 км²
-    riveroaks	Ривер-Оукс	city:River Oaks	13.8 км²
-  fw-far-north	Дальний север Форт-Уэрта	-	328.5 км²
-    fw-fossilcreek	Фоссил-Крик	-	10.1 км²
-    fw-summerfields	Саммерфилдс	-	44.9 км²
-    fw-alliance	Аэропорт Альянс	aero:Alliance	146.5 км²
-    saginaw	Сагино	city:Saginaw	76.3 км²
-    fw-nwedge	Северо-западная окраина	-	50.7 км²
-  fw-east	Истсайд	-	142.3 км²
-    fw-riverside	Риверсайд	-	22.7 км²
-    fw-eastlancaster	Ист-Ланкастер	-	5.4 км²
-    fw-meadowbrook	Медоубрук	-	22.4 км²
-    fw-handley	Хэндли	-	22.4 км²
-    fw-eastchase	Истчейс	-	22.1 км²
-    fw-rivertrails	Ривер-Трейлс	-	47.2 км²
-  fw-southeast	Юго-восток Форт-Уэрта	-	131.3 км²
-    fw-poly	Политехник	-	12.1 км²
-    fw-stopsix	Стоп-Сикс	-	10.9 км²
-    fw-morningside	Морнингсайд	-	39.1 км²
-    fw-southi20	За I-20	-	69.3 км²
-  fw-southwest	Юго-запад Форт-Уэрта	-	328.3 км²
-    fw-tcu	TCU	osm:Texas Christian University	9.2 км²
-    fw-zoo	Зоопарк Форт-Уэрта	osm:Fort Worth Zoo	3.5 км²
-    fw-tanglewood	Тэнглвуд	-	8.1 км²
-    fw-hulen	Хьюлен	-	19.5 км²
-    fw-seminary	Семинария	-	13.9 км²
-    fw-wedgwood	Уэджвуд	-	57.7 км²
-      fw-oldwedgwood	Старый Уэджвуд	-	6.8 км²
-      fw-wedgwoodeast	Уэджвуд-Ист	-	9.9 км²
-      fw-candleridge	Кэндлридж	-	13.3 км²
-      fw-meadowcreek	Медоу-Крик	-	27.6 км²
-    fw-southedge	Южная окраина	-	73.9 км²
-    benbrook	Бенбрук	city:Benbrook	142.5 км²
-arlington	Арлингтон	city:Arlington	259.1 км²
-  arl-uta	Университет UTA	osm:The University of Texas at Arlington	26.3 км²
-  arl-downtown	Даунтаун Арлингтона	-	4.0 км²
-  arl-entertainment	Развлекательный район	-	7.9 км²
-  arl-sixflags	Six Flags	osm:Six Flags Over Texas	9.7 км²
-  arl-north	Северный Арлингтон	-	30.9 км²
-  arl-east	Восточный Арлингтон	-	22.6 км²
-  arl-west	Западный Арлингтон	-	44.6 км²
-  arl-south	Южный Арлингтон	-	18.5 км²
-  arl-southwest	Юго-западный Арлингтон	-	49.0 км²
-  arl-airport	Аэропорт Арлингтона	aero:Arlington Municipal	45.6 км²
-irving	Ирвинг	city:Irving	174.9 км²
-  irving-lascolinas	Лас-Колинас	-	22.1 км²
-  irving-valleyranch	Валли-Ранч	-	21.4 км²
-  irving-northlake	Норт-Лейк	-	28.8 км²
-  irving-stadium	Техас-Стэдиум	-	8.6 км²
-  irving-plymouth	Плимут-Парк	-	28.6 км²
-    irving-oldplymouth	Старый Плимут-Парк	-	13.6 км²
-    irving-hospital	Больница Ирвинга	place	3.7 км²
-    irving-bearcreek	Бэр-Крик	-	11.4 км²
-  irving-center	Центр Ирвинга	-	41.9 км²
-    irving-downtown	Даунтаун Ирвинга	-	4.7 км²
-    irving-senter	Сентер	-	8.1 км²
-    irving-heights	Ирвинг-Хайтс	-	14.5 км²
-    irving-shadygrove	Шейди-Гроув	-	14.5 км²
-  irving-west	Западный Ирвинг	-	23.5 км²
-grandprairie	Гранд-Прери	city:Grand Prairie	193.2 км²
-  gp-center	Центр Гранд-Прери	-	41.8 км²
-  gp-greatsouthwest	Грейт-Саутвест	-	22.5 км²
-  gp-lonestar	Лоун-Стар-Парк	-	28.9 км²
-  gp-traders	Трейдерс-Виллидж	-	30.5 км²
-  gp-south	Южный Гранд-Прери	-	69.5 км²
-plano	Плано	city:Plano	158.5 км²
-  plano-east	Восточный Плано	-	42.2 км²
-  plano-center	Центральный Плано	-	98.0 км²
-    plano-prestonpark	Престон-Парк	-	36.0 км²
-    plano-medcenter	Медцентр Плано	place	1.1 км²
-    plano-dne	Даллас-Норт-Эстейтс	-	22.3 км²
-    plano-huntersglen	Хантерс-Глен	-	38.6 км²
-  plano-willowbend	Уиллоу-Бенд	-	8.4 км²
-  plano-legacy	Легаси	-	9.9 км²
-richardson	Ричардсон	city:Richardson	75.0 км²
+    kiest	Кист-Парк	-	8.5 км²
+    vahospital	Госпиталь ветеранов	-	14.7 км²
+  dal-southwest	Юго-запад Далласа	-	128.7 км²
+    redbird	Ред-Бёрд	-	29.1 км²
+    redbirdairport	Аэропорт Ред-Бёрд	aero:Dallas Executive	36.5 км²
+    mountaincreek	Маунтин-Крик	-	54.2 км²
+    hensley	Хенсли-Филд	osm:Hensley Field Service Center	9.0 км²
+  dal-south	Юг Далласа	-	140.2 км²
+    fairpark	Фэр-Парк	osm:Texas State Fair Grounds	4.9 км²
+    expopark	Экспо-Парк	-	1.4 км²
+    jubilee	Джубили-Парк	-	8.8 км²
+    southdallas	Саут-Даллас	-	4.8 км²
+    bonton	Бонтон	-	9.5 км²
+    cedarcrest	Сидар-Крест	-	15.9 км²
+    trinityforest	Тринити-Форест	-	41.4 км²
+    highlandhills	Хайленд-Хиллс	-	24.5 км²
+    i20south	За I-20	-	29.0 км²
+  dal-southeast	Юго-восток Далласа	-	127.0 км²
+    pleasantgrove	Плезант-Гроув	-	12.9 км²
+    buckner	Бакнер-Террас	-	8.6 км²
+    urbandale	Урбандейл	-	21.3 км²
+    lakejune	Лейк-Джун	-	24.7 км²
+    kleberg	Клеберг	-	59.5 км²
+  dal-parkcities	Парк-Ситиз	group	19.7 км²
+    highlandpark	Хайленд-Парк	city:Highland Park	8.0 км²
+    universitypark	Юниверсити-Парк	city:University Park	10.9 км²
+    smu	Кампус SMU	osm:Southern Methodist University	0.8 км²
+fortworth	Форт-Уэрт	city:Fort Worth	1217.3 км²
+  fw-downtown	Даунтаун Форт-Уэрта	-	12.3 км²
+    fw-sundance	Сандэнс-сквер	-	3.9 км²
+    fw-watergardens	Уотер-Гарденс	-	3.0 км²
+    fw-samuels	Сэмюэлс-авеню	-	5.5 км²
+  fw-nearsouthside	Ниар-Саутсайд	-	13.2 км²
+    fw-medical	Медрайон Форт-Уэрта	-	2.7 км²
+    fw-jps	Больница JPS	osm:John Peter Smith Hospital	2.5 км²
+    fw-fairmount	Фэрмаунт	-	2.1 км²
+    fw-ryanplace	Райан-Плейс	-	6.0 км²
+  fw-westside	Вестсайд	-	180.1 км²
+    fw-cultural	Культурный район	-	4.6 км²
+    fw-willrogers	Уилл-Роджерс	osm:Will Rogers Memorial Center	4.2 км²
+    fw-arlingtonheights	Арлингтон-Хайтс	-	6.6 км²
+    fw-rivercrest	Ривер-Крест	-	4.7 км²
+    fw-como	Комо	-	12.0 км²
+    fw-ridglea	Риджли	-	5.9 км²
+    fw-lasvegastrail	Лас-Вегас-Трейл	-	12.2 км²
+    fw-nasjrb	Авиабаза	aero:Naval Air Station	19.8 км²
+    whitesettlement	Уайт-Сеттлмент	city:White Settlement	23.4 км²
+    fw-westedge	Западная окраина	-	86.6 км²
+  fw-north	Нортсайд	-	101.9 км²
+    fw-stockyards	Стокъярдс	-	7.8 км²
+    fw-billybobs	Billy Bob's	place	1.0 км²
+    fw-rosenheights	Розен-Хайтс	-	5.8 км²
+    fw-diamondhill	Даймонд-Хилл	-	13.8 км²
+    fw-meacham	Аэропорт Мичем	aero:Meacham	16.9 км²
+    fw-jacksboro	Джексборо-хайвей	-	5.8 км²
+    fw-marinecreek	Марин-Крик	-	8.4 км²
+    lakeworth	Лейк-Уэрт	city:Lake Worth	29.0 км²
+    riveroaks	Ривер-Оукс	city:River Oaks	13.4 км²
+  fw-far-north	Дальний север Форт-Уэрта	-	317.5 км²
+    fw-fossilcreek	Фоссил-Крик	-	10.7 км²
+    fw-summerfields	Саммерфилдс	-	50.7 км²
+    fw-alliance	Аэропорт Альянс	aero:Alliance	134.9 км²
+    saginaw	Сагино	city:Saginaw	50.1 км²
+    fw-nwedge	Северо-западная окраина	-	71.2 км²
+  fw-east	Истсайд	-	135.5 км²
+    fw-riverside	Риверсайд	-	21.5 км²
+    fw-eastlancaster	Ист-Ланкастер	-	4.7 км²
+    fw-meadowbrook	Медоубрук	-	22.3 км²
+    fw-handley	Хэндли	-	20.5 км²
+    fw-eastchase	Истчейс	-	18.7 км²
+    fw-rivertrails	Ривер-Трейлс	-	47.7 км²
+  fw-southeast	Юго-восток Форт-Уэрта	-	126.9 км²
+    fw-poly	Политехник	-	17.1 км²
+    fw-stopsix	Стоп-Сикс	-	11.9 км²
+    fw-morningside	Морнингсайд	-	34.8 км²
+    fw-southi20	За I-20	-	63.1 км²
+  fw-southwest	Юго-запад Форт-Уэрта	-	330.0 км²
+    fw-tcu	TCU	osm:Texas Christian University	8.6 км²
+    fw-zoo	Зоопарк Форт-Уэрта	osm:Fort Worth Zoo	3.9 км²
+    fw-tanglewood	Тэнглвуд	-	9.5 км²
+    fw-hulen	Хьюлен	-	19.9 км²
+    fw-seminary	Семинария	-	15.3 км²
+    fw-wedgwood	Уэджвуд	-	59.7 км²
+      fw-oldwedgwood	Старый Уэджвуд	-	6.0 км²
+      fw-wedgwoodeast	Уэджвуд-Ист	-	10.1 км²
+      fw-candleridge	Кэндлридж	-	15.9 км²
+      fw-meadowcreek	Медоу-Крик	-	27.7 км²
+    fw-southedge	Южная окраина	-	81.7 км²
+    benbrook	Бенбрук	city:Benbrook	131.3 км²
+arlington	Арлингтон	city:Arlington	265.5 км²
+  arl-uta	Университет UTA	osm:The University of Texas at Arlington	19.4 км²
+  arl-downtown	Даунтаун Арлингтона	-	8.2 км²
+  arl-entertainment	Развлекательный район	-	17.4 км²
+  arl-sixflags	Six Flags	osm:Six Flags Over Texas	6.3 км²
+  arl-north	Северный Арлингтон	-	29.2 км²
+  arl-east	Восточный Арлингтон	-	25.0 км²
+  arl-west	Западный Арлингтон	-	46.2 км²
+  arl-south	Южный Арлингтон	-	18.7 км²
+  arl-southwest	Юго-западный Арлингтон	-	38.9 км²
+  arl-airport	Аэропорт Арлингтона	aero:Arlington Municipal	56.1 км²
+irving	Ирвинг	city:Irving	174.6 км²
+  irving-lascolinas	Лас-Колинас	-	24.3 км²
+  irving-valleyranch	Валли-Ранч	-	22.7 км²
+  irving-northlake	Норт-Лейк	-	28.2 км²
+  irving-stadium	Техас-Стэдиум	-	7.0 км²
+  irving-plymouth	Плимут-Парк	-	34.0 км²
+    irving-oldplymouth	Старый Плимут-Парк	-	14.3 км²
+    irving-hospital	Больница Ирвинга	place	10.1 км²
+    irving-bearcreek	Бэр-Крик	-	9.5 км²
+  irving-center	Центр Ирвинга	-	45.4 км²
+    irving-downtown	Даунтаун Ирвинга	-	5.7 км²
+    irving-senter	Сентер	-	12.1 км²
+    irving-heights	Ирвинг-Хайтс	-	17.0 км²
+    irving-shadygrove	Шейди-Гроув	-	10.7 км²
+  irving-west	Западный Ирвинг	-	13.1 км²
+grandprairie	Гранд-Прери	city:Grand Prairie	184.9 км²
+  gp-center	Центр Гранд-Прери	-	39.3 км²
+  gp-greatsouthwest	Грейт-Саутвест	-	23.0 км²
+  gp-lonestar	Лоун-Стар-Парк	-	24.4 км²
+  gp-traders	Трейдерс-Виллидж	-	32.4 км²
+  gp-south	Южный Гранд-Прери	-	65.8 км²
+plano	Плано	city:Plano	160.2 км²
+  plano-east	Восточный Плано	-	46.6 км²
+  plano-center	Центральный Плано	-	81.5 км²
+    plano-prestonpark	Престон-Парк	-	19.8 км²
+    plano-medcenter	Медцентр Плано	place	0.9 км²
+    plano-dne	Даллас-Норт-Эстейтс	-	17.9 км²
+    plano-huntersglen	Хантерс-Глен	-	43.0 км²
+  plano-willowbend	Уиллоу-Бенд	-	19.3 км²
+  plano-legacy	Легаси	-	12.8 км²
+richardson	Ричардсон	city:Richardson	74.3 км²
   rich-center	Центр Ричардсона	-	16.9 км²
-  rich-telecom	Телеком-коридор	-	33.3 км²
-  rich-utd	Университет UTD	osm:University of Texas at Dallas	24.7 км²
-garland	Гарленд	city:Garland	148.0 км²
-  garland-center	Центр Гарленда	-	63.8 км²
-    garland-downtown	Даунтаун Гарленда	-	22.3 км²
-    garland-vietnamese	Вьетнамский квартал	-	13.1 км²
-    garland-industrial	Промзона Гарленда	-	12.0 км²
-    garland-springcreek	Спринг-Крик	-	16.5 км²
-  garland-north	Северный Гарленд	-	24.7 км²
-  garland-south	Южный Гарленд	-	59.5 км²
-    garland-centerville	Сентервилл	-	20.3 км²
-    garland-easternhills	Истерн-Хиллс	-	17.4 км²
-    garland-rosehill	Роуз-Хилл	-	14.0 км²
-    garland-lakeshore	Берег Рэй-Хаббарда	-	7.6 км²
-mesquite	Меските	city:Mesquite	113.5 км²
-  mesquite-center	Центр Меските	-	31.5 км²
-  mesquite-towneast	Таун-Ист	-	40.3 км²
-    mesquite-towneastmall	Молл Таун-Ист	place	1.2 км²
-    mesquite-eastfield	Колледж Истфилд	osm:Eastfield College	23.4 км²
-    mesquite-north	Северный Меските	-	15.7 км²
-  mesquite-south	Южный Меските	-	41.7 км²
-carrollton	Карролтон	city:Carrollton	116.7 км²
-  carr-downtown	Даунтаун Карролтона	-	18.3 км²
+  rich-telecom	Телеком-коридор	-	30.5 км²
+  rich-utd	Университет UTD	osm:University of Texas at Dallas	26.9 км²
+garland	Гарленд	city:Garland	147.4 км²
+  garland-center	Центр Гарленда	-	61.5 км²
+    garland-downtown	Даунтаун Гарленда	-	19.6 км²
+    garland-vietnamese	Вьетнамский квартал	-	12.9 км²
+    garland-industrial	Промзона Гарленда	-	11.3 км²
+    garland-springcreek	Спринг-Крик	-	17.7 км²
+  garland-north	Северный Гарленд	-	29.2 км²
+  garland-south	Южный Гарленд	-	56.6 км²
+    garland-centerville	Сентервилл	-	24.2 км²
+    garland-easternhills	Истерн-Хиллс	-	14.0 км²
+    garland-rosehill	Роуз-Хилл	-	13.6 км²
+    garland-lakeshore	Берег Рэй-Хаббарда	-	4.8 км²
+mesquite	Меските	city:Mesquite	132.3 км²
+  mesquite-center	Центр Меските	-	38.0 км²
+  mesquite-towneast	Таун-Ист	-	41.6 км²
+    mesquite-towneastmall	Молл Таун-Ист	place	1.3 км²
+    mesquite-eastfield	Колледж Истфилд	osm:Eastfield College	26.3 км²
+    mesquite-north	Северный Меските	-	14.0 км²
+  mesquite-south	Южный Меските	-	52.6 км²
+carrollton	Карролтон	city:Carrollton	110.2 км²
+  carr-downtown	Даунтаун Карролтона	-	24.5 км²
   carr-sandylake	Сэнди-Лейк	place	0.3 км²
-  carr-josey	Джоси-Ранч	-	31.0 км²
-  carr-indiancreek	Индиан-Крик	-	41.3 км²
-  carr-castlehills	Касл-Хиллз	-	25.7 км²
-farmersbranch	Фармерс-Бранч	city:Farmers Branch	29.7 км²
-  fb-center	Центр Фармерс-Бранча	-	8.5 км²
-  fb-histpark	Исторический парк	place	0.6 км²
-  fb-brookhaven	Брукхейвен	-	11.5 км²
-  fb-valwood	Валвуд	-	9.1 км²
-addison	Аддисон	city:Addison	12.2 км²
-coppell	Коппелл	city:Coppell	36.7 км²
-lewisville	Льюисвилл	city:Lewisville	109.2 км²
-  lew-oldtown	Олд-Таун	-	48.1 км²
-  lew-vistaridge	Виста-Ридж	-	33.6 км²
-  lew-lakepark	Лейк-Парк	-	27.1 км²
-  lew-medcenter	Медцентр Льюисвилла	place	0.4 км²
-flowermound	Флауэр-Маунд	city:Flower Mound	141.9 км²
-  fm-mound	Холм Флауэр-Маунд	place	3.4 км²
-  fm-center	Центр Флауэр-Маунда	-	21.1 км²
-  fm-wellington	Веллингтон	-	38.5 км²
-  fm-bridlewood	Брайдлвуд	-	16.1 км²
-  fm-crosstimbers	Кросс-Тимберс	-	47.8 км²
-  fm-doubleoak	Дабл-Оук	-	14.9 км²
-grapevine	Грейпвайн	city:Grapevine	78.2 км²
-  grape-downtown	Даунтаун Грейпвайна	-	27.8 км²
-  grape-mills	Грейпвайн-Миллс	place	2.1 км²
-  grape-gaylord	Гейлорд-Тексан	place	0.8 км²
-  grape-lakeshore	Берег озера	-	24.0 км²
-  grape-south	Южный Грейпвайн	-	23.5 км²
-rowlett	Роулетт	city:Rowlett	123.0 км²
-  rowlett-downtown	Даунтаун Роулетта	-	69.5 км²
-  rowlett-waterview	Уотервью	-	32.4 км²
-  rowlett-dalrock	Далрок	-	21.1 км²
-sunnyvale	Саннивейл	city:Sunnyvale	54.9 км²
-balchsprings	Болч-Спрингс	city:Balch Springs	21.3 км²
-dfw-airport	Аэропорт DFW	aero:Dallas/Fort Worth	24.8 км²
-midcities	Мид-Ситиз	group	183.9 км²
-  hurst	Хёрст	city:Hurst	24.5 км²
-  euless	Юлесс	city:Euless	32.4 км²
-  bedford	Бедфорд	city:Bedford	31.5 км²
-  nrh	Норт-Ричленд-Хиллс	city:North Richland Hills	46.3 км²
-    nrh-old	Старый Норт-Ричленд-Хиллс	-	20.0 км²
-    nrh-mall	Норт-Хиллс-молл	place	0.8 км²
-    nrh-smithfield	Смитфилд	-	20.0 км²
-    nrh-thornbridge	Торнбридж	-	5.4 км²
-  haltomcity	Холтом-Сити	city:Haltom City	32.2 км²
-  richlandhills	Ричленд-Хиллс	city:Richland Hills	7.4 км²
-  watauga	Уотога	city:Watauga	9.6 км²
-netarrant	Северо-восток Тарранта	group	200.8 км²
-  southlake	Саутлейк	city:Southlake	61.8 км²
-  colleyville	Колливилл	city:Colleyville	35.6 км²
-  keller	Келлер	city:Keller	51.6 км²
-  westlake	Уэстлейк	city:Westlake	17.5 км²
-  trophyclub	Трофи-Клаб	city:Trophy Club	14.3 км²
-  roanoke	Роанок	city:Roanoke	19.9 км²
-bestsouthwest	Бест-Саутвест	group	175.8 км²
-  duncanville	Данканвилл	city:Duncanville	35.4 км²
-  cedarhill	Сидар-Хилл	city:Cedar Hill	44.2 км²
-  desoto	Де-Сото	city:DeSoto	41.0 км²
-  lancaster	Ланкастер	city:Lancaster	55.1 км²
-sedallas	Юго-восток округа Даллас	group	219.2 км²
-  seagoville	Сиговилл	city:Seagoville	103.1 км²
-  hutchins	Хатчинс	city:Hutchins	39.0 км²
-  wilmer	Уилмер	city:Wilmer	52.2 км²
-  sedallas-farms	Фермы у Тринити	-	24.8 км²
-ecollin	Восток округа Коллин	group	157.7 км²
-  allen	Аллен	city:Allen	4.2 км²
-  wylie	Уайли	city:Wylie	79.4 км²
-  murphy	Мерфи	city:Murphy	14.4 км²
-  sachse	Сакси	city:Sachse	25.3 км²
-  parker	Паркер	city:Parker	23.0 км²
-  lucas	Лукас	city:Lucas	11.4 км²
-starrant	Юг Тарранта	group	83.9 км²
-  mansfield	Мансфилд	city:Mansfield	38.3 км²
-  kennedale	Кеннедейл	city:Kennedale	32.2 км²
-  everman	Эверман	city:Everman	6.1 км²
-  foresthill	Форест-Хилл	city:Forest Hill	7.3 км²
-nwtarrant	Северо-запад Тарранта	group	297.3 км²
-  haslet	Хаслет	city:Haslet	40.7 км²
-  azle	Азл	city:Azle	96.6 км²
-  eaglemountain	Берега Игл-Маунтин	-	160.0 км²
-sdenton	Юг округа Дентон	group	113.0 км²
-  northlake	Нортлейк	city:Northlake	35.1 км²
-  justin	Джастин	city:Justin	11.3 км²
-  sdenton-ranch	Ранчо Дентона	-	66.6 км²
+  carr-josey	Джоси-Ранч	-	23.4 км²
+  carr-indiancreek	Индиан-Крик	-	40.0 км²
+  carr-castlehills	Касл-Хиллз	-	22.1 км²
+farmersbranch	Фармерс-Бранч	city:Farmers Branch	31.5 км²
+  fb-center	Центр Фармерс-Бранча	-	8.7 км²
+  fb-histpark	Исторический парк	place	1.0 км²
+  fb-brookhaven	Брукхейвен	-	12.7 км²
+  fb-valwood	Валвуд	-	9.2 км²
+addison	Аддисон	city:Addison	11.9 км²
+  addison-circle	Аддисон-Серкл	-	3.1 км²
+  addison-beltline	Белт-Лайн	-	4.6 км²
+  addison-airport	Аэропорт Аддисон	aero:Addison	4.3 км²
+coppell	Коппелл	city:Coppell	37.9 км²
+  coppell-old	Старый Коппелл	-	21.6 км²
+  coppell-riverchase	Риверчейз	-	9.5 км²
+  coppell-warehouses	Склады у DFW	-	6.7 км²
+lewisville	Льюисвилл	city:Lewisville	110.9 км²
+  lew-oldtown	Олд-Таун	-	54.8 км²
+  lew-vistaridge	Виста-Ридж	-	30.0 км²
+  lew-lakepark	Лейк-Парк	-	25.5 км²
+  lew-medcenter	Медцентр Льюисвилла	place	0.5 км²
+flowermound	Флауэр-Маунд	city:Flower Mound	146.5 км²
+  fm-mound	Холм Флауэр-Маунд	place	4.5 км²
+  fm-center	Центр Флауэр-Маунда	-	25.7 км²
+  fm-wellington	Веллингтон	-	33.8 км²
+  fm-bridlewood	Брайдлвуд	-	12.8 км²
+  fm-crosstimbers	Кросс-Тимберс	-	55.4 км²
+  fm-doubleoak	Дабл-Оук	-	14.1 км²
+grapevine	Грейпвайн	city:Grapevine	78.4 км²
+  grape-downtown	Даунтаун Грейпвайна	-	31.4 км²
+  grape-mills	Грейпвайн-Миллс	place	0.6 км²
+  grape-gaylord	Гейлорд-Тексан	place	1.2 км²
+  grape-lakeshore	Берег озера	-	22.5 км²
+  grape-south	Южный Грейпвайн	-	22.6 км²
+rowlett	Роулетт	city:Rowlett	128.7 км²
+  rowlett-downtown	Даунтаун Роулетта	-	66.8 км²
+  rowlett-waterview	Уотервью	-	34.9 км²
+  rowlett-dalrock	Далрок	-	27.0 км²
+sunnyvale	Саннивейл	city:Sunnyvale	46.7 км²
+balchsprings	Болч-Спрингс	city:Balch Springs	16.8 км²
+dfw-airport	Аэропорт DFW	aero:Dallas/Fort Worth	27.9 км²
+midcities	Мид-Ситиз	group	187.2 км²
+  hurst	Хёрст	city:Hurst	27.7 км²
+  euless	Юлесс	city:Euless	36.4 км²
+  bedford	Бедфорд	city:Bedford	26.4 км²
+  nrh	Норт-Ричленд-Хиллс	city:North Richland Hills	47.7 км²
+    nrh-old	Старый Норт-Ричленд-Хиллс	-	15.1 км²
+    nrh-mall	Норт-Хиллс-молл	place	0.9 км²
+    nrh-smithfield	Смитфилд	-	25.8 км²
+    nrh-thornbridge	Торнбридж	-	5.8 км²
+  haltomcity	Холтом-Сити	city:Haltom City	31.9 км²
+  richlandhills	Ричленд-Хиллс	city:Richland Hills	7.7 км²
+  watauga	Уотога	city:Watauga	9.4 км²
+netarrant	Северо-восток Тарранта	group	186.2 км²
+  southlake	Саутлейк	city:Southlake	57.3 км²
+  colleyville	Колливилл	city:Colleyville	34.3 км²
+  keller	Келлер	city:Keller	51.0 км²
+  westlake	Уэстлейк	city:Westlake	16.2 км²
+  trophyclub	Трофи-Клаб	city:Trophy Club	13.2 км²
+  roanoke	Роанок	city:Roanoke	14.2 км²
+bestsouthwest	Бест-Саутвест	group	182.7 км²
+  duncanville	Данканвилл	city:Duncanville	29.4 км²
+  cedarhill	Сидар-Хилл	city:Cedar Hill	50.5 км²
+  desoto	Де-Сото	city:DeSoto	41.1 км²
+  lancaster	Ланкастер	city:Lancaster	61.7 км²
+sedallas	Юго-восток округа Даллас	group	195.2 км²
+  seagoville	Сиговилл	city:Seagoville	85.9 км²
+  hutchins	Хатчинс	city:Hutchins	28.8 км²
+  wilmer	Уилмер	city:Wilmer	52.7 км²
+  sedallas-farms	Фермы у Тринити	-	27.8 км²
+ecollin	Восток округа Коллин	group	154.3 км²
+  allen	Аллен	city:Allen	2.9 км²
+  wylie	Уайли	city:Wylie	83.5 км²
+  murphy	Мерфи	city:Murphy	11.8 км²
+  sachse	Сакси	city:Sachse	24.7 км²
+  parker	Паркер	city:Parker	22.8 км²
+  lucas	Лукас	city:Lucas	8.6 км²
+starrant	Юг Тарранта	group	88.5 км²
+  mansfield	Мансфилд	city:Mansfield	35.2 км²
+  kennedale	Кеннедейл	city:Kennedale	35.1 км²
+  everman	Эверман	city:Everman	8.0 км²
+  foresthill	Форест-Хилл	city:Forest Hill	10.2 км²
+nwtarrant	Северо-запад Тарранта	group	283.5 км²
+  haslet	Хаслет	city:Haslet	52.4 км²
+  azle	Азл	city:Azle	80.3 км²
+  eaglemountain	Берега Игл-Маунтин	-	150.8 км²
+sdenton	Юг округа Дентон	group	133.0 км²
+  northlake	Нортлейк	city:Northlake	36.9 км²
+  justin	Джастин	city:Justin	9.5 км²
+  sdenton-ranch	Ранчо Дентона	-	86.7 км²
