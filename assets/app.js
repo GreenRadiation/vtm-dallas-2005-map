@@ -1468,7 +1468,20 @@ function bindTagEd(slot, st, onchange) { // st: {tags: [], colors: {}}
   return {flush: add, color: col};
 }
 function slotOptions(cur) {
-  return marks.slots.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === cur ? " selected" : "") + '>' + esc(s.name) + '</option>'; }).join("");
+  return marks.slots.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === cur ? " selected" : "") + '>' + esc(s.name) + (s.on ? "" : " (скрыт)") + '</option>'; }).join("");
+}
+// «Хранить в слоте» в формах метки и заметки: при сохранении метка или заметка переезжает в выбранный слот
+function moveRow(cur) {
+  return '<div class="row"><label for="f-move">Хранить в слоте</label><select id="f-move">' + slotOptions(cur) + '<option value="+new">Новый слот</option></select>' +
+    '<p class="hint mdhint" id="f-move-hint" hidden></p></div>';
+}
+function bindMove(slot, why) { // why(to) — пояснение для выбранного слота или ""
+  var m = document.getElementById("f-move"), h = document.getElementById("f-move-hint");
+  m.addEventListener("change", function () {
+    var to = slotOf(m.value), t = m.value === "+new" ? "Появится новый слот, переименовать его можно в меню «Метки»." : to && to !== slot ? why(to) : "";
+    h.textContent = t; h.hidden = !t;
+  });
+  return function () { return m.value === "+new" ? newSlot("Новый слот " + marks.slots.length) : slotOf(m.value) || slot; };
 }
 function confirmBtn(id, label) {
   return confirmDel ? '<button class="btn danger" type="button" id="' + id + '2">Да, удалить</button><button class="btn" type="button" id="' + id + '0">Не удалять</button>'
@@ -1518,13 +1531,14 @@ function renderPinPanel() {
       PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>' +
     '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
     '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Кто здесь, что случилось, зацепки">' + esc(draft.text) + '</textarea>' + MD_HINT + '</div>' +
-    (marks.slots.length > 1 ? '<div class="row"><label for="f-slot">Слот</label><select id="f-slot">' + slotOptions(slot.id) + '</select></div>' : '') +
+    moveRow(slot.id) +
     '<p class="hint">Метку можно перетащить по карте мышью или пальцем.</p>' +
     '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
     (isNewPin ? "" : confirmBtn("f-del", "Удалить метку")) + '<span class="status">' + esc(status) + '</span></div></form>';
   fillWhere(draft);
   function head() { var h = document.getElementById("f-head"); h.innerHTML = pinHtml(draft) + esc(draft.title || "Без названия"); drawPins(); }
   var ed = bindTagEd(slot, st, function () { draft.tags = st.tags.slice(); });
+  var target = bindMove(slot, function (to) { return to.on ? "" : "Слот «" + to.name + "» скрыт: метка пропадёт с карты, пока его не покажешь в меню «Метки»."; });
   document.getElementById("f-title").addEventListener("input", function (e) { draft.title = e.target.value; head(); });
   panel.querySelector(".icgrid").addEventListener("click", function (e) {
     var b = e.target.closest("[data-ic]"); if (!b) return;
@@ -1537,7 +1551,7 @@ function renderPinPanel() {
   document.getElementById("f-text").addEventListener("input", function (e) { draft.text = e.target.value; });
   document.getElementById("f").addEventListener("submit", function (e) {
     e.preventDefault(); ed.flush();
-    var fs = document.getElementById("f-slot"), to = slotOf(fs ? fs.value : slot.id) || slot;
+    var to = target();
     var p2 = {id: draft.id, ll: draft.ll, icon: draft.icon, color: draft.color, title: draft.title.trim().slice(0, 120), tags: st.tags.slice(),
       text: draft.text.replace(/\r/g, "").trim()};
     st.tags.forEach(function (t) { to.tags[t] = ed.color(t); });
@@ -1566,12 +1580,13 @@ function renderNoteForm(s, name, meta) {
   panel.innerHTML = '<div class="pmeta">' + meta + '</div><h2>' + esc(name) + '</h2>' +
     '<p class="psum">Заметка хранится в этом браузере, в слоте «' + esc(slot.name) + '».</p>' +
     '<form class="form" id="f">' +
-    (marks.slots.length > 1 ? '<div class="row"><label for="f-slot">Слот</label><select id="f-slot">' + slotOptions(slot.id) + '</select></div>' : '') +
+    (marks.slots.length > 1 ? '<div class="row"><label for="f-slot">Заметка из слота</label><select id="f-slot">' + slotOptions(slot.id) + '</select></div>' : '') +
     '<div class="row"><label>Цвет региона</label><div class="colrow"><label class="rad"><input type="radio" name="f-rc" value=""' + (r.color ? "" : " checked") + '> не менять</label>' +
       '<label class="rad"><input type="radio" name="f-rc" value="c"' + (r.color ? " checked" : "") + '> свой</label><input type="color" id="f-color" value="' + (r.color || PALETTE[0]) + '">' +
       PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>' +
     '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
     '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Сюжетные зацепки, NPC, что угодно своё">' + esc(r.text) + '</textarea>' + MD_HINT + '</div>' +
+    moveRow(slot.id) +
     '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
     (slot.regions[k] ? confirmBtn("f-del", "Удалить заметку") : "") + '<span class="status">' + esc(status) + '</span></div></form>';
   var ed = bindTagEd(slot, st, function () {}), ci = document.getElementById("f-color");
@@ -1580,13 +1595,23 @@ function renderNoteForm(s, name, meta) {
   panel.querySelector(".colrow").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) { ci.value = b.getAttribute("data-c"); custom(); } });
   var fs = document.getElementById("f-slot");
   if (fs) fs.addEventListener("change", function () { noteSlot = fs.value; confirmDel = false; renderPanel(); });
+  var target = bindMove(slot, function (to) {
+    return (to.regions[k] ? "В слоте «" + to.name + "» уже есть заметка к этому региону: тексты и теги объединятся. " : "") +
+      (to.on ? "" : "Слот «" + to.name + "» скрыт: заметку будет видно, когда его покажешь в меню «Метки».");
+  });
   document.getElementById("f").addEventListener("submit", function (e) {
     e.preventDefault(); ed.flush();
     var next = {color: panel.querySelector('input[name="f-rc"]:checked').value ? ci.value : "", tags: st.tags.slice(),
       text: document.getElementById("f-text").value.replace(/\r/g, "").trim()};
-    st.tags.forEach(function (t) { slot.tags[t] = ed.color(t); });
-    if (!next.color && !next.tags.length && !next.text) delete slot.regions[k]; else slot.regions[k] = next;
-    editing = false; afterMarks("Сохранено в этом браузере");
+    var to = target(), old = to !== slot && to.regions[k];
+    st.tags.forEach(function (t) { to.tags[t] = ed.color(t); });
+    if (old) { // в слоте уже есть заметка к региону — объединяем
+      next = {color: next.color || old.color, tags: old.tags.concat(next.tags.filter(function (t) { return old.tags.indexOf(t) < 0; })),
+        text: [old.text, next.text].filter(Boolean).join("\n\n")};
+    }
+    if (to !== slot) delete slot.regions[k];
+    if (!next.color && !next.tags.length && !next.text) delete to.regions[k]; else to.regions[k] = next;
+    noteSlot = to.id; editing = false; afterMarks(to === slot ? "Сохранено в этом браузере" : "Перенесено в слот «" + to.name + "»");
   });
   document.getElementById("f-cancel").addEventListener("click", function () { editing = false; status = ""; renderPanel(); });
   bindConfirm("f-del", function () { delete slot.regions[k]; editing = false; afterMarks("Заметка удалена"); });
