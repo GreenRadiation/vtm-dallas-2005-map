@@ -797,6 +797,28 @@ function setDart(on) {
 var VEC_PAD = 0.3, WHEEL_STEP = 0.375;
 (function () {
   L.Map.prototype._createRenderer = function (o) { return L.canvas(L.extend({padding: VEC_PAD}, o)); };
+  // Наведение на холсте: Leaflet обрабатывает движение мыши не чаще раза в 32 мс, а промежуточные выбрасывает —
+  // подсказки и подсветка шли рывками на 30 кадрах. Берём последнее положение мыши раз в кадр и ищем слой
+  // сверху вниз до первого попадания.
+  var C = L.Canvas.prototype, out = C._handleMouseOut;
+  C._handleMouseHover = function (e, point) {
+    this._hoverAt = [e, point];
+    if (this._hoverRaf) return;
+    this._hoverRaf = L.Util.requestAnimFrame(function () {
+      this._hoverRaf = null;
+      var e = this._hoverAt[0], point = this._hoverAt[1], hit = null;
+      for (var o = this._drawLast; o; o = o.prev) if (o.layer.options.interactive && o.layer._containsPoint(point)) { hit = o.layer; break; }
+      if (hit !== this._hoveredLayer) {
+        this._handleMouseOut(e);
+        if (hit) { L.DomUtil.addClass(this._container, "leaflet-interactive"); this._fireEvent([hit], e, "mouseover"); this._hoveredLayer = hit; }
+      }
+      this._fireEvent(this._hoveredLayer ? [this._hoveredLayer] : false, e);
+    }, this);
+  };
+  C._handleMouseOut = function (e) {
+    if (e && e.type === "mouseout" && this._hoverRaf) { L.Util.cancelAnimFrame(this._hoverRaf); this._hoverRaf = null; }
+    out.call(this, e);
+  };
   L.Map.ScrollWheelZoom.prototype._performZoom = function () {
     // _delta — прокрутка за 40 мс; щелчок колеса — около 50. Больше двух щелчков за раз не берём, чтобы
     // прокрутка, накопленная пока страница подвисла, не прыгала; мелкая прокрутка тачпада — малыми шагами
