@@ -93,12 +93,11 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .land{fill:var(--land);stroke:none;fill-opacity:1}
 
 /* регионы: цвет — от верхнего узла, оттенок чередуется у соседей, чтобы каждый регион читался отдельно.
-   d0…d3 — глубина в дереве; focus — дети раскрытого узла, ctx — соседи вокруг, exp — сам раскрытый узел (только контур) */
+   d0…d3 — глубина в дереве; focus — дети раскрытого узла, ctx — соседи вокруг (не приглушаются: карта всегда светлая), exp — сам раскрытый узел (только контур) */
 .reg{stroke:var(--rline);stroke-width:1;stroke-opacity:.9;fill-rule:nonzero}
 .reg.d0{stroke-width:1.8}
 .reg.d1{stroke-width:1.3}
 .reg.d2,.reg.d3{stroke-width:1}
-.reg.ctx{fill-opacity:.4!important;stroke-opacity:.7}
 .reg.exp{fill:none!important;stroke:var(--aline);stroke-width:3;stroke-opacity:1;pointer-events:none}
 .reg.exp.d1,.reg.exp.d2{stroke-width:2.4}
 .t0{fill:var(--t0)}.t1{fill:var(--t1)}.t2{fill:var(--t2)}.t3{fill:var(--t3)}.t4{fill:var(--t4)}.t5{fill:var(--t5)}
@@ -110,8 +109,6 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .nat.k-green{fill:var(--park-strong);fill-opacity:.9;stroke:var(--green-ink);stroke-opacity:.35}
 .nat:hover{stroke:var(--sel);stroke-width:2;stroke-opacity:1}
 .reg.hov{stroke:var(--sel);stroke-width:2.2;fill-opacity:1}
-/* приглушаем весь слой регионов разом: прозрачность на каждом контуре заставляет браузер рисовать их по одному */
-.has-sel .leaflet-reg-pane{opacity:.72}
 /* границы старших масштабов поверх: области — толсто, районы (на мелком масштабе) — средне */
 .outl{fill:none;stroke:var(--aline);stroke-linejoin:round}
 .outl1{stroke-width:3}
@@ -138,7 +135,7 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
   text-shadow:-1px -1px 0 var(--halo),1px -1px 0 var(--halo),-1px 1px 0 var(--halo),1px 1px 0 var(--halo),0 0 3px var(--halo)}
 .lbl-top span{font-weight:700;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;max-width:170px;color:var(--label-a)}
 .lbl-focus span{font-weight:650;font-size:12.5px;max-width:140px}
-.lbl-ctx span{font-weight:600;font-size:11.5px;max-width:130px;opacity:.7}
+.lbl-ctx span{font-weight:600;font-size:11.5px;max-width:130px}
 .lbl-nat span{font-weight:500;font-size:11.5px;max-width:120px}
 .lk-water span{color:var(--water-ink);font-style:italic}
 .lk-green span{color:var(--green-ink);font-style:italic}

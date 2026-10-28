@@ -199,7 +199,7 @@ var PIN = {
 var PIN_NAME = {dot: "точка", home: "дом", glass: "бокал", building: "здание", eye: "глаз", star: "звезда", users: "люди", skull: "череп",
   drop: "капля", heart: "сердце", shield: "щит", crown: "корона", flag: "флаг", key: "ключ", alert: "опасность", moon: "луна",
   cross: "крест", coin: "деньги", blade: "клинок", question: "вопрос"};
-var pinLayer = null;
+var pinLayer = null, lastPinClick = {};
 function pinSvg(name) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (PIN[name] || PIN.dot).map(function (d) { return '<path d="' + d + '"/>'; }).join("") + '</svg>'; }
 function isLight(hex) { var n = parseInt(hex.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) > 160; }
 function pinHtml(p) { return '<span class="pinb' + (isLight(p.color) ? " lt" : "") + '" style="background:' + p.color + '">' + pinSvg(p.icon) + '</span>'; }
@@ -217,7 +217,16 @@ function drawPins() {
     m.bindTooltip("<b>" + esc(p.title || "Метка") + "</b><small>" + esc((p.tags.length ? p.tags.join(", ") + " · " : "") + slot.name) + "</small>" +
       tripTip({k: "pin", slot: slot.id, id: p.id}, p.ll),
       {direction: "top", className: "tip", offset: [0, -14]});
-    m.on("click", function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) selectPin(slot.id, q[1].id, false); });
+    m.on("click", function (e) {
+      L.DomEvent.stopPropagation(e);
+      if (placeAt(e.latlng)) return;
+      // двойной клик ловим по двум быстрым кликам: первый клик перерисовывает значок, и браузерный dblclick уходит в пустоту
+      var key = slot.id + "/" + q[1].id, now = Date.now();
+      if (lastPinClick.key === key && now - lastPinClick.t < 450) { lastPinClick = {}; openAt(q[1].ll); return; }
+      lastPinClick = {key: key, t: now};
+      selectPin(slot.id, q[1].id, false);
+    });
+    m.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); });
     m.on("dragend", function () { var ll = m.getLatLng(); if (draft) draft.ll = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)]; });
     pinLayer.addLayer(m);
   });
@@ -228,6 +237,14 @@ function selectPin(slotId, id, fly) {
   placeStop(); sel = {k: "pin", slot: slotId, id: id}; editing = false; draft = null; isNewPin = false; status = ""; confirmDel = false;
   drawSel(); drawPins(); renderPanel(); syncHash(); placeLabels();
   if (fly) map.flyTo(p.ll, Math.max(map.getZoom(), 13), {duration: 0.6});
+}
+// Раскрыть ветку дерева до района под точкой (для меток); камеру не трогаем
+function openAt(ll) {
+  leafPath(ll).then(function (path) {
+    if (!path.length || view.leaves) return;
+    var last = path[path.length - 1];
+    open = idx[last].n ? path : path.slice(0, -1); syncLayers(); placeLabels();
+  });
 }
 // Путь узлов от верхнего уровня до самого мелкого района под точкой; файлы детей подгружаются по дороге
 function leafPath(ll) {
@@ -1301,13 +1318,7 @@ function renderPinPanel() {
     fillWhere(p); bindRef(sel);
     var pe = document.getElementById("p-edit");
     if (pe) pe.addEventListener("click", function () { editing = true; draft = JSON.parse(JSON.stringify(p)); status = ""; drawPins(); renderPanel(); });
-    document.getElementById("p-show").addEventListener("click", function () { // раскрыть ветку до района с меткой, камеру не трогаем
-      leafPath(p.ll).then(function (path) {
-        if (!path.length || view.leaves) return;
-        var last = path[path.length - 1];
-        open = idx[last].n ? path : path.slice(0, -1); syncLayers(); placeLabels();
-      });
-    });
+    document.getElementById("p-show").addEventListener("click", function () { openAt(p.ll); });
     bindConfirm("p-del", function () {
       slot.pins = slot.pins.filter(function (q) { return q.id !== p.id; });
       sel = null; afterMarks(""); syncHash();
