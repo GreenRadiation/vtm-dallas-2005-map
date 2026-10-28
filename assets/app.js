@@ -35,7 +35,7 @@ var view = {leaves: false, lens: ""}; // leaves — режим проверки:
 var sel = null; // {k: "n" | "nat", id}
 var editing = false, status = "", toolStatus = "", confirmWipe = false, moreOpen = {};
 var map, featOf = {n: {}, nat: {}}, layerOf = {n: {}, nat: {}}, labelLayer, natLayer;
-var selLayer = null, gridLayer, gridLabels, extra = {};
+var selLayer = null, gridLayer, gridLabels, extra = {}, lensLayer = null, lensReady = null;
 var panel = document.getElementById("panel"), toolsEl = document.getElementById("tools");
 
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (ch) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[ch]; }); }
@@ -124,10 +124,8 @@ var NIGHT = [
   ["центр ночной жизни", "Сюда едут развлекаться со всего города."]];
 // у полиции Далласа пояснение общее на весь город, у остальных — своё в tags.notes.police
 var POLICE = {
-  dpd: ["Даллас", "Полиция Далласа: почти три тысячи офицеров на весь город, по вызовам из бедных районов приезжает не сразу. " +
-    "В 2001–2002 годах её тряс скандал с «гипсовым кокаином»: информаторы подбрасывали молотый гипс вместо наркотиков, и десятки невиновных сели. " +
-    "Тюрьма и суды — у шерифа округа Даллас, с января 2005 года это Лупе Вальдес."],
-  fwpd: ["Форт-Уэрт", "Полиция Форт-Уэрта (Fort Worth Police Department) — городская полиция примерно на полторы тысячи офицеров, вдвое меньше далласской; она отвечает за весь город, кроме городков-анклавов внутри него, у которых своя полиция. С 90-х она делает ставку на работу с районами: регулярные встречи с жителями и добровольные патрули горожан Citizens on Patrol, которые Форт-Уэрт первым в Техасе завёл в 1991 году. Город заметно спокойнее Далласа, полицию тут считают консервативной, но надёжной, а по туристическим Стокъярдс ездит её конный патруль."], city: ["своя", ""], sheriff: ["шериф", ""], campus: ["кампус", ""]};
+  dpd: ["Даллас", "Полиция Далласа, около трёх тысяч офицеров на весь город."],
+  fwpd: ["Форт-Уэрт", "Полиция Форт-Уэрта, около полутора тысяч офицеров — вдвое меньше далласской."], city: ["своя", ""], sheriff: ["шериф", ""], campus: ["кампус", ""]};
 
 function icon(name, cls) {
   return '<svg class="ic' + (cls ? " " + cls : "") + '" viewBox="0 0 24 24" aria-hidden="true">' +
@@ -306,6 +304,37 @@ function paintLens(el, s) {
   // у озёр и парков без данных оставляем их обычный цвет
   el.style.fill = !view.lens || (!p && s.k === "nat") ? "" : p ? p.fill : stripes([["#d9d9d9", 50], ["#f2f2f2", 50]]);
 }
+// Линза красит самые мелкие области: слой всех листьев лежит под регионами, а у регионов заливка прозрачная,
+// так что видны границы раскрытой ветки, а цвет — по листьям
+function syncLensLeaves() {
+  if (!view.lens) { if (lensLayer) show(lensLayer, false); return; }
+  lensReady = lensReady || ensureAll().then(function () {
+    var feats = [];
+    Object.keys(loaded).forEach(function (p) { loaded[p].features.forEach(function (f) { if (!idx[f.properties.id].n) feats.push(f); }); });
+    lensLayer = L.geoJSON({type: "FeatureCollection", features: feats}, {pane: "lens", interactive: false, style: {className: "lensleaf"}});
+  });
+  lensReady.then(function () {
+    if (!view.lens) return;
+    show(lensLayer, true);
+    lensLayer.eachLayer(function (l) { var el = l.getElement(); if (el) paintLens(el, {k: "n", id: l.feature.properties.id}); });
+  });
+}
+// Лист под курсором внутри свёрнутого региона — для подсказки в режиме линзы
+function inRing(x, y, ring) {
+  var c = false;
+  for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    var a = ring[i], b = ring[j];
+    if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c;
+  }
+  return c;
+}
+function leafAt(id, ll) {
+  var x = ll.lng, y = ll.lat;
+  return descendants(id).filter(function (d) { return !idx[d].n && featOf.n[d]; }).filter(function (d) {
+    var g = featOf.n[d].geometry, polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    return polys.some(function (p) { return inRing(x, y, p[0]) && !p.slice(1).some(function (h) { return inRing(x, y, h); }); });
+  })[0] || null;
+}
 function lensTip(s) {
   if (!view.lens) return "";
   var p = lensPaint(s);
@@ -363,10 +392,10 @@ function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
     maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: 0.5})});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
-  [["land", 200], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["sel", 430], ["grid", 440], ["labels", 450]].forEach(function (p) {
+  [["land", 200], ["lens", 290], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["sel", 430], ["grid", 440], ["labels", 450]].forEach(function (p) {
     map.createPane(p[0]).style.zIndex = p[1];
   });
-  ["green", "water", "grid", "labels", "sel"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
+  ["lens", "green", "water", "grid", "labels", "sel"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
 
   L.rectangle(BOUNDS, {pane: "land", className: "land", interactive: false}).addTo(map);
   L.geoJSON(geo.green, {pane: "green", interactive: false, style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
@@ -435,8 +464,16 @@ function descendants(id) {
 function hook(f, l) {
   var id = f.properties.id;
   featOf.n[id] = f; layerOf.n[id] = l;
-  l.bindTooltip(function () { return esc(idx[id].name) + lensTip({k: "n", id: id}) + (idx[id].n && !isOpen(id) ? '<small>двойной клик — что внутри</small>' : ''); },
-    {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+  var leaf = null; // в линзе: лист под курсором, если регион свёрнут
+  l.bindTooltip(function () {
+    var closed = idx[id].n && !isOpen(id);
+    return esc(idx[id].name) + (leaf ? "<small>" + esc(idx[leaf].name) + "</small>" : "") + lensTip({k: "n", id: leaf || id}) +
+      (closed ? '<small>двойной клик — что внутри</small>' : '');
+  }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+  l.on("mousemove", function (e) {
+    var lf = view.lens && idx[id].n && !isOpen(id) && lensLayer ? leafAt(id, e.latlng) : null;
+    if (lf !== leaf) { leaf = lf; if (l.getTooltip()) l.getTooltip().update(); }
+  });
   l.on("click", function (e) { L.DomEvent.stopPropagation(e); select({k: "n", id: id}, false); });
   l.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); if (idx[id].n) expand(id); });
   l.on("mouseover", function () { var el = l.getElement(); if (el) el.classList.add("hov"); });
@@ -605,8 +642,9 @@ function drawSel() {
 function refreshStyles() {
   Object.keys(layerOf.n).forEach(function (id) {
     var el = layerOf.n[id].getElement();
-    if (el) { el.setAttribute("class", regClass(id) + " leaflet-interactive"); paintLens(el, {k: "n", id: id}); }
+    if (el) { el.setAttribute("class", regClass(id) + " leaflet-interactive"); el.style.fill = ""; }
   });
+  syncLensLeaves();
   Object.keys(layerOf.nat).forEach(function (id) {
     var el = layerOf.nat[id].getElement(), m = marker({k: "nat", id: id});
     if (el) { el.setAttribute("class", "nat k-" + featOf.nat[id].properties.kind + (m ? " m-" + m : "") + " leaflet-interactive"); paintLens(el, {k: "nat", id: id}); }

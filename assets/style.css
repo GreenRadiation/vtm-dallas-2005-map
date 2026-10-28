@@ -210,8 +210,9 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .tagtip b{font-weight:700}
 
 /* линзы: регион закрашен по параметру, легенда в углу карты */
-.lensed .reg{fill-opacity:.88}
-.lensed .reg.hov{fill-opacity:1}
+.lensed .reg,.lensed .reg.ctx{fill-opacity:0!important}
+.lensed .reg.hov{fill-opacity:.2!important}
+.lensleaf{stroke:var(--rline);stroke-width:.5;stroke-opacity:.35;fill-opacity:.88}
 .lens-pick select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
 .lens-legend{position:absolute;right:10px;top:10px;z-index:800;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;
   font-size:12.5px;max-width:250px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
