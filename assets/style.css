@@ -185,6 +185,7 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .kids button:hover{border-color:var(--ink)}
 .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
 .btn{font-weight:600;font-size:13px;padding:7px 12px;border-radius:6px;border:1.5px solid var(--ink);background:var(--paper);cursor:pointer}
+.btn.ico{display:inline-flex;align-items:center;justify-content:center;padding:6px 8px;line-height:0}
 .btn.primary{background:var(--ink);color:var(--bg)}
 .btn.danger{border-color:var(--hostile);color:var(--hostile)}
 .btn.small{font-size:12px;padding:4px 9px}

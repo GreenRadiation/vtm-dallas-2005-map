@@ -703,6 +703,24 @@ function setLens(k) {
   refreshStyles(); renderLegend();
 }
 
+// Тема: тёмная по умолчанию, выбор помнится. Атрибут ставит скрипт в <head> до отрисовки; здесь — кнопка в шапке.
+var THEME_KEY = "vtm-dallas-2005-map.theme";
+var SUN = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>';
+var MOON = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  var b = document.getElementById("theme-btn"), next = t === "dark" ? "Светлая тема" : "Тёмная тема";
+  b.innerHTML = t === "dark" ? SUN : MOON; b.title = next; b.setAttribute("aria-label", next);
+}
+function setupTheme() {
+  setTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+  document.getElementById("theme-btn").addEventListener("click", function () {
+    var t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    store(THEME_KEY, t); setTheme(t);
+    if (view.lens && map) { refreshStyles(); renderLegend(); } // цвета групп жителей берутся из темы
+  });
+}
+
 // ---------- DART ----------
 // Линии поездов и станции весны 2005 года поверх карты (data/geo/dart.geojson, сборка — tools/dart.py) и окошко справки
 var DART_LINE = {red: "Красная линия: Уэстморленд — Паркер-роуд", blue: "Синяя линия: Ледбеттер — Даунтаун-Гарленд",
@@ -1610,6 +1628,7 @@ function readHash(fly) {
 }
 
 // ---------- запуск ----------
+setupTheme();
 var files = ["water", "green", "nature"];
 Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(function (r) { if (!r.ok) throw new Error(n); return r.json(); }); })
   .concat([fetch(TREE + "index.json").then(function (r) { return r.json(); }),
