@@ -316,3 +316,97 @@ eaglemountain	nwtarrant		Берега Игл-Маунтин	32.9100,-97.4600 32.
 northlake	sdenton	city:Northlake	Нортлейк
 justin	sdenton	city:Justin	Джастин
 sdenton-ranch	sdenton		Ранчо Дентона	33.0600,-97.3600
+
+# ---------------------------------------------------------------- деление крупных листьев (29 октября 2026)
+# Карролтон
+carr-downtown	carrollton		Даунтаун Карролтона	32.9520,-96.9070	Downtown Carrollton, Texas
+carr-sandylake	carrollton	place	Сэнди-Лейк	32.9701,-96.9276	Sandy Lake Amusement Park, Carrollton
+carr-josey	carrollton		Джоси-Ранч	32.9740,-96.8850	Josey Ranch Lake, Carrollton
+carr-indiancreek	carrollton		Индиан-Крик	33.0080,-96.9250	Indian Creek Golf Club, Carrollton
+carr-castlehills	carrollton		Касл-Хиллз	33.0450,-96.9050	Castle Hills, Lewisville
+# Льюисвилл
+lew-oldtown	lewisville		Олд-Таун	33.0465,-96.9950	Old Town, Lewisville
+lew-vistaridge	lewisville		Виста-Ридж	33.0030,-96.9720	Vista Ridge Mall, Lewisville
+lew-lakepark	lewisville		Лейк-Парк	33.0700,-97.0080	Lewisville Lake Park
+lew-medcenter	lewisville	place	Медцентр Льюисвилла	33.0445,-97.0050	Medical City Lewisville
+# Флауэр-Маунд
+fm-mound	flowermound	place	Холм Флауэр-Маунд	33.0145,-97.0690	The Flower Mound, Flower Mound
+fm-center	flowermound		Центр Флауэр-Маунда	33.0430,-97.0700	Flower Mound Town Hall
+fm-wellington	flowermound		Веллингтон	33.0230,-97.0840	Wellington of Flower Mound
+fm-bridlewood	flowermound		Брайдлвуд	33.0520,-97.1000	Bridlewood Boulevard, Flower Mound
+fm-crosstimbers	flowermound		Кросс-Тимберс	33.0450,-97.1700	Tour 18, Flower Mound
+fm-doubleoak	flowermound		Дабл-Оук	33.0651,-97.1106	Double Oak, Texas
+# Грейпвайн
+grape-downtown	grapevine		Даунтаун Грейпвайна	32.9370,-97.0780	Main Street, Grapevine
+grape-mills	grapevine	place	Грейпвайн-Миллс	32.9662,-97.0425	Grapevine Mills
+grape-gaylord	grapevine	place	Гейлорд-Тексан	32.9528,-97.0643	Gaylord Texan, Grapevine
+grape-lakeshore	grapevine		Берег озера	32.9680,-97.0820 32.9820,-97.1150	Oak Grove Park, Grapevine
+grape-south	grapevine		Южный Грейпвайн	32.9100,-97.1000	Parr Park, Grapevine
+# Фармерс-Бранч
+fb-center	farmersbranch		Центр Фармерс-Бранча	32.9280,-96.8800	Farmers Branch City Hall
+fb-histpark	farmersbranch	place	Исторический парк	32.9169,-96.8932	Farmers Branch Historical Park
+fb-brookhaven	farmersbranch		Брукхейвен	32.9330,-96.8580 32.9284,-96.8501	Brookhaven College, Farmers Branch
+fb-valwood	farmersbranch		Валвуд	32.9200,-96.9200	Valwood Parkway, Farmers Branch
+# Лейк-Хайлендс
+lh-old	dal-lakehighlands		Старый Лейк-Хайлендс	32.8580,-96.7080	Old Lake Highlands, Dallas
+lh-center	dal-lakehighlands		Центр Лейк-Хайлендс	32.8850,-96.7250	Lake Highlands High School, Dallas
+lh-forestaudelia	dal-lakehighlands		Форест-Оделия	32.9100,-96.7180	Forest Lane and Audelia Road, Dallas
+lh-richland	dal-lakehighlands	osm:Dallas College Richland Campus	Колледж Ричленд	32.9210,-96.7290	Richland College, Dallas
+lh-ti	dal-lakehighlands		Texas Instruments	32.9250,-96.7520	Texas Instruments, Dallas
+# Центр Гарленда
+garland-downtown	garland-center		Даунтаун Гарленда	32.9130,-96.6372	Downtown Garland Square
+garland-vietnamese	garland-center		Вьетнамский квартал	32.9180,-96.6845	Jupiter Road and Walnut Street, Garland
+garland-industrial	garland-center		Промзона Гарленда	32.8930,-96.6720	South Jupiter Road, Garland
+garland-springcreek	garland-center		Спринг-Крик	32.9620,-96.6560	Spring Creek Forest Preserve, Garland
+# Южный Гарленд
+garland-centerville	garland-south		Сентервилл	32.8680,-96.6280	Centerville Road, Garland
+garland-easternhills	garland-south		Истерн-Хиллс	32.8820,-96.6020	Eastern Hills Country Club, Garland
+garland-rosehill	garland-south		Роуз-Хилл	32.8530,-96.5860	Rose Hill, Garland
+garland-lakeshore	garland-south		Берег Рэй-Хаббарда	32.8600,-96.5460	Lake Ray Hubbard, Garland
+# Роулетт
+rowlett-downtown	rowlett		Даунтаун Роулетта	32.9025,-96.5635	Main Street, Rowlett
+rowlett-waterview	rowlett		Уотервью	32.9480,-96.5350	Waterview Golf Club, Rowlett
+rowlett-dalrock	rowlett		Далрок	32.9130,-96.5220	Dalrock Road, Rowlett
+# Таун-Ист (Меските)
+mesquite-towneastmall	mesquite-towneast	place	Молл Таун-Ист	32.8077,-96.6236	Town East Mall, Mesquite
+mesquite-eastfield	mesquite-towneast	osm:Eastfield College	Колледж Истфилд	32.8141,-96.6605	Eastfield College, Mesquite
+mesquite-north	mesquite-towneast		Северный Меските	32.8350,-96.6250	North Mesquite High School
+# Центральный Плано
+plano-prestonpark	plano-center		Престон-Парк	33.0260,-96.7950	Preston Park Village, Plano
+plano-medcenter	plano-center	place	Медцентр Плано	33.0218,-96.7667	Medical City Plano
+plano-dne	plano-center		Даллас-Норт-Эстейтс	33.0125,-96.7320	Dallas North Estates, Plano
+plano-huntersglen	plano-center		Хантерс-Глен	33.0580,-96.7450	Hunters Glen, Plano
+# Престонвуд
+oldprestonwood	prestonwood		Старый Престонвуд	32.9687,-96.7975 32.9620,-96.7850	Prestonwood, Dallas
+northwoodhills	prestonwood		Нортвуд-Хиллс	32.9475,-96.7776 32.9350,-96.7850	Northwood Hills, Dallas
+renner	prestonwood		Реннер	32.9904,-96.7742	Renner, Dallas
+# Бент-Три
+oldbenttree	benttree		Старый Бент-Три	32.9791,-96.8221 32.9890,-96.8330	Bent Tree Country Club, Dallas
+prestontrail	benttree		Престон-Трейл	32.9842,-96.8115	Preston Trail Golf Club, Dallas
+prestonhighlands	benttree		Престон-Хайлендс	32.9900,-96.7920 33.0000,-96.7900	Preston Highlands, Dallas
+timberglen	benttree		Тимберглен	33.0040,-96.8560	Timberglen, Dallas
+frankford	benttree	place	Кладбище Франкфорд	32.9887,-96.8238	Frankford Cemetery, Dallas
+# Викери-Медоу
+fivepoints	vickery		Файв-Пойнтс	32.8725,-96.7605 32.8780,-96.7520 32.8900,-96.7560	Park Lane and Fair Oaks Avenue, Dallas
+thevillage	vickery		Виллидж	32.8580,-96.7580	The Village, Dallas
+presbyterian	vickery	osm:Texas Health Presbyterian Hospital Dallas	Пресвитерианская больница	32.8797,-96.7615	Texas Health Presbyterian Hospital Dallas
+merrimanpark	vickery		Мерримен-Парк	32.8790,-96.7410	Merriman Park, Dallas
+# Центр Ирвинга
+irving-downtown	irving-center		Даунтаун Ирвинга	32.8140,-96.9480	Heritage District, Irving
+irving-senter	irving-center		Сентер	32.7990,-96.9420	Senter Park, Irving
+irving-heights	irving-center		Ирвинг-Хайтс	32.8250,-96.9300 32.8100,-96.9200	Irving Heights Drive, Irving
+irving-shadygrove	irving-center		Шейди-Гроув	32.7950,-96.9750 32.7880,-96.9600	Shady Grove Road, Irving
+# Плимут-Парк
+irving-oldplymouth	irving-plymouth		Старый Плимут-Парк	32.8340,-96.9740	Plymouth Park, Irving
+irving-hospital	irving-plymouth	place	Больница Ирвинга	32.8350,-96.9610	Baylor Medical Center Irving
+irving-bearcreek	irving-plymouth		Бэр-Крик	32.8176,-97.0018 32.8200,-97.0200	Bear Creek, Irving
+# Норт-Ричленд-Хиллс
+nrh-old	nrh		Старый Норт-Ричленд-Хиллс	32.8370,-97.2240 32.8200,-97.2380	Cummings Drive, North Richland Hills
+nrh-mall	nrh	place	Норт-Хиллс-молл	32.8275,-97.2180	North Hills Mall, North Richland Hills
+nrh-smithfield	nrh		Смитфилд	32.8680,-97.2105 32.8850,-97.2050	Smithfield, North Richland Hills
+nrh-thornbridge	nrh		Торнбридж	32.8960,-97.1930	Thornbridge, North Richland Hills
+# Уэджвуд
+fw-oldwedgwood	fw-wedgwood		Старый Уэджвуд	32.6630,-97.3880	Wedgwood, Fort Worth
+fw-wedgwoodeast	fw-wedgwood		Уэджвуд-Ист	32.6620,-97.3580	Wedgwood East, Fort Worth
+fw-candleridge	fw-wedgwood		Кэндлридж	32.6380,-97.3860	Candleridge, Fort Worth
+fw-meadowcreek	fw-wedgwood		Медоу-Крик	32.6290,-97.3610	Meadowcreek, Fort Worth

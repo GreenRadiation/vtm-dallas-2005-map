@@ -449,15 +449,17 @@ def split(parent, atoms_):
     M, pos = graph(nodes)
     ctree = cKDTree(AC[nodes])
     src, src_kid = [], []
+    taken = dict(lab)  # атом-исток → ребёнок: две точки разных детей не должны попасть в один атом
     for a, k in lab.items():
         src.append(pos[a]); src_kid.append(k)
     for k in kids:
         for d in SUB[k]:
             for p in PTS[d]:
                 _, cand = ctree.query(p, k=min(12, len(nodes)))
-                a = next((nodes[c] for c in np.atleast_1d(cand) if lab.get(nodes[c], k) == k), None)
+                a = next((nodes[c] for c in np.atleast_1d(cand) if taken.get(nodes[c], k) == k), None)
                 if a is None:
                     warns.append("точка %s не легла в землю %s" % (d, parent or "карты")); continue
+                taken[a] = k
                 src.append(pos[a]); src_kid.append(k)
     if not src:
         errors.append("%s: нет ни точек, ни контуров у детей" % parent); return
@@ -595,7 +597,8 @@ l1_geom = {k: GEOM[k] for k in ROOTS if k in GEOM}
 # ---------------------------------------------------------------- проверки
 log("проверки")
 if not shapely.coverage_is_valid([GEOM[k] for k in leaf_ids]):
-    errors.append("листья: наложения или щели")
+    bad = [k for k, e in zip(leaf_ids, shapely.coverage_invalid_edges([GEOM[k] for k in leaf_ids])) if not e.is_empty]
+    errors.append("листья: наложения или щели (%s)" % ", ".join(bad))
 if abs(unary_union([GEOM[k] for k in ROOTS if k in GEOM]).area - FRAME.area) > 0.01:
     errors.append("верхний уровень покрывает не всю карту")
 for k in T:
