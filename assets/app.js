@@ -31,7 +31,7 @@ var geo = {}, text = {nodes: {}, nature: {}}, census = {nodes: {}}, mine = {item
 var idx = {}, kidsOf = {}; // узел по id; дети по id родителя ("" — верхний уровень)
 var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
 var open = []; // раскрытая ветка: путь от верхнего уровня
-var view = {leaves: false, lens: ""}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
+var view = {leaves: false, lens: "", dart: false}; // leaves — режим проверки: все листья дерева сразу, без раскрытия
 var sel = null; // {k: "n" | "nat", id}
 var editing = false, status = "", toolStatus = "", confirmWipe = false, moreOpen = {};
 var map, featOf = {n: {}, nat: {}}, layerOf = {n: {}, nat: {}}, labelLayer, natLayer;
@@ -59,7 +59,7 @@ function nameOf(s) {
 // Ключи: «n:<узел>», «nat:<озеро или парк>». Пометки старых карт («d:<район>» и т. п.) переносятся по таблице aliases.
 function loadMine() {
   try { var raw = load(STORE_KEY); if (raw) { var p = JSON.parse(raw); if (p && p.items) mine = p; } } catch (_) {}
-  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; view.lens = LENS[v.lens] ? v.lens : ""; } catch (_) {}
+  try { var v = JSON.parse(load(VIEW_KEY) || "{}"); view.leaves = !!v.leaves; view.lens = LENS[v.lens] ? v.lens : ""; view.dart = !!v.dart; } catch (_) {}
   var moved = 0;
   Object.keys(mine.items).forEach(function (k) {
     if (/^(n|nat):/.test(k)) return;
@@ -365,7 +365,7 @@ var legendEl = null;
 function renderLegend() {
   if (!legendEl) {
     legendEl = document.createElement("div"); legendEl.className = "lens-legend";
-    document.querySelector(".mapbox").appendChild(legendEl);
+    document.querySelector(".map-side").appendChild(legendEl);
     L.DomEvent.disableClickPropagation(legendEl); L.DomEvent.disableScrollPropagation(legendEl);
   }
   legendEl.hidden = !view.lens;
@@ -387,15 +387,75 @@ function setLens(k) {
   refreshStyles(); renderLegend();
 }
 
+// ---------- DART ----------
+// Линии поездов и станции весны 2005 года поверх карты (data/geo/dart.geojson, сборка — tools/dart.py) и окошко справки
+var DART_LINE = {red: "Красная линия: Уэстморленд — Паркер-роуд", blue: "Синяя линия: Ледбеттер — Даунтаун-Гарленд",
+  shared: "Красная и синяя линии вместе: через центр от 8-й и Коринт до Мокингберда", tre: "TRE, пригородный поезд: Юнион-Стейшн — Форт-Уэрт"};
+var DART_CODE = {R: "красная", B: "синяя", T: "TRE"};
+var DART_TEXT = [
+  "DART — городской транспорт Далласа и соседних пригородов: автобусы и две линии лёгкого метро, красная и синяя. В центре поезда идут прямо по улице, дальше — по своим путям, а под Центральным шоссе — в тоннеле.",
+  "Поезда ходят примерно с пяти утра до часу ночи: днём каждые 10 минут, вечером раз в 20. Ночью поездов нет, только редкие автобусы и такси.",
+  "Турникетов нет: билет берут в автомате на платформе, контролёры проверяют выборочно. На станциях и в поездах дежурит своя полиция DART, но камеры есть не везде, а ночные платформы на окраинах пустые и тёмные.",
+  "TRE — пригородный поезд до Форт-Уэрта: по будням с утра до позднего вечера, по субботам реже, по воскресеньям не ходит. По Макинни-авеню в Аптауне катается старинный трамвай M-Line."];
+var dartLayer = null, dartReady = null, dartEl = null;
+function dartLayers(fc) {
+  var g = L.layerGroup(), lines = fc.features.filter(function (f) { return f.properties.kind === "line"; });
+  function draw(f, cls, tip) {
+    var l = L.geoJSON(f, {pane: "dart", interactive: !!tip, style: {className: cls}});
+    if (tip) l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+    l.addTo(g);
+  }
+  lines.forEach(function (f) { draw(f, "dart-case" + (f.properties.tunnel ? " dart-tun" : "")); });
+  lines.forEach(function (f) {
+    var p = f.properties, t = (p.tunnel ? " dart-tun" : ""),
+      tip = esc(DART_LINE[p.line]) + (p.tunnel ? "<small>Под землёй: тоннель под Центральным шоссе, около пяти километров</small>" : "");
+    if (p.line === "shared") { draw(f, "dart-red" + t); draw(f, "dart-blue dart-dash" + t, tip); }
+    else draw(f, "dart-" + p.line + t, tip);
+  });
+  fc.features.forEach(function (f) {
+    var p = f.properties;
+    if (p.kind !== "station") return;
+    var c = f.geometry.coordinates, big = p.lines.length > 1;
+    L.circleMarker([c[1], c[0]], {pane: "dart", radius: big ? 6.5 : 4.5, className: "dart-st" + (big ? " big" : "")})
+      .bindTooltip("<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
+        (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>", {direction: "top", className: "tip dart-tip", offset: [0, -6]})
+      .on("click", function (e) { L.DomEvent.stopPropagation(e); e.target.openTooltip(); })
+      .addTo(g);
+  });
+  return g;
+}
+function renderDartBox() {
+  if (!dartEl) {
+    dartEl = document.createElement("details"); dartEl.className = "dart-box"; dartEl.open = map.getSize().x >= 600;
+    document.querySelector(".map-side").appendChild(dartEl);
+    L.DomEvent.disableClickPropagation(dartEl); L.DomEvent.disableScrollPropagation(dartEl);
+    var sw = function (cls) { return '<svg width="22" height="10" aria-hidden="true"><line x1="2" y1="5" x2="20" y2="5" class="' + cls + '"/></svg>'; };
+    dartEl.innerHTML = "<summary><b>DART</b> — поезда весной 2005</summary>" + DART_TEXT.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
+      '<ul><li>' + sw("dart-red") + 'красная линия</li><li>' + sw("dart-blue") + 'синяя линия</li><li>' + sw("dart-red") .replace("</svg>", '<line x1="2" y1="5" x2="20" y2="5" class="dart-blue dart-dash"/></svg>') +
+      'обе линии</li><li>' + sw("dart-tre") + 'TRE до Форт-Уэрта</li><li>' + sw("dart-red dart-tun") + 'под землёй</li>' +
+      '<li><svg width="22" height="10" aria-hidden="true"><circle cx="11" cy="5" r="4" class="dart-st"/></svg>станция — наведи, чтобы узнать подробнее</li></ul>';
+  }
+  dartEl.hidden = !view.dart;
+}
+function setDart(on) {
+  view.dart = !!on; store(VIEW_KEY, JSON.stringify(view));
+  document.getElementById("dart-tog").checked = view.dart;
+  renderDartBox();
+  if (!view.dart) { if (dartLayer) show(dartLayer, false); return; }
+  dartReady = dartReady || fetch(GEO + "dart.geojson").then(function (r) { if (!r.ok) throw new Error("dart"); return r.json(); })
+    .then(function (fc) { dartLayer = dartLayers(fc); });
+  dartReady.then(function () { show(dartLayer, view.dart); });
+}
+
 // ---------- карта ----------
 function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
     maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: 0.5})});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
-  [["land", 200], ["lens", 290], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["sel", 430], ["grid", 440], ["labels", 450]].forEach(function (p) {
+  [["land", 200], ["lens", 290], ["reg", 300], ["green", 320], ["water", 330], ["nat", 340], ["city", 345], ["sel", 430], ["dart", 435], ["grid", 440], ["labels", 450]].forEach(function (p) {
     map.createPane(p[0]).style.zIndex = p[1];
   });
-  ["lens", "green", "water", "grid", "labels", "sel"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
+  ["lens", "city", "green", "water", "grid", "labels", "sel"].forEach(function (p) { map.getPane(p).style.pointerEvents = "none"; });
 
   L.rectangle(BOUNDS, {pane: "land", className: "land", interactive: false}).addTo(map);
   L.geoJSON(geo.green, {pane: "green", interactive: false, style: function (f) { return {className: f.properties.cls}; }}).addTo(map);
@@ -657,6 +717,7 @@ var INTRO = '<div class="pmeta"><span>Даллас, Форт-Уэрт и при�
   '<p>Чтобы заглянуть внутрь, дважды щёлкни по региону или нажми «Раскрыть» в карточке: он разделится на части, а те — на районы. Раскрыта всегда одна ветка; «Свернуть всё» в шапке возвращает общий вид.</p>' +
   '<p>Озёра, парки и заповедники видны всегда, их тоже можно открыть.</p>' +
   '<p>«Линза» в шапке перекрашивает карту по одному признаку: достаток, кто живёт, опасность улиц, свидетели, ночная жизнь, застройка, полиция. Что значит цвет — в легенде в углу карты.</p>' +
+  '<p>Кнопка «DART» показывает поезда 2005 года: линии лёгкого метро, пригородный поезд до Форт-Уэрта и станции.</p>' +
   '<p>К любому региону можно добавить свою метку и заметки: они хранятся только в твоём браузере.</p></div>';
 
 function crumbs(id) {
@@ -885,6 +946,8 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   loaded[""] = res[files.length + 3];
   if (res[files.length + 4]) census = res[files.length + 4];
   regLayer[""] = L.geoJSON(loaded[""], {pane: "reg", style: function (f) { return {className: regClass(f.properties.id, f.properties)}; }, onEachFeature: function (f, l) { hook(f, l); }});
+  L.geoJSON({type: "FeatureCollection", features: loaded[""].features.filter(function (f) { return f.properties.id === "dallas" || f.properties.id === "fortworth"; })},
+    {pane: "city", interactive: false, style: {className: "cityline"}}).addTo(map);
   syncLayers(); refresh(); setupSearch(); renderTools(); renderPanel();
   var lt = document.getElementById("leaf-tog");
   function setLeaves(on) {
@@ -898,6 +961,8 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   if (view.leaves) setLeaves(true);
   document.getElementById("lens").addEventListener("change", function (e) { setLens(e.target.value); });
   if (view.lens) setLens(view.lens);
+  document.getElementById("dart-tog").addEventListener("change", function (e) { setDart(e.target.checked); });
+  if (view.dart) setDart(true);
   document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !open.length || view.leaves) return;
@@ -906,7 +971,8 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   readHash(true);
   window.addEventListener("hashchange", function () { readHash(true); });
 }).catch(function (e) {
-  document.getElementById("loading").textContent = "Не удалось загрузить данные карты. Если ты открыл файл прямо с диска, запусти локальный сервер (см. README).";
   if (window.console) console.error(e);
+  var ld = document.getElementById("loading");
+  if (ld) ld.textContent = "Не удалось загрузить данные карты. Если ты открыл файл прямо с диска, запусти локальный сервер (см. README).";
 });
 })();

@@ -18,6 +18,9 @@ QUERIES = {
     "roads": 'way["highway"~"^(motorway|trunk|primary|secondary)$"]' + b + ';',
     "rail": 'way["railway"~"^(rail|light_rail)$"]["service"!~"."]' + b + ';',
     "dart": 'rel["route"="light_rail"]["network"~"DART"]' + b + ';',
+    # линии DART и TRE для слоя DART: пути маршрутов с тегами (тоннели) и станции
+    "transit": ('rel["route"="light_rail"]["network"~"DART"]' + b + ';rel["route"="train"]["name"~"Trinity|TRE"]' + b + ';)->.r;('
+                '.r;way(r.r);node(r.r);node["railway"~"^(station|halt)$"]' + b + ';'),
     "water": ('way["natural"="water"]' + b + ';rel["natural"="water"]' + b + ';'
               'way["waterway"="river"]' + b + ';rel["waterway"="river"]' + b + ';'
               'way["waterway"~"^(stream|canal)$"]["name"]' + b + ';'),

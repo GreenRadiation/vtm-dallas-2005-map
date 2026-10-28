@@ -214,7 +214,10 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .lensed .reg.hov{fill-opacity:.2!important}
 .lensleaf{stroke:var(--rline);stroke-width:.5;stroke-opacity:.35;fill-opacity:.88}
 .lens-pick select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
-.lens-legend{position:absolute;right:10px;top:10px;z-index:800;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;
+.map-side{position:absolute;right:10px;top:10px;z-index:800;display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+  max-height:calc(100% - 40px);overflow:auto;pointer-events:none}
+.map-side>*{pointer-events:auto}
+.lens-legend{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;
   font-size:12.5px;max-width:250px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .lens-legend[hidden]{display:none}
 .lens-legend b{font-weight:700}
@@ -224,4 +227,33 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .lens-legend svg{flex:none;box-shadow:inset 0 0 0 1px var(--line);border-radius:2px}
 .lg-tip{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.4;min-height:2.8em}
 .lg-tip b{color:var(--ink)}
-@media (max-width:620px){.lens-legend{max-width:190px;font-size:12px;right:6px;top:6px}}
+
+/* DART: линии поездов и станции поверх карты, справка в углу */
+.dart-case{fill:none;stroke:var(--paper);stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.9}
+.dart-case.dart-tun{stroke:var(--ink);stroke-width:11;stroke-dasharray:5 4;stroke-linecap:butt;stroke-opacity:.55}
+.dart-red,.dart-blue,.dart-tre{fill:none;stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
+.dart-red{stroke:#d63a2e}.dart-blue{stroke:#2b6fd6}.dart-tre{stroke:#8a6a2c;stroke-width:4.5}
+.dart-dash{stroke-dasharray:14 14;stroke-linecap:butt}
+.dart-tun{stroke-opacity:.6}
+.dart-st{fill:var(--paper);stroke:var(--ink);stroke-width:2;fill-opacity:1}
+.dart-st.big{stroke-width:2.6}
+.leaflet-tooltip.dart-tip{max-width:260px;white-space:normal}
+.dart-tip span{display:block;font-weight:500;font-size:12px;line-height:1.4;margin-top:3px}
+.dart-box{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;font-size:12.5px;line-height:1.45;
+  max-width:280px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.dart-box[hidden]{display:none}
+.dart-box summary{cursor:pointer;color:var(--muted)}
+.dart-box summary b{color:var(--ink);font-weight:700}
+.dart-box p{margin:6px 0 0}
+.dart-box ul{list-style:none;margin:8px 0 2px;padding:0;display:grid;gap:3px}
+.dart-box li{display:flex;align-items:center;gap:7px}
+.dart-box svg{flex:none;overflow:visible}
+.dart-box svg .dart-red,.dart-box svg .dart-blue,.dart-box svg .dart-tre{stroke-width:4.5}
+.dart-box svg .dart-dash{stroke-dasharray:5 5}
+.dart-box svg .dart-tun{stroke-dasharray:4 3}
+.dart-box svg .dart-st{stroke-width:1.8}
+
+/* границы Далласа и Форт-Уэрта — вдвое толще прочих, видны всегда */
+.cityline{fill:none;stroke:var(--rline);stroke-width:3.6;stroke-opacity:.9;stroke-linejoin:round}
+
+@media (max-width:620px){.map-side{right:6px;top:6px}.lens-legend{max-width:190px;font-size:12px}.dart-box{max-width:220px;font-size:12px}}
