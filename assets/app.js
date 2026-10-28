@@ -37,8 +37,54 @@ var selLayer = null, gridLayer, gridLabels, extra = {}, lensLayer = null, lensRe
 var panel = document.getElementById("panel");
 
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (ch) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[ch]; }); }
-function paras(t) {
-  return String(t || "").split(/\n\s*\n/).filter(function (p) { return p.trim(); }).map(function (p) { return "<p>" + esc(p.trim()) + "</p>"; }).join("");
+// Markdown в описаниях, заметках и метках: *курсив* и _курсив_, **жирный**, __подчёркнутый__, ~~зачёркнутый~~, `код`,
+// [ссылка](https://…), «> цитата», «---» — линия, списки «- » и «1. », заголовки «# ». Одиночный перевод строки — перенос.
+// Текст сначала экранируется, так что HTML из него не проходит.
+var MD_HR = /^ {0,3}([-*_])( *\1){2,} *$/, MD_H = /^ {0,3}(#{1,3}) +(.*)$/, MD_Q = /^ {0,3}>/, MD_UL = /^ {0,3}[-*+] +/, MD_OL = /^ {0,3}(\d{1,3})[.)] +/; // до трёх цифр: «2005. Год…» — не список
+function mdInline(s) {
+  var keep = [], put = function (h) { keep.push(h); return "\u0000" + (keep.length - 1) + "\u0000"; };
+  s = esc(s).replace(/\\([\\`*_~[\]()#>.-])/g, function (_, c) { return put(c); })
+    .replace(/`([^`\n]+)`/g, function (_, c) { return put("<code>" + c + "</code>"); })
+    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, function (_, t, u) { return put('<a href="' + u + '" target="_blank" rel="noopener">') + t + put("</a>"); })
+    .replace(/\*\*\*(?=\S)([\s\S]*?\S)\*\*\*/g, "<b><i>$1</i></b>")
+    .replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "<b>$1</b>")
+    .replace(/__(?=\S)([\s\S]*?\S)__/g, "<u>$1</u>")
+    .replace(/~~(?=\S)([\s\S]*?\S)~~/g, "<s>$1</s>")
+    .replace(/\*(?=\S)([^*\n]*?\S)\*/g, "<i>$1</i>")
+    .replace(/(^|[^\p{L}\p{N}])_(?=\S)([^_\n]*?\S)_(?![\p{L}\p{N}])/gu, "$1<i>$2</i>");
+  return s.replace(/\u0000(\d+)\u0000/g, function (_, i) { return keep[i]; });
+}
+function md(t) {
+  var lines = String(t || "").replace(/\r/g, "").split("\n"), out = [], i = 0, m;
+  var block = function (l) { return MD_HR.test(l) || MD_H.test(l) || MD_Q.test(l) || MD_UL.test(l) || MD_OL.test(l); };
+  var take = function (re) { var buf = []; while (i < lines.length && re.test(lines[i])) buf.push(lines[i++].replace(re, "")); return buf; };
+  var items = function (buf) { return buf.map(function (x) { return "<li>" + mdInline(x) + "</li>"; }).join(""); };
+  while (i < lines.length) {
+    var l = lines[i];
+    if (!l.trim()) { i++; continue; }
+    if (MD_HR.test(l)) { out.push("<hr>"); i++; }
+    else if ((m = MD_H.exec(l))) { out.push('<h4 class="md-h' + m[1].length + '">' + mdInline(m[2]) + "</h4>"); i++; }
+    else if (MD_Q.test(l)) out.push("<blockquote>" + md(take(/^ {0,3}> ?/).join("\n")) + "</blockquote>");
+    else if (MD_UL.test(l)) out.push("<ul>" + items(take(MD_UL)) + "</ul>");
+    else if ((m = MD_OL.exec(l))) out.push("<ol" + (+m[1] !== 1 ? ' start="' + +m[1] + '"' : "") + ">" + items(take(MD_OL)) + "</ol>");
+    else {
+      var p = [];
+      while (i < lines.length && lines[i].trim() && !block(lines[i])) p.push(lines[i++].trim());
+      out.push("<p>" + mdInline(p.join("\n")).replace(/\n/g, "<br>") + "</p>");
+    }
+  }
+  return out.join("");
+}
+var MD_HINT = '<p class="hint mdhint">Можно Markdown: <b>**жирный**</b>, <i>*курсив*</i>, <u>__подчёркнутый__</u>, <s>~~зачёркнутый~~</s>, «&gt; цитата», «---» — линия, «- » — список.</p>';
+// Тот же текст без разметки — для поиска и подсказок
+function plain(t) {
+  var keep = [], put = function (_, c) { keep.push(c); return "\u0000" + (keep.length - 1) + "\u0000"; };
+  return String(t || "").replace(/\\([\\`*_~[\]()#>.-])/g, put).replace(/`([^`\n]+)`/g, put)
+    .replace(/^ {0,3}([-*_])( *\1){2,} *$/gm, "").replace(/^ {0,3}(> ?)+|^ {0,3}(#{1,3}|[-*+]|\d{1,3}[.)]) +/gm, "")
+    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
+    .replace(/\*\*\*(?=\S)([\s\S]*?\S)\*\*\*/g, "$1").replace(/(\*\*|__|~~)(?=\S)([\s\S]*?\S)\1/g, "$2")
+    .replace(/\*(?=\S)([^*\n]*?\S)\*/g, "$1").replace(/(^|[^\p{L}\p{N}])_(?=\S)([^_\n]*?\S)_(?![\p{L}\p{N}])/gu, "$1$2")
+    .replace(/\u0000(\d+)\u0000/g, function (_, i) { return keep[i]; });
 }
 function skey(s) { return s.k + ":" + s.id; }
 function info(s) { return (s.k === "nat" ? text.nature[s.id] : text.nodes[s.id]) || {}; }
@@ -719,6 +765,28 @@ function setDart(on) {
 }
 
 // ---------- карта ----------
+// Ускорения Leaflet. Колесо: шаги, пришедшие во время анимации зума, Leaflet выбрасывает, и карта «залипает» —
+// копим их и применяем, как только анимация кончится. Проекция: меркатор каждой вершины считается один раз,
+// при зуме остаётся умножение (раньше на каждом шаге зума заново считались синусы и логарифмы всех вершин).
+(function () {
+  var W = L.Map.ScrollWheelZoom.prototype, perform = W._performZoom;
+  W._performZoom = function () {
+    if (this._map._animatingZoom) { this._timer = setTimeout(L.Util.bind(this._performZoom, this), 30); return; }
+    perform.call(this);
+  };
+  L.Polyline.prototype._projectLatlngs = function (latlngs, result, bounds) {
+    var i;
+    if (!(latlngs[0] instanceof L.LatLng)) { for (i = 0; i < latlngs.length; i++) this._projectLatlngs(latlngs[i], result, bounds); return; }
+    var m = this._map, crs = m.options.crs, t = crs.transformation, s = crs.scale(m._zoom), o = m.getPixelOrigin(), ring = new Array(latlngs.length);
+    for (i = 0; i < latlngs.length; i++) {
+      var ll = latlngs[i], p = ll._m || (ll._m = crs.projection.project(ll));
+      ring[i] = new L.Point(Math.round(s * (t._a * p.x + t._b)) - o.x, Math.round(s * (t._c * p.y + t._d)) - o.y);
+      bounds.extend(ring[i]);
+    }
+    result.push(ring);
+  };
+})();
+
 function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
     maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, renderer: L.svg({padding: 0.5})});
@@ -1012,13 +1080,13 @@ function renderPanel() {
   var act = activeSlot(), mineBlock = regionNotes(skey(s)).map(function (q) {
     return '<div class="mine"><h3>' + (q.r.color ? '<i class="sw" style="background:' + q.r.color + '"></i>' : "") + esc(q.slot.name) +
       '<button type="button" class="linkbtn" data-note="' + esc(q.slot.id) + '">изменить</button></h3>' +
-      tagChips(q.slot, q.r.tags) + (q.r.text ? '<p>' + esc(q.r.text) + '</p>' : "") + '</div>';
+      tagChips(q.slot, q.r.tags) + (q.r.text ? '<div class="md">' + md(q.r.text) + '</div>' : "") + '</div>';
   }).join("");
   // своего текста нет — показываем описание ближайшего предка, у которого он есть
-  var body = (x.details || "").trim() ? '<div class="pdet">' + paras(x.details) + '</div>' : "";
+  var body = (x.details || "").trim() ? '<div class="pdet">' + md(x.details) + '</div>' : "";
   if (!body && node) {
     var up = ancestors(s.id).reverse().filter(function (a) { return ((text.nodes[a] || {}).details || "").trim(); })[0];
-    body = up ? '<div class="inherit"><h3>' + esc(kindLabel(up)) + ' «' + esc(idx[up].name) + '»</h3>' + paras(text.nodes[up].details) + '</div>'
+    body = up ? '<div class="inherit"><h3>' + esc(kindLabel(up)) + ' «' + esc(idx[up].name) + '»</h3>' + md(text.nodes[up].details) + '</div>'
       : '<p class="hint">Описания пока нет.</p>';
   }
   if (!body) body = '<p class="hint">Описания пока нет.</p>';
@@ -1035,8 +1103,8 @@ function renderPanel() {
     '<div class="pmeta" style="margin-bottom:12px"><span>≈ ' + String(km2).replace(".", ",") + ' км²</span>' +
     (cells.length && gridOn() ? '<span>старая сетка: ' + esc(cells.join(", ")) + '</span>' : '') + '</div>' + tripLine(s, ll) +
     tagsBlock(s) + (x.summary ? '<p class="psum">' + esc(x.summary) + '</p>' : "") + body +
-    (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Подробнее</summary><div class="pdet">' + paras(x.more) + '</div></details>' : "") +
-    (x.notes && x.notes.trim() ? '<div class="notes"><h3>Заметки мастера</h3><p>' + esc(x.notes) + '</p></div>' : "") +
+    (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Подробнее</summary><div class="pdet">' + md(x.more) + '</div></details>' : "") +
+    (x.notes && x.notes.trim() ? '<div class="notes"><h3>Заметки мастера</h3><div class="md">' + md(x.notes) + '</div></div>' : "") +
     mineBlock +
     '<div class="actions">' +
     (node && node.n && !view.leaves ? (opened ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Раскрыть</button>') : '') +
@@ -1127,7 +1195,7 @@ function snippet(src, at, len) {
 function setupSearch() {
   var q = document.getElementById("q"), box = document.getElementById("results"), base = null;
   // Тексты карты не меняются: собираем их один раз, при первом поиске
-  function field(src) { return {src: src, words: wordsOf(src)}; }
+  function field(src) { src = plain(src); return {src: src, words: wordsOf(src)}; }
   function regionTags(s) {
     // в теги идут названия клеток и значения («Полиция — шериф»), в текст — пояснения к ним
     var keep = [tagTexts, tagCells], lab = [], txt = [];
@@ -1310,7 +1378,7 @@ function renderPinPanel() {
   if (!editing) {
     panel.innerHTML = '<div class="pmeta"><span>Метка</span><span>' + esc(slot.name) + '</span>' + where + '</div>' +
       '<h2 class="pinh">' + pinHtml(p) + esc(p.title || "Без названия") + '</h2>' + tagChips(slot, p.tags) + tripLine(sel, p.ll) +
-      (p.text ? '<div class="pdet">' + paras(p.text) + '</div>' : '<p class="hint">Текста нет.</p>') +
+      (p.text ? '<div class="pdet">' + md(p.text) + '</div>' : '<p class="hint">Текста нет.</p>') +
       '<div class="actions"><button class="btn primary" type="button" id="p-edit">Изменить</button>' +
       '<button class="btn" type="button" id="p-show">Показать на карте</button>' + refBtn(sel) + confirmBtn("p-del", "Удалить метку") +
       (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' +
@@ -1335,7 +1403,7 @@ function renderPinPanel() {
     '<div class="row"><label for="f-color">Цвет</label><div class="colrow"><input type="color" id="f-color" value="' + draft.color + '">' +
       PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>' +
     '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
-    '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Кто здесь, что случилось, зацепки">' + esc(draft.text) + '</textarea></div>' +
+    '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Кто здесь, что случилось, зацепки">' + esc(draft.text) + '</textarea>' + MD_HINT + '</div>' +
     (marks.slots.length > 1 ? '<div class="row"><label for="f-slot">Слот</label><select id="f-slot">' + slotOptions(slot.id) + '</select></div>' : '') +
     '<p class="hint">Метку можно перетащить по карте мышью или пальцем.</p>' +
     '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
@@ -1389,7 +1457,7 @@ function renderNoteForm(s, name, meta) {
       '<label class="rad"><input type="radio" name="f-rc" value="c"' + (r.color ? " checked" : "") + '> свой</label><input type="color" id="f-color" value="' + (r.color || PALETTE[0]) + '">' +
       PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>' +
     '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
-    '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Сюжетные зацепки, NPC, что угодно своё">' + esc(r.text) + '</textarea></div>' +
+    '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Сюжетные зацепки, NPC, что угодно своё">' + esc(r.text) + '</textarea>' + MD_HINT + '</div>' +
     '<div class="actions"><button class="btn primary" type="submit">Сохранить</button><button class="btn" type="button" id="f-cancel">Отмена</button>' +
     (slot.regions[k] ? confirmBtn("f-del", "Удалить заметку") : "") + '<span class="status">' + esc(status) + '</span></div></form>';
   var ed = bindTagEd(slot, st, function () {}), ci = document.getElementById("f-color");
