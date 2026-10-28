@@ -802,9 +802,9 @@ var VEC_PAD = 0.5;
   W._performZoom = function () {
     var m = this._map;
     if (m._animatingZoom) { if (!this._queued) { this._queued = true; m.once("zoomend", function () { this._queued = false; this._performZoom(); }, this); } return; }
-    // не больше 0,75 уровня зума за шаг: если страница подвисла (например, окно только что развернули), накопленная
-    // прокрутка иначе срабатывает одним прыжком через весь город
-    this._delta = Math.max(-100, Math.min(100, this._delta)); // ±100 — до 0,75 уровня, запаса холста хватает
+    // один щелчок колеса (полуровня) за шаг: прокрутка, накопленная за анимацию или пока страница подвисла,
+    // иначе срабатывает резким прыжком; лишнее отбрасывается
+    this._delta = Math.max(-50, Math.min(50, this._delta));
     perform.call(this);
   };
   L.Polyline.prototype._projectLatlngs = function (latlngs, result, bounds) {
@@ -822,11 +822,20 @@ var VEC_PAD = 0.5;
 
 function buildMap() {
   map = L.map("map", {zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
-    maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, preferCanvas: true});
+    maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, preferCanvas: true, markerZoomAnimation: false});
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
   // все векторные слои — на одном холсте в панели vec (события мыши получает только верхний холст), порядок задаёт stack()
   [["vec", 300], ["pins", 445], ["labels", 450]].forEach(function (p) { map.createPane(p[0]).style.zIndex = p[1]; });
   map.getPane("labels").style.pointerEvents = "none";
+  // Подписи и метки при зуме едут одним слоем вместе с холстом, а не каждая своей анимацией (их сотни, и в Firefox
+  // они отставали от линий): Leaflet их не анимирует (markerZoomAnimation: false), панели получают то же преобразование,
+  // что и холст, а в конце зума Leaflet ставит метки на новые места и преобразование снимается.
+  ["pins", "labels"].forEach(function (p) { L.DomUtil.addClass(map.getPane(p), "leaflet-zoom-animated"); });
+  map.on("zoomanim", function (e) {
+    var k = map.getZoomScale(e.zoom), off = map.getPixelOrigin().multiplyBy(k).subtract(map._getNewPixelOrigin(e.center, e.zoom));
+    ["pins", "labels"].forEach(function (p) { L.DomUtil.setTransform(map.getPane(p), off, k); });
+  });
+  map.on("zoom", function () { ["pins", "labels"].forEach(function (p) { map.getPane(p).style.transform = ""; }); });
 
   extra.land = L.rectangle(BOUNDS, L.extend({pane: "vec", interactive: false}, cssStyle("land"))).addTo(map);
   extra.green = L.geoJSON(geo.green, {pane: "vec", interactive: false, style: geoStyle()}).addTo(map);

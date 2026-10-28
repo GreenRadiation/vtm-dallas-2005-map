@@ -627,18 +627,22 @@ if errors and not FORCE:
     sys.exit("проверки не прошли (%d), карта не записана; для отладки: python tools/build.py --force" % len(errors))
 
 # ---------------------------------------------------------------- выгрузка
-def colour(items, ncol, group=lambda k: None):
-    """Жадная раскраска: соседи (в той же группе) разного цвета."""
+def colour(items, ncol, group=lambda k: None, fixed=None):
+    """Жадная раскраска: соседи (в той же группе) разного цвета. fixed — заранее закреплённые цвета."""
     keys = sorted(items, key=lambda k: -items[k].area)
     tree = STRtree([items[k] for k in keys])
-    col = {}
+    col = {k: c for k, c in (fixed or {}).items() if k in items}
     for k in keys:
+        if k in col:
+            continue
         near = {col[keys[j]] for j in tree.query(items[k].buffer(0.01)) if keys[j] in col and group(keys[j]) == group(k)}
         col[k] = next(c for c in range(ncol * 4) if c not in near) % ncol
     return col
 
 
-tone = colour(l1_geom, 6)
+# Даллас голубой (t3), Форт-Уэрт фиолетовый (t2): главные города не должны быть тёмно-жёлтыми (t0) — просьба автора
+TONE_FIXED = {"dallas": 3, "fortworth": 2}
+tone = colour(l1_geom, 6, fixed=TONE_FIXED)
 shade = colour({k: GEOM[k] for k in GEOM if T[k]["parent"] is not None}, 3, lambda k: T[k]["parent"])
 
 
