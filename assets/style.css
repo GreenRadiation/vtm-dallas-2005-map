@@ -278,6 +278,8 @@ details.legacy summary small{font-family:var(--mono);color:var(--muted);font-wei
 .taged{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:5px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg)}
 .taged .tlist{display:contents}
 .form .taged input#f-tagin{flex:1 1 120px;width:auto;border:0;padding:4px;background:none}
+.form .taged input#f-tagcol{flex:none;width:30px;height:26px;padding:0 1px;border:1.5px solid var(--line);border-radius:5px;cursor:pointer}
+.crumbs{display:contents}
 .icgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:4px}
 .icb{display:flex;align-items:center;justify-content:center;height:34px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);cursor:pointer}
 .icb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
