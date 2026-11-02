@@ -830,8 +830,11 @@ var VEC_PAD = 0.3, ANIM_PAD = 0.02, WHEEL_STEP = 0.5, WHEEL_TAU = 85, zooming = 
 (function () {
   L.Map.prototype._createRenderer = function (o) { return L.canvas(L.extend({padding: VEC_PAD}, o)); };
   var C = L.Canvas.prototype, update = C._update;
-  // zoom и viewreset: всё спроецировать и нарисовать сейчас, без CSS-растяжения
+  // zoom и viewreset: всё спроецировать и нарисовать сейчас, без CSS-растяжения. Флаг _postponeUpdatePaths
+  // Leaflet ставит на viewprereset и снимал в своём _reset; не снять — и после первого мгновенного сброса вида
+  // (щипок, клавиши +/−, setView) слои больше не обрезаются по кадру, на карте остаются пустые куски
   C._onZoom = C._reset = function () {
+    this._postponeUpdatePaths = false;
     for (var id in this._layers) this._layers[id]._project();
     this._update(true);
   };
