@@ -897,10 +897,32 @@ var dartLayer = null, dartEl = null;
 function stSelect(id) { return function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "st", id: id}, false); }; }
 // Линии и станции ловят клик и подсказку с запасом в несколько пикселей вокруг рисунка: рисуем аккуратно, попадать легко
 function hitPad() { return this.options.weight / 2 + 6; }
+// Линия, сдвинутая вбок на offset пикселей: общий участок красной и синей рисуется двумя полосами рядом, как на схемах
+// метро (пунктир выглядел грязно и рвался). Сдвиг считается в пикселях после проекции, поэтому ровный на любом масштабе.
+var OffsetLine = L.Polyline.extend({
+  _project: function () {
+    L.Polyline.prototype._project.call(this);
+    var d = this.options.offset;
+    if (d) this._rings = this._rings.map(function (r) { return offsetRing(r, d); });
+  }
+});
+function offsetRing(pts, d) {
+  function nrm(p, q) { var dx = q.x - p.x, dy = q.y - p.y, l = Math.sqrt(dx * dx + dy * dy); return l ? {x: -dy / l, y: dx / l} : null; }
+  return pts.map(function (b, i) {
+    var na = i > 0 ? nrm(pts[i - 1], b) : null, nb = i < pts.length - 1 ? nrm(b, pts[i + 1]) : null, n = na || nb, k = 1;
+    if (na && nb) { // на изломе — по биссектрисе, с запасом длины, чтобы полоса не сужалась (не больше чем вдвое)
+      var mx = na.x + nb.x, my = na.y + nb.y, ml = Math.sqrt(mx * mx + my * my);
+      if (ml > 1e-6) { n = {x: mx / ml, y: my / ml}; k = 1 / Math.max(0.5, n.x * na.x + n.y * na.y); }
+    }
+    return n ? L.point(b.x + n.x * d * k, b.y + n.y * d * k) : b;
+  });
+}
 function dartLayers(fc) {
   var g = L.featureGroup(), lines = fc.features.filter(function (f) { return f.properties.kind === "line"; });
-  function draw(f, cls, tip) {
-    var l = L.geoJSON(f, {pane: "vec", interactive: !!tip, style: cssStyle(cls, true)});
+  function draw(f, cls, tip, offset) {
+    var l = offset == null ? L.geoJSON(f, {pane: "vec", interactive: !!tip, style: cssStyle(cls, true)}) : L.featureGroup([new OffsetLine(
+      (f.geometry.type === "LineString" ? [f.geometry.coordinates] : f.geometry.coordinates).map(function (part) { return part.map(function (c) { return [c[1], c[0]]; }); }),
+      L.extend({pane: "vec", interactive: !!tip, offset: offset}, cssStyle(cls, true)))]);
     if (tip) {
       l.eachLayer(function (x) { x._clickTolerance = hitPad; });
       l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip dart-tip", offset: [0, -6]}).on("click", stSelect(f.properties.id));
@@ -917,7 +939,7 @@ function dartLayers(fc) {
   lines.forEach(function (f) {
     var p = f.properties, t = (p.tunnel ? " dart-tun" : ""), tip = lineTip(p);
     layerOf.st[p.id] = true;
-    if (p.line === "shared") { draw(f, "dart-red" + t); draw(f, "dart-blue dart-dash" + t, tip); }
+    if (p.line === "shared") { draw(f, "dart-red dart-half" + t, tip, -2.2); draw(f, "dart-blue dart-half" + t, tip, 2.2); }
     else draw(f, "dart-" + p.line + t, tip);
   });
   fc.features.forEach(function (f) {
@@ -942,7 +964,8 @@ function renderDartBox() {
     var sw = function (cls) { return '<svg width="22" height="10" aria-hidden="true"><line x1="2" y1="5" x2="20" y2="5" class="' + cls + '"/></svg>'; };
     dartEl.innerHTML = "<summary><b>DART</b> — поезда весной 2005</summary>" +
       '<p class="hours"><b>Метро:</b> каждый день примерно с 5:00 до 1:00 ночи.<br><b>TRE:</b> по будням примерно с 5:30 до 23:00, в субботу реже, в воскресенье не ходит.</p>' + DART_TEXT.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
-      '<ul><li>' + sw("dart-red") + 'красная линия</li><li>' + sw("dart-blue") + 'синяя линия</li><li>' + sw("dart-red") .replace("</svg>", '<line x1="2" y1="5" x2="20" y2="5" class="dart-blue dart-dash"/></svg>') +
+      '<ul><li>' + sw("dart-red") + 'красная линия</li><li>' + sw("dart-blue") + 'синяя линия</li><li>' +
+      '<svg width="22" height="10" aria-hidden="true"><line x1="2" y1="3.4" x2="20" y2="3.4" class="dart-red dart-half"/><line x1="2" y1="6.6" x2="20" y2="6.6" class="dart-blue dart-half"/></svg>' +
       'обе линии</li><li>' + sw("dart-tre") + 'TRE до Форт-Уэрта</li><li>' + sw("dart-case dart-tun").replace("</svg>", '<line x1="2" y1="5" x2="20" y2="5" class="dart-red"/></svg>') + 'под землёй</li>' +
       '<li>' + sw("dart-tandy") + 'метро Tandy, закрыто в 2002</li>' +
       '<li><svg width="22" height="10" aria-hidden="true"><circle cx="11" cy="5" r="4" class="dart-st"/></svg>станция — нажми, чтобы открыть карточку</li></ul>';

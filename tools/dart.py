@@ -6,6 +6,7 @@
 синяя — Ледбеттер–Даунтаун-Гарленд (позже её продлили до Роулетта и UNT Dallas), TRE — Юнион-Стейшн–T&P.
 Зелёной и оранжевой линий в 2005 году ещё нет. Общий участок красной и синой — отдельная линия `shared`,
 тоннель под Центральным шоссе — `tunnel: true`. Станции — из data/dart.tsv, притянуты к своей линии.
+В OSM у двухпутных линий каждый путь нанесён отдельно — оставляем один (single_track), иначе на карте две линии внахлёст.
 
 Ещё одна линия — частное метро Tandy Center в Форт-Уэрте (1963–2002, весной 2005 года закрыто): его тоннеля в OSM нет,
 поэтому путь задан здесь по описаниям, с точностью до квартала (TANDY_TUNNEL, TANDY_LOT).
@@ -13,7 +14,7 @@
 как регионы, а тексты к ним лежат в data/map.json → transit.
 """
 import json, pathlib, collections
-from shapely.geometry import LineString, Point, mapping
+from shapely.geometry import LineString, MultiLineString, Point, mapping
 from shapely.ops import linemerge, nearest_points, unary_union
 
 RAW = pathlib.Path("data/raw")
@@ -58,10 +59,21 @@ LINE_NAME = {("red", False): "Красная линия", ("blue", False): "Си
              ("shared", True): "Тоннель под Центральным шоссе", ("tre", False): "TRE до Форт-Уэрта",
              ("tandy", False): "Метро Tandy: путь по парковке", ("tandy", True): "Тоннель метро Tandy"}
 
+def single_track(g):
+    """В OSM у двухпутной линии каждый путь нанесён отдельно, в 10–90 м друг от друга. На карте нужна одна линия:
+    кусок, который целиком лежит рядом с уже взятым (ближе 0,0012° ≈ 120 м), выбрасываем; берём сначала длинные."""
+    keep = []
+    for p in sorted(getattr(g, "geoms", [g]), key=lambda x: -x.length):
+        n = max(2, int(p.length / 0.0005))
+        if not any(all(k.distance(p.interpolate(i / n, normalized=True)) < 0.0012 for i in range(n + 1)) for k in keep):
+            keep.append(p)
+    return keep[0] if len(keep) == 1 else MultiLineString(keep)
+
+
 feats, lines = [], collections.defaultdict(list)
 for (line, tunnel), segs in sorted(parts.items()):
     g = unary_union(segs)
-    g = (linemerge(g) if g.geom_type == "MultiLineString" else g).simplify(0.00008)
+    g = single_track((linemerge(g) if g.geom_type == "MultiLineString" else g).simplify(0.00008))
     lines[line].append(g)
     feats.append({"type": "Feature", "properties": {"kind": "line", "id": line + ("-tunnel" if tunnel else ""), "name": LINE_NAME[(line, tunnel)],
                                                     "line": line, "tunnel": tunnel}, "geometry": mapping(g)})
