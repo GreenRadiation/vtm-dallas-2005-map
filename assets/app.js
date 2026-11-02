@@ -903,8 +903,10 @@ function dartLayers(fc) {
     l.addTo(g);
   }
   function lineTip(p) {
+    if (p.id === "tandy-tunnel") return "<b>" + esc(p.name) + "</b><small>Первое частное метро в Форт-Уэрте, закрыто и заброшено уже 3 года. " +
+      "Тоннель длиной 300 метров, люди в округе наблюдали, что тут живёт колония летучих мышей.</small>";
     return "<b>" + esc(p.name) + "</b><small>" + esc(DART_LINE[p.line]) + "</small>" +
-      (p.id === "shared-tunnel" ? "<small>Под землёй, около пяти километров</small>" : p.id === "tandy-tunnel" ? "<small>Под землёй, около трёхсот метров</small>" : "");
+      (p.id === "shared-tunnel" ? "<small>Под землёй, около пяти километров</small>" : "");
   }
   // широкая подложка под линией тоже ловит клик и подсказку: в тонкую цветную линию мышью попасть трудно
   lines.forEach(function (f) { draw(f, "dart-case" + (f.properties.tunnel ? " dart-tun" : ""), lineTip(f.properties)); });
