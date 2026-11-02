@@ -244,6 +244,7 @@ from scipy.sparse.csgraph import dijkstra
 
 FORCE = "--force" in sys.argv  # записать результат, даже если проверки не прошли (для отладки)
 SMOOTH = 0.6  # доля размера атома: насколько упрощать границы перед скруглением
+CURVE_TOL = 0.02  # км: упрощение скруглённой границы — Чайкин даёт в 8 раз больше точек, чем нужно глазу
 errors, warns = [], []
 
 T = read_tree()
@@ -545,8 +546,9 @@ def chaikin(c, n):
 
 def smooth_coverage(polys):
     """Сглаживает общие границы покрытия: каждая граница между двумя соседями (от узла до узла) упрощается
-    с допуском по местному размеру атомов и скругляется (Чайкин); концы границ не двигаются, поэтому
-    соседи остаются без щелей. Потом грани собираются заново и раздаются исходным регионам."""
+    с допуском по местному размеру атомов, скругляется (Чайкин) и снова прореживается с допуском CURVE_TOL;
+    концы границ не двигаются, а каждая граница обрабатывается один раз на двоих, поэтому соседи остаются
+    без щелей. Потом грани собираются заново и раздаются исходным регионам."""
     merged = shapely.line_merge(unary_union([p.boundary for p in polys]))
     ctree = cKDTree(AC)
     edges = []
@@ -558,7 +560,7 @@ def smooth_coverage(polys):
         c = np.array(e.simplify(tol).coords)
         if e.is_ring:
             edges.append(LineString(c)); continue
-        edges.append(LineString(chaikin(c, 3)))
+        edges.append(LineString(chaikin(c, 3)).simplify(CURVE_TOL))
     faces = list(polygonize(unary_union(edges)))
     own = collections.defaultdict(list)
     ptree = STRtree(polys)
@@ -732,6 +734,8 @@ def merge_lines(g):
 log("подложка")
 
 
+# Подложка — по одному объекту на класс. Резать её по клеткам пробовали (2 ноября 2026): подсветка при наведении
+# не ускорилась (0,1 мс и так), а кадр зума стал на 0,3 мс дороже из-за лишних слоёв Leaflet.
 def lines_feature(ls, props, tol):
     m = merge_lines(unary_union(ls).intersection(FRAME))
     return feature(m, props, tol)
