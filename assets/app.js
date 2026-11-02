@@ -685,10 +685,16 @@ function leafAt(id, ll) {
   }
   return null;
 }
+// Подсказка линзы: значение и так видно по цвету, поэтому в ней своё пояснение региона к этому параметру
+// (tags.notes), а если его нет — что значит значение. Длинное обрезает CSS (.tipmore, четыре строки).
 function lensTip(s) {
   if (!view.lens) return "";
-  var p = lensPaint(s);
-  return "<small>" + esc(LENS[view.lens].name) + ": " + esc(p ? p.text : "нет данных") + "</small>";
+  var key = view.lens, L0 = LENS[key], t = info(s).tags || {}, txt = (t.notes || {})[key], c = s.k === "n" && censusOf(s.id), v;
+  if (!txt && key === "wealth") txt = c && c.inc ? money(c.inc) + " в год на семью." : "";
+  else if (!txt && key === "police" && t.police) txt = POLICE[t.police] && POLICE[t.police][1] || POLICE_DESC[POLICE_COLOR[t.police] ? t.police : "other"];
+  else if (!txt && L0.tag && (v = tagVal(s, L0.tag)) != null) txt = L0.desc(v);
+  else if (!txt) { var p = lensPaint(s); txt = p ? cap(p.text) + "." : ""; } // жители — доли, застройка — что стоит
+  return txt ? '<span class="tipmore">' + esc(txt) + '</span>' : "<small>нет данных</small>";
 }
 
 // Легенда линзы: значения с образцами цвета; наведение показывает, что значит уровень
@@ -1069,10 +1075,8 @@ function hook(f, l) {
   featOf.n[id] = f; layerOf.n[id] = l;
   var leaf = null; // в линзе: лист под курсором, если регион свёрнут
   l.bindTooltip(function () {
-    var closed = idx[id].n && !isOpen(id);
     var to = leaf || id;
-    return esc(idx[id].name) + (leaf ? "<small>" + esc(idx[leaf].name) + "</small>" : "") + lensTip({k: "n", id: to}) + tripTip({k: "n", id: to}, [idx[to].ly, idx[to].lx]) +
-      (closed ? '<small>двойной клик — что внутри</small>' : '');
+    return esc(idx[id].name) + (leaf ? "<small>" + esc(idx[leaf].name) + "</small>" : "") + lensTip({k: "n", id: to}) + tripTip({k: "n", id: to}, [idx[to].ly, idx[to].lx]);
   }, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
   l.on("mousemove", function (e) {
     var lf = view.lens && idx[id].n && !isOpen(id) && lensLayer ? leafAt(id, e.latlng) : null;

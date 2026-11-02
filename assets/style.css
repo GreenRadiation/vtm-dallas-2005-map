@@ -191,6 +191,9 @@ details summary{cursor:pointer;font-weight:600}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .sw{width:14px;height:14px;display:inline-block}
 .leaflet-tooltip.tip small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+/* пояснение линзы в подсказке: переносится по словам, больше четырёх строк — многоточие, подробности в карточке */
+.leaflet-tooltip.tip .tipmore{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;
+  width:max-content;max-width:260px;margin-top:3px;white-space:normal;font-weight:500;font-size:12px;line-height:1.35}
 
 /* теги в карточке: табличка с иконками, пояснение — строкой под ней */
 .tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 6px}
