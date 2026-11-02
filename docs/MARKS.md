@@ -116,6 +116,7 @@
 
 - `n:<id>` — регион дерева любого уровня: город (`n:dallas`), часть города (`n:dal-oakcliff`), район (`n:deepellum`).
 - `nat:<id>` — озеро или парк (`nat:lake-rayhubbard`).
+- `st:<id>` — станция или линия поездов: станции — первая колонка `data/dart.tsv` (`st:unionstation`, `st:tandycenter`), линии — `st:red`, `st:blue`, `st:shared`, `st:shared-tunnel`, `st:tre`, `st:tandy`, `st:tandy-tunnel`. У станций и линий нет своего цвета: `color` оставляй пустым.
 
 Заметки с неизвестным ключом при загрузке молча отбрасываются, так что id надо брать из списков ниже.
 

@@ -6,6 +6,11 @@
 синяя — Ледбеттер–Даунтаун-Гарленд (позже её продлили до Роулетта и UNT Dallas), TRE — Юнион-Стейшн–T&P.
 Зелёной и оранжевой линий в 2005 году ещё нет. Общий участок красной и синой — отдельная линия `shared`,
 тоннель под Центральным шоссе — `tunnel: true`. Станции — из data/dart.tsv, притянуты к своей линии.
+
+Ещё одна линия — частное метро Tandy Center в Форт-Уэрте (1963–2002, весной 2005 года закрыто): его тоннеля в OSM нет,
+поэтому путь задан здесь по описаниям, с точностью до квартала (TANDY_TUNNEL, TANDY_LOT).
+У каждой линии свой id (`red`, `shared-tunnel`, `tandy-tunnel`…) и название: на сайте линии и станции выбираются,
+как регионы, а тексты к ним лежат в data/map.json → transit.
 """
 import json, pathlib, collections
 from shapely.geometry import LineString, Point, mapping
@@ -43,14 +48,25 @@ for e in elements:
     if len(pts) >= 2:
         parts[(line, line != "tre" and e["tags"].get("tunnel") == "yes")].append(LineString(pts))
 
+# Метро Tandy: тоннель от тупика у 3-й улицы через подземную станцию на север под Тейлор-стрит к порталу в склоне
+# над рекой, дальше — по парковке в пойме к уцелевшим платформам у нынешнего Panther Island Pavilion
+TANDY_TUNNEL = [(-97.3341, 32.7541), (-97.3349, 32.7553), (-97.3353, 32.7558), (-97.3358, 32.7566), (-97.3363, 32.7574), (-97.3370, 32.7581)]
+TANDY_LOT = [(-97.3370, 32.7581), (-97.3396, 32.7580), (-97.3421, 32.7571), (-97.3434, 32.7559)]
+parts[("tandy", True)].append(LineString(TANDY_TUNNEL))
+parts[("tandy", False)].append(LineString(TANDY_LOT))
+LINE_NAME = {("red", False): "Красная линия", ("blue", False): "Синяя линия", ("shared", False): "Красная и синяя через центр",
+             ("shared", True): "Тоннель под Центральным шоссе", ("tre", False): "TRE до Форт-Уэрта",
+             ("tandy", False): "Метро Tandy: путь по парковке", ("tandy", True): "Тоннель метро Tandy"}
+
 feats, lines = [], collections.defaultdict(list)
 for (line, tunnel), segs in sorted(parts.items()):
     g = unary_union(segs)
     g = (linemerge(g) if g.geom_type == "MultiLineString" else g).simplify(0.00008)
     lines[line].append(g)
-    feats.append({"type": "Feature", "properties": {"kind": "line", "line": line, "tunnel": tunnel}, "geometry": mapping(g)})
+    feats.append({"type": "Feature", "properties": {"kind": "line", "id": line + ("-tunnel" if tunnel else ""), "name": LINE_NAME[(line, tunnel)],
+                                                    "line": line, "tunnel": tunnel}, "geometry": mapping(g)})
 
-WHICH = {"R": ["red", "shared"], "B": ["blue", "shared"], "T": ["tre"]}
+WHICH = {"R": ["red", "shared"], "B": ["blue", "shared"], "T": ["tre"], "M": ["tandy"]}
 n = 0
 for row in open("data/dart.tsv", encoding="utf-8"):
     if row.startswith("#") or not row.strip():

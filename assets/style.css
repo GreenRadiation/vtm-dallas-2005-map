@@ -252,6 +252,11 @@ details summary{cursor:pointer;font-weight:600}
 .dart-red{stroke:#d63a2e}.dart-blue{stroke:#2b6fd6}.dart-tre{stroke:#8a6a2c;stroke-width:4.5}
 .dart-dash{stroke-dasharray:14 14;stroke-linecap:butt}
 .dart-tun{stroke-opacity:.6}
+.dart-tandy{fill:none;stroke:#8f6fb3;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.dart-st.closed{fill:var(--line);stroke:#8f6fb3;stroke-width:2.4}
+/* выбранная и найденная линия поездов: широкая подсветка под линией */
+.selline{fill:none;stroke:var(--accent);stroke-width:12;stroke-opacity:.45;stroke-linecap:round;stroke-linejoin:round}
+.hovline{fill:none;stroke:var(--accent);stroke-width:12;stroke-opacity:.35;stroke-dasharray:10 6;stroke-linecap:round;stroke-linejoin:round}
 .dart-st{fill:var(--paper);stroke:var(--ink);stroke-width:2;fill-opacity:1}
 .dart-st.big{stroke-width:2.6}
 .leaflet-tooltip.dart-tip{width:max-content;max-width:280px;white-space:normal}

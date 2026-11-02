@@ -30,9 +30,9 @@ var idx = {}, kidsOf = {}; // узел по id; дети по id родител�
 var loaded = {}, regLayer = {}; // загруженные файлы детей и их слои: по id родителя
 var open = []; // раскрытая ветка: путь от верхнего уровня
 var view = {leaves: false, lens: "", dart: false, ref: null}; // leaves — режим проверки: все листья дерева сразу, без раскрытия; ref — точка отсчёта
-var sel = null; // {k: "n" | "nat", id}
+var sel = null; // {k: "n" | "nat" | "st", id}; st — станция или линия DART, TRE и метро Tandy
 var editing = false, status = "", moreOpen = {};
-var map, featOf = {n: {}, nat: {}}, layerOf = {n: {}, nat: {}}, labelLayer, natLayer;
+var map, featOf = {n: {}, nat: {}, st: {}}, layerOf = {n: {}, nat: {}, st: {}}, labelLayer, natLayer;
 var selLayer = null, gridLayer, gridLabels, extra = {}, lensLayer = null, lensReady = null;
 var panel = document.getElementById("panel");
 
@@ -87,14 +87,14 @@ function plain(t) {
     .replace(/\u0000(\d+)\u0000/g, function (_, i) { return keep[i]; });
 }
 function skey(s) { return s.k + ":" + s.id; }
-function info(s) { return (s.k === "nat" ? text.nature[s.id] : text.nodes[s.id]) || {}; }
+function info(s) { return (s.k === "nat" ? text.nature[s.id] : s.k === "st" ? text.transit[s.id] : text.nodes[s.id]) || {}; }
 function store(key, val) { try { localStorage.setItem(key, val); } catch (_) {} }
 function load(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
 function isOpen(id) { return view.leaves ? !!(idx[id] && idx[id].n) : open.indexOf(id) >= 0; }
 function ancestors(id) { var out = [], p = idx[id] && idx[id].parent; while (p) { out.unshift(p); p = idx[p].parent; } return out; }
 function nameOf(s) {
   if (s.k === "n") return idx[s.id].name;
-  var f = featOf[s.k][s.id]; return f ? f.properties.name : "";
+  var f = s.k === "st" ? stFeat(s.id) : featOf[s.k][s.id]; return f ? f.properties.name : "";
 }
 
 // ---------- метки: слоты ----------
@@ -114,14 +114,60 @@ function slotOf(id) { return allSlots().filter(function (x) { return x.id === id
 function activeSlot() { return slotOf(marks.active) || marks.slots[0] || null; }
 function newSlot(name) { var s = {id: uid(), name: name, on: true, tags: {}, pins: [], regions: {}}; marks.slots.push(s); return s; }
 function pinOf(s) { var slot = s && slotOf(s.slot); return slot ? slot.pins.filter(function (p) { return p.id === s.id; })[0] || null : null; }
-function validKey(k) { var g = k.split(":"), id = g.slice(1).join(":"); return (g[0] === "n" && !!idx[id]) || (g[0] === "nat" && !!natFeat(id)); }
+function validKey(k) { var g = k.split(":"), id = g.slice(1).join(":"); return (g[0] === "n" && !!idx[id]) || (g[0] === "nat" && !!natFeat(id)) || (g[0] === "st" && !!stFeat(id)); }
 var natIdx = null; // id озера или парка → объект; нужен каждой подсказке через refOf
 function natFeat(id) {
   if (!natIdx) { natIdx = {}; geo.nature.features.forEach(function (f) { natIdx[f.properties.id] = f; }); }
   return natIdx[id] || null;
 }
-function keyName(k) { var g = k.split(":"), id = g.slice(1).join(":"); return g[0] === "n" ? idx[id].name : natFeat(id).properties.name; }
-function keyCenter(k) { var g = k.split(":"), id = g.slice(1).join(":"), p = g[0] === "n" ? idx[id] : natFeat(id).properties; return [p.ly, p.lx]; }
+function keyName(k) { var g = k.split(":"), id = g.slice(1).join(":"); return g[0] === "n" ? idx[id].name : (g[0] === "st" ? stFeat(id) : natFeat(id)).properties.name; }
+function keyCenter(k) { var g = k.split(":"), id = g.slice(1).join(":"), p = g[0] === "n" ? idx[id] : (g[0] === "st" ? stFeat(id) : natFeat(id)).properties; return [p.ly, p.lx]; }
+// Станции и линии поездов (data/geo/dart.geojson): id → объект с точкой подписи ly, lx. У линии точка — середина
+// самого длинного куска. Какие станции на какой линии, считается по геометрии: станции притянуты к своим путям.
+var stIdx = null, stOn = null;
+function stFeat(id) {
+  if (!stIdx) {
+    stIdx = {};
+    (geo.dart ? geo.dart.features : []).forEach(function (f) {
+      var p = f.properties, g = f.geometry;
+      if (!p.id) return;
+      stIdx[p.id] = f;
+      var c = g.type === "Point" ? g.coordinates : (function () {
+        var parts = g.type === "LineString" ? [g.coordinates] : g.coordinates, best = parts.reduce(function (a, b) { return b.length > a.length ? b : a; });
+        return best[Math.floor(best.length / 2)];
+      })();
+      p.ly = c[1]; p.lx = c[0];
+    });
+  }
+  return stIdx[id] || null;
+}
+function stLinks() { // {линия: [станции по порядку в dart.tsv], станция: [линии]}
+  if (stOn) return stOn;
+  stOn = {};
+  stFeat("");
+  var lines = Object.keys(stIdx).filter(function (id) { return stIdx[id].properties.kind === "line"; });
+  function near(c, f) { // точка рядом с линией, в градусах
+    var g = f.geometry, parts = g.type === "LineString" ? [g.coordinates] : g.coordinates, best = 1;
+    parts.forEach(function (pts) {
+      for (var i = 1; i < pts.length; i++) {
+        var a = pts[i - 1], b = pts[i], dx = b[0] - a[0], dy = b[1] - a[1], t = dx || dy ? ((c[0] - a[0]) * dx + (c[1] - a[1]) * dy) / (dx * dx + dy * dy) : 0;
+        t = Math.max(0, Math.min(1, t));
+        best = Math.min(best, Math.hypot(a[0] + t * dx - c[0], a[1] + t * dy - c[1]));
+      }
+    });
+    return best < 0.0004;
+  }
+  geo.dart.features.forEach(function (f) {
+    var p = f.properties; if (p.kind !== "station") return;
+    stOn[p.id] = lines.filter(function (l) { return near(f.geometry.coordinates, stIdx[l]); });
+    stOn[p.id].forEach(function (l) { (stOn[l] = stOn[l] || []).push(p.id); });
+  });
+  return stOn;
+}
+function stKind(p) {
+  if (p.kind !== "station") return p.tunnel ? "Тоннель" : p.line === "tandy" ? "Закрытая линия" : "Линия";
+  return p.lines === "M" ? "Закрытая станция" : p.lines === "T" ? "Станция TRE" : /T/.test(p.lines) ? "Станция DART и TRE" : "Станция DART";
+}
 function fixKey(k) { return validKey(k) ? k : aliases[k] && idx[aliases[k]] ? "n:" + aliases[k] : null; }
 function tagsColored(slot, list) { // теги без цвета получают следующий цвет палитры
   list.forEach(function (t) { if (!slot.tags[t]) slot.tags[t] = PALETTE[Object.keys(slot.tags).length % PALETTE.length]; });
@@ -360,7 +406,7 @@ function refOf() {
   var r = view.ref; if (!r) return null;
   if (r.k === "pin") { var p = pinOf({slot: r.slot, id: r.id}); return p ? {ll: p.ll, name: p.title || "Метка"} : null; }
   if (r.k === "n") return idx[r.id] ? {ll: [idx[r.id].ly, idx[r.id].lx], name: idx[r.id].name} : null;
-  var f = natFeat(r.id); return f ? {ll: [f.properties.ly, f.properties.lx], name: f.properties.name} : null;
+  var f = r.k === "st" ? stFeat(r.id) : natFeat(r.id); return f ? {ll: [f.properties.ly, f.properties.lx], name: f.properties.name} : null;
 }
 function isRef(s) { var r = view.ref; return !!r && r.k === s.k && r.id === s.id && (s.k !== "pin" || r.slot === s.slot); }
 function setRef(s) {
@@ -837,25 +883,31 @@ function setupTheme() {
 // ---------- DART ----------
 // Линии поездов и станции весны 2005 года поверх карты (data/geo/dart.geojson, сборка — tools/dart.py) и окошко справки
 var DART_LINE = {red: "Красная линия: Уэстморленд — Паркер-роуд", blue: "Синяя линия: Ледбеттер — Даунтаун-Гарленд",
-  shared: "Красная и синяя линии вместе: через центр от 8-й и Коринт до Мокингберда", tre: "TRE, пригородный поезд: Юнион-Стейшн — Форт-Уэрт"};
-var DART_CODE = {R: "красная", B: "синяя", T: "TRE"};
+  shared: "Красная и синяя линии вместе: через центр от 8-й и Коринт до Мокингберда", tre: "TRE, пригородный поезд: Юнион-Стейшн — Форт-Уэрт",
+  tandy: "Частное метро Tandy Center в Форт-Уэрте, закрыто в августе 2002"};
+var DART_CODE = {R: "красная", B: "синяя", T: "TRE", M: "метро Tandy, закрыто"};
 var DART_TEXT = [
   "DART — городской транспорт Далласа и соседних пригородов: автобусы и две линии лёгкого метро, красная и синяя. В центре поезда идут прямо по улице, дальше — по своим путям, а под Центральным шоссе — в тоннеле.",
   "Днём поезд приходит каждые 10 минут, вечером раз в 20. С часу ночи до пяти утра поездов нет, только редкие автобусы и такси.",
   "Турникетов нет: билет берут в автомате на платформе, контролёры проверяют выборочно. На станциях и в поездах дежурит своя полиция DART, но камеры есть не везде, а ночные платформы на окраинах пустые и тёмные.",
-  "TRE — пригородный поезд до Форт-Уэрта. По Макинни-авеню в Аптауне катается старинный трамвай M-Line."];
-var dartLayer = null, dartReady = null, dartEl = null;
+  "TRE — пригородный поезд до Форт-Уэрта. По Макинни-авеню в Аптауне катается старинный трамвай M-Line.",
+  "В Форт-Уэрте метро нет, только автобусы и TRE. Но под центром города лежит пустой тоннель частного метро Tandy Center, закрытого в 2002 году.",
+  "Нажми на станцию или линию — откроется карточка: к ней можно оставить заметку и считать от неё расстояния."];
+var dartLayer = null, dartEl = null;
+function stSelect(id) { return function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "st", id: id}, false); }; }
 function dartLayers(fc) {
   var g = L.featureGroup(), lines = fc.features.filter(function (f) { return f.properties.kind === "line"; });
   function draw(f, cls, tip) {
     var l = L.geoJSON(f, {pane: "vec", interactive: !!tip, style: cssStyle(cls, true)});
-    if (tip) l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip", offset: [0, -6]});
+    if (tip) l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip", offset: [0, -6]}).on("click", stSelect(f.properties.id));
     l.addTo(g);
   }
   lines.forEach(function (f) { draw(f, "dart-case" + (f.properties.tunnel ? " dart-tun" : "")); });
   lines.forEach(function (f) {
-    var p = f.properties, t = (p.tunnel ? " dart-tun" : ""),
-      tip = esc(DART_LINE[p.line]) + (p.tunnel ? "<small>Под землёй: тоннель под Центральным шоссе, около пяти километров</small>" : "");
+    var p = f.properties, t = (p.tunnel ? " dart-tun" : "");
+    var tip = "<b>" + esc(p.name) + "</b><small>" + esc(DART_LINE[p.line]) + "</small>" +
+      (p.id === "shared-tunnel" ? "<small>Под землёй, около пяти километров</small>" : p.id === "tandy-tunnel" ? "<small>Под землёй, около трёхсот метров</small>" : "");
+    layerOf.st[p.id] = true;
     if (p.line === "shared") { draw(f, "dart-red" + t); draw(f, "dart-blue dart-dash" + t, tip); }
     else draw(f, "dart-" + p.line + t, tip);
   });
@@ -863,10 +915,11 @@ function dartLayers(fc) {
     var p = f.properties;
     if (p.kind !== "station") return;
     var c = f.geometry.coordinates, big = p.lines.length > 1;
-    L.circleMarker([c[1], c[0]], L.extend({pane: "vec", radius: big ? 6.5 : 4.5}, cssStyle("dart-st" + (big ? " big" : ""))))
+    layerOf.st[p.id] = true;
+    L.circleMarker([c[1], c[0]], L.extend({pane: "vec", radius: big ? 6.5 : 4.5}, cssStyle("dart-st" + (big ? " big" : "") + (p.lines === "M" ? " closed" : ""))))
       .bindTooltip(function () { return "<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
-        (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>" + tripTip({k: "st"}, [c[1], c[0]]); }, {direction: "top", className: "tip dart-tip", offset: [0, -6]})
-      .on("click", function (e) { L.DomEvent.stopPropagation(e); e.target.openTooltip(); })
+        (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>" + tripTip({k: "st", id: p.id}, [c[1], c[0]]); }, {direction: "top", className: "tip dart-tip", offset: [0, -6]})
+      .on("click", stSelect(p.id))
       .addTo(g);
   });
   return g;
@@ -881,7 +934,8 @@ function renderDartBox() {
       '<p class="hours"><b>Метро:</b> каждый день примерно с 5:00 до 1:00 ночи.<br><b>TRE:</b> по будням примерно с 5:30 до 23:00, в субботу реже, в воскресенье не ходит.</p>' + DART_TEXT.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
       '<ul><li>' + sw("dart-red") + 'красная линия</li><li>' + sw("dart-blue") + 'синяя линия</li><li>' + sw("dart-red") .replace("</svg>", '<line x1="2" y1="5" x2="20" y2="5" class="dart-blue dart-dash"/></svg>') +
       'обе линии</li><li>' + sw("dart-tre") + 'TRE до Форт-Уэрта</li><li>' + sw("dart-red dart-tun") + 'под землёй</li>' +
-      '<li><svg width="22" height="10" aria-hidden="true"><circle cx="11" cy="5" r="4" class="dart-st"/></svg>станция — наведи, чтобы узнать подробнее</li></ul>';
+      '<li>' + sw("dart-tandy dart-tun") + 'метро Tandy, закрыто в 2002</li>' +
+      '<li><svg width="22" height="10" aria-hidden="true"><circle cx="11" cy="5" r="4" class="dart-st"/></svg>станция — нажми, чтобы открыть карточку</li></ul>';
   }
   dartEl.hidden = !view.dart;
 }
@@ -890,9 +944,8 @@ function setDart(on) {
   document.getElementById("dart-tog").checked = view.dart;
   renderDartBox();
   if (!view.dart) { if (dartLayer) show(dartLayer, false); return; }
-  dartReady = dartReady || fetch(GEO + "dart.geojson").then(function (r) { if (!r.ok) throw new Error("dart"); return r.json(); })
-    .then(function (fc) { dartLayer = dartLayers(fc); });
-  dartReady.then(function () { show(dartLayer, view.dart); });
+  dartLayer = dartLayer || dartLayers(geo.dart); // файл грузится при запуске: от станций нужны имена и точки для заметок и отсчёта
+  show(dartLayer, true);
 }
 
 // ---------- карта ----------
@@ -1301,11 +1354,14 @@ function select(s, fly) {
       ensurePath(anc).then(function () { open = anc; syncLayers(); select(s, fly); });
       return;
     }
+  } else if (s.k === "st") {
+    if (!stFeat(s.id)) return;
+    if (!view.dart) setDart(true); // станции и линии видны только со слоем DART
   } else if (!featOf[s.k][s.id]) return;
   placeStop(); sel = s; editing = false; status = ""; draft = null; isNewPin = false; noteSlot = ""; confirmDel = false;
   drawSel(); drawPins();
   if (fly) {
-    var b = layerOf[s.k][s.id].getBounds();
+    var b = s.k === "st" ? L.geoJSON(stFeat(s.id).geometry).getBounds() : layerOf[s.k][s.id].getBounds();
     map.flyTo(b.getCenter(), Math.min(14, Math.max(9.5, map.getBoundsZoom(b, false, L.point(60, 60)))), {duration: 0.6});
   }
   refresh(); renderPanel(); syncHash();
@@ -1318,7 +1374,9 @@ function drawSel() {
   selLayer = null;
   if (!sel || sel.k === "pin") { map.getContainer().classList.remove("has-sel"); return; }
   var cls = "selpath" + (sel.k === "n" && isOpen(sel.id) ? " selopen" : "");
-  selLayer = L.geoJSON(featOf[sel.k][sel.id], {pane: "vec", interactive: false, style: cssStyle(cls)}).addTo(map);
+  selLayer = L.geoJSON(sel.k === "st" ? stFeat(sel.id) : featOf[sel.k][sel.id], {pane: "vec", interactive: false,
+    style: function (f) { return /LineString/.test(f.geometry.type) ? cssStyle("selline", true) : cssStyle(cls); },
+    pointToLayer: function (f, ll) { return L.circleMarker(ll, {radius: 11}); }}).addTo(map);
   stack();
   map.getContainer().classList.add("has-sel");
 }
@@ -1361,9 +1419,10 @@ function renderPanel() {
   if (!sel) { panel.innerHTML = INTRO; return; }
   if (sel.k === "pin") { renderPinPanel(); return; }
   var s = sel, x = info(s);
-  var node = s.k === "n" ? idx[s.id] : null, np = s.k === "nat" ? featOf.nat[s.id].properties : null;
+  var node = s.k === "n" ? idx[s.id] : null, np = node ? null : (s.k === "st" ? stFeat(s.id) : featOf.nat[s.id]).properties;
   var name = node ? node.name : np.name, km2 = node ? node.km2 : np.km2, ll = node ? [node.ly, node.lx] : [np.ly, np.lx];
-  var meta = '<span>' + (node ? kindLabel(s.id) : NATKIND[np.kind]) + '</span>' + (node ? crumbs(s.id).join('<span>›</span>') : '');
+  var meta = '<span>' + (node ? kindLabel(s.id) : s.k === "st" ? stKind(np) : NATKIND[np.kind]) + '</span>' + (node ? crumbs(s.id).join('<span>›</span>') : '') +
+    (s.k === "st" && np.kind === "station" ? '<span>' + esc(np.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ")) + '</span>' : '');
 
   if (editing) { renderNoteForm(s, name, meta); return; }
 
@@ -1373,7 +1432,7 @@ function renderPanel() {
       tagChips(q.slot, q.r.tags) + (q.r.text ? '<div class="md">' + md(q.r.text) + '</div>' : "") + '</div>';
   }).join("");
   // своего текста нет — показываем описание ближайшего предка, у которого он есть
-  var body = (x.details || "").trim() ? '<div class="pdet">' + md(x.details) + '</div>' : "";
+  var body = (x.details || (np && np.note) || "").trim() ? '<div class="pdet">' + md(x.details || np.note) + '</div>' : "";
   if (!body && node) {
     var up = ancestors(s.id).reverse().filter(function (a) { return ((text.nodes[a] || {}).details || "").trim(); })[0];
     body = up ? '<div class="inherit"><h3>' + esc(kindLabel(up)) + ' «' + esc(idx[up].name) + '»</h3>' + md(text.nodes[up].details) + '</div>'
@@ -1386,19 +1445,24 @@ function renderPanel() {
     kids = '<div class="kids"><h3>Внутри · ' + list.length + '</h3><ul>' + list.map(function (id) {
       return '<li><button type="button" data-go="n:' + esc(id) + '">' + esc(idx[id].name) + '</button></li>'; }).join("") + '</ul></div>';
   }
+  if (s.k === "st") { // станция — линии, на которых она стоит; линия — станции на ней
+    var on = stLinks()[s.id] || [];
+    if (on.length) kids = '<div class="kids"><h3>' + (np.kind === "station" ? "Линии" : "Станции") + ' · ' + on.length + '</h3><ul>' + on.map(function (id) {
+      return '<li><button type="button" data-go="st:' + esc(id) + '">' + esc(stFeat(id).properties.name) + '</button></li>'; }).join("") + '</ul></div>';
+  }
   var cells = ["core", "city", "fw"].map(function (b) { var c = gridCell(b, ll[0], ll[1]); return c ? GRIDS[b].label + " " + c : null; }).filter(Boolean);
+  var size = [km2 != null ? '<span>≈ ' + String(km2).replace(".", ",") + ' км²</span>' : "", cells.length && gridOn() ? '<span>старая сетка: ' + esc(cells.join(", ")) + '</span>' : ""].join("");
   panel.innerHTML =
     '<div class="pmeta">' + meta + '</div>' +
     '<h2>' + esc(name) + '</h2>' +
-    '<div class="pmeta" style="margin-bottom:12px"><span>≈ ' + String(km2).replace(".", ",") + ' км²</span>' +
-    (cells.length && gridOn() ? '<span>старая сетка: ' + esc(cells.join(", ")) + '</span>' : '') + '</div>' + tripLine(s, ll) +
+    (size ? '<div class="pmeta" style="margin-bottom:12px">' + size + '</div>' : '') + tripLine(s, ll) +
     tagsBlock(s) + (x.summary ? '<p class="psum">' + esc(x.summary) + '</p>' : "") + body +
     (x.more && x.more.trim() ? '<details class="pmore" id="p-more"' + (moreOpen[skey(s)] ? " open" : "") + '><summary>Подробнее</summary><div class="pdet">' + md(x.more) + '</div></details>' : "") +
     (x.notes && x.notes.trim() ? '<div class="notes"><h3>Заметки мастера</h3><div class="md">' + md(x.notes) + '</div></div>' : "") +
     mineBlock +
     '<div class="actions">' +
     (node && node.n && !view.leaves ? (opened ? '<button class="btn primary" type="button" id="p-fold">Свернуть</button>' : '<button class="btn primary" type="button" id="p-open">Раскрыть</button>') : '') +
-    '<button class="btn" type="button" id="p-note">' + (act && act.regions[skey(s)] ? "Изменить заметку" : "Заметка к региону") + '</button>' +
+    '<button class="btn" type="button" id="p-note">' + (act && act.regions[skey(s)] ? "Изменить заметку" : s.k !== "st" ? "Заметка к региону" : np.kind === "station" ? "Заметка к станции" : "Заметка к линии") + '</button>' +
     '<button class="btn" type="button" id="p-pin" title="Потом нажми на карту, где поставить точку">Поставить метку</button>' +
     '<button class="btn" type="button" id="p-show">Показать на карте</button>' + refBtn(s) +
     (status ? '<span class="status">' + esc(status) + '</span>' : "") + '</div>' + kids;
@@ -1509,6 +1573,13 @@ function setupSearch() {
       add({k: "n", id: id}, idx[id].name, kindLabel(id).toLowerCase() + (a.length ? " · " + idx[a[a.length - 1]].name : ""), idx[id].depth);
     });
     geo.nature.features.forEach(function (f) { add({k: "nat", id: f.properties.id}, f.properties.name, NATKIND[f.properties.kind].toLowerCase(), 4); });
+    geo.dart.features.forEach(function (f) {
+      var p = f.properties; if (!p.id) return;
+      add({k: "st", id: p.id}, p.name, stKind(p).toLowerCase(), 4);
+      var o = out[out.length - 1]; // английское имя станции — в названия, пояснение с карты — в текст
+      if (p.en && p.en !== p.name) o.f[0] = field(p.name + " " + p.en);
+      if (p.note) o.f[2] = field([o.f[2].src, p.note].filter(Boolean).join("\n\n"));
+    });
     return out;
   }
   // Метки и заметки меняются, их собираем на каждый поиск: только из видимых слотов
@@ -1563,6 +1634,8 @@ function setupSearch() {
     function draw(layer) { if (hovKey === key) { hov = extra.hov = layer.addTo(map); stack(); } }
     if (k === "pin") { var p = pinOf({slot: b.getAttribute("data-slot"), id: id}); if (p) draw(L.circleMarker(p.ll, L.extend({pane: "vec", interactive: false, radius: 20}, cssStyle("hovpath")))); }
     else if (k === "nat") draw(L.geoJSON(featOf.nat[id], opt));
+    else if (k === "st") draw(L.geoJSON(stFeat(id), {pane: "vec", interactive: false, pointToLayer: function (f, ll) { return L.circleMarker(ll, {radius: 14}); },
+      style: function (f) { return /LineString/.test(f.geometry.type) ? cssStyle("hovline", true) : cssStyle("hovpath"); }}));
     else ensureKids(idx[id].parent || "").then(function (fc) {
       var f = fc.features.filter(function (f) { return f.properties.id === id; })[0];
       if (f) draw(L.geoJSON(f, opt));
@@ -1757,9 +1830,9 @@ function renderNoteForm(s, name, meta) {
     '<p class="psum">Заметка хранится в этом браузере, в слоте «' + esc(slot.name) + '».</p>' +
     '<form class="form" id="f">' +
     (marks.slots.length > 1 ? '<div class="row"><label for="f-slot">Заметка из слота</label><select id="f-slot">' + slotOptions(slot.id) + '</select></div>' : '') +
-    '<div class="row"><label>Цвет региона</label><div class="colrow"><label class="rad"><input type="radio" name="f-rc" value=""' + (r.color ? "" : " checked") + '> не менять</label>' +
+    (s.k === "st" ? "" : '<div class="row"><label>Цвет региона</label><div class="colrow"><label class="rad"><input type="radio" name="f-rc" value=""' + (r.color ? "" : " checked") + '> не менять</label>' +
       '<label class="rad"><input type="radio" name="f-rc" value="c"' + (r.color ? " checked" : "") + '> свой</label><input type="color" id="f-color" value="' + (r.color || PALETTE[0]) + '">' +
-      PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>' +
+      PALETTE.map(function (c) { return '<button type="button" class="sw" data-c="' + c + '" style="background:' + c + '" aria-label="Цвет ' + c + '"></button>'; }).join("") + '</div></div>') +
     '<div class="row"><label for="f-tagin">Теги</label>' + tagEdHtml(slot) + '</div>' +
     '<div class="row"><label for="f-text">Текст</label><textarea id="f-text" rows="7" placeholder="Сюжетные зацепки, NPC, что угодно своё">' + esc(r.text) + '</textarea>' + MD_HINT + '</div>' +
     moveRow(slot.id) +
@@ -1768,8 +1841,10 @@ function renderNoteForm(s, name, meta) {
     '<div class="actions" id="f-ask" hidden></div></form>';
   var ed = bindTagEd(slot, st, function () {}), ci = document.getElementById("f-color");
   function custom() { panel.querySelector('input[name="f-rc"][value="c"]').checked = true; }
-  ci.addEventListener("input", custom);
-  panel.querySelector(".colrow").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) { ci.value = b.getAttribute("data-c"); custom(); } });
+  if (ci) {
+    ci.addEventListener("input", custom);
+    panel.querySelector(".colrow").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) { ci.value = b.getAttribute("data-c"); custom(); } });
+  }
   var fs = document.getElementById("f-slot");
   if (fs) fs.addEventListener("change", function () { noteSlot = fs.value; confirmDel = false; renderPanel(); });
   var target = bindMove(slot, function (to) {
@@ -1797,7 +1872,7 @@ function renderNoteForm(s, name, meta) {
     e.preventDefault(); ed.flush();
     var m = document.getElementById("f-move"), busy = slotOf(m.value);
     if (busy && busy !== slot && busy.regions[k] && !mode) { askMove(busy); return; }
-    var next = {color: panel.querySelector('input[name="f-rc"]:checked').value ? ci.value : "", tags: st.tags.slice(),
+    var rc = panel.querySelector('input[name="f-rc"]:checked'), next = {color: rc && rc.value ? ci.value : "", tags: st.tags.slice(),
       text: document.getElementById("f-text").value.replace(/\r/g, "").trim()};
     var to = target(), old = to !== slot && to.regions[k];
     st.tags.forEach(function (t) { to.tags[t] = ed.color(t); });
@@ -1931,7 +2006,7 @@ function setupSlots() {
 }
 
 // ---------- ссылки ----------
-// #n/<узел> (с «+» на конце — раскрытым), #nat/<озеро>; ссылки прежних карт (#d/<район>, #city-D5) — по таблице aliases
+// #n/<узел> (с «+» на конце — раскрытым), #nat/<озеро>, #st/<станция или линия>; ссылки прежних карт (#d/<район>, #city-D5) — по таблице aliases
 function syncCollapse() { document.getElementById("collapse").disabled = view.leaves || (!open.length && !sel); }
 function syncHash() {
   syncCollapse();
@@ -1939,7 +2014,7 @@ function syncHash() {
   try { history.replaceState(null, "", h || location.pathname); } catch (_) {}
 }
 function readHash(fly) {
-  var h = decodeURIComponent(location.hash || ""), m = /^#(n|nat)\/([^+]+)(\+?)$/.exec(h);
+  var h = decodeURIComponent(location.hash || ""), m = /^#(n|nat|st)\/([^+]+)(\+?)$/.exec(h);
   if (m) {
     if (m[1] === "n" && m[3] && idx[m[2]] && !view.leaves) expand(m[2], fly);
     else select({k: m[1], id: m[2]}, fly);
@@ -1951,7 +2026,7 @@ function readHash(fly) {
 
 // ---------- запуск ----------
 setupTheme();
-var files = ["water", "green", "nature"];
+var files = ["water", "green", "nature", "dart"];
 Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(function (r) { if (!r.ok) throw new Error(n); return r.json(); }); })
   .concat([fetch(TREE + "index.json").then(function (r) { return r.json(); }),
     fetch(TREE + "aliases.json").then(function (r) { return r.json(); }),
@@ -1962,7 +2037,7 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   files.forEach(function (n, i) { geo[n] = res[i]; });
   res[files.length].forEach(function (x) { idx[x.id] = x; (kidsOf[x.parent] = kidsOf[x.parent] || []).push(x.id); });
   aliases = res[files.length + 1];
-  text = res[files.length + 2]; text.nodes = text.nodes || {}; text.nature = text.nature || {};
+  text = res[files.length + 2]; text.nodes = text.nodes || {}; text.nature = text.nature || {}; text.transit = text.transit || {};
   document.getElementById("loading").remove();
   loadMine(); buildMap();
   loaded[""] = res[files.length + 3];
