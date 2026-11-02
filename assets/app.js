@@ -902,11 +902,14 @@ function dartLayers(fc) {
     if (tip) l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip", offset: [0, -6]}).on("click", stSelect(f.properties.id));
     l.addTo(g);
   }
-  lines.forEach(function (f) { draw(f, "dart-case" + (f.properties.tunnel ? " dart-tun" : "")); });
-  lines.forEach(function (f) {
-    var p = f.properties, t = (p.tunnel ? " dart-tun" : "");
-    var tip = "<b>" + esc(p.name) + "</b><small>" + esc(DART_LINE[p.line]) + "</small>" +
+  function lineTip(p) {
+    return "<b>" + esc(p.name) + "</b><small>" + esc(DART_LINE[p.line]) + "</small>" +
       (p.id === "shared-tunnel" ? "<small>Под землёй, около пяти километров</small>" : p.id === "tandy-tunnel" ? "<small>Под землёй, около трёхсот метров</small>" : "");
+  }
+  // широкая подложка под линией тоже ловит клик и подсказку: в тонкую цветную линию мышью попасть трудно
+  lines.forEach(function (f) { draw(f, "dart-case" + (f.properties.tunnel ? " dart-tun" : ""), lineTip(f.properties)); });
+  lines.forEach(function (f) {
+    var p = f.properties, t = (p.tunnel ? " dart-tun" : ""), tip = lineTip(p);
     layerOf.st[p.id] = true;
     if (p.line === "shared") { draw(f, "dart-red" + t); draw(f, "dart-blue dart-dash" + t, tip); }
     else draw(f, "dart-" + p.line + t, tip);
@@ -916,7 +919,7 @@ function dartLayers(fc) {
     if (p.kind !== "station") return;
     var c = f.geometry.coordinates, big = p.lines.length > 1;
     layerOf.st[p.id] = true;
-    L.circleMarker([c[1], c[0]], L.extend({pane: "vec", radius: big ? 6.5 : 4.5}, cssStyle("dart-st" + (big ? " big" : "") + (p.lines === "M" ? " closed" : ""))))
+    L.circleMarker([c[1], c[0]], L.extend({pane: "vec", radius: big ? 13 : 9}, cssStyle("dart-st" + (big ? " big" : "") + (p.lines === "M" ? " closed" : ""))))
       .bindTooltip(function () { return "<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
         (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>" + tripTip({k: "st", id: p.id}, [c[1], c[0]]); }, {direction: "top", className: "tip dart-tip", offset: [0, -6]})
       .on("click", stSelect(p.id))
@@ -1033,6 +1036,9 @@ function buildMap() {
   // все векторные слои — на одном холсте в панели vec (события мыши получает только верхний холст), порядок задаёт stack()
   [["vec", 300], ["pins", 445], ["labels", 450]].forEach(function (p) { map.createPane(p[0]).style.zIndex = p[1]; });
   map.getPane("labels").style.pointerEvents = "none";
+  // слой Leaflet по умолчанию: всё наше — в vec, но если слой без панели всё же попадёт сюда, его холст ляжет поверх
+  // карты и заберёт все клики (так ломался выбор после клика по станции) — пусть клики проходят насквозь
+  map.getPane("overlayPane").style.pointerEvents = "none";
 
   extra.land = L.rectangle(BOUNDS, L.extend({pane: "vec", interactive: false}, cssStyle("land"))).addTo(map);
   extra.green = L.geoJSON(geo.green, {pane: "vec", interactive: false, style: geoStyle()}).addTo(map);
@@ -1376,7 +1382,7 @@ function drawSel() {
   var cls = "selpath" + (sel.k === "n" && isOpen(sel.id) ? " selopen" : "");
   selLayer = L.geoJSON(sel.k === "st" ? stFeat(sel.id) : featOf[sel.k][sel.id], {pane: "vec", interactive: false,
     style: function (f) { return /LineString/.test(f.geometry.type) ? cssStyle("selline", true) : cssStyle(cls); },
-    pointToLayer: function (f, ll) { return L.circleMarker(ll, {radius: 11}); }}).addTo(map);
+    pointToLayer: function (f, ll) { return L.circleMarker(ll, {pane: "vec", interactive: false, radius: 20}); }}).addTo(map);
   stack();
   map.getContainer().classList.add("has-sel");
 }
@@ -1634,7 +1640,7 @@ function setupSearch() {
     function draw(layer) { if (hovKey === key) { hov = extra.hov = layer.addTo(map); stack(); } }
     if (k === "pin") { var p = pinOf({slot: b.getAttribute("data-slot"), id: id}); if (p) draw(L.circleMarker(p.ll, L.extend({pane: "vec", interactive: false, radius: 20}, cssStyle("hovpath")))); }
     else if (k === "nat") draw(L.geoJSON(featOf.nat[id], opt));
-    else if (k === "st") draw(L.geoJSON(stFeat(id), {pane: "vec", interactive: false, pointToLayer: function (f, ll) { return L.circleMarker(ll, {radius: 14}); },
+    else if (k === "st") draw(L.geoJSON(stFeat(id), {pane: "vec", interactive: false, pointToLayer: function (f, ll) { return L.circleMarker(ll, {pane: "vec", interactive: false, radius: 24}); },
       style: function (f) { return /LineString/.test(f.geometry.type) ? cssStyle("hovline", true) : cssStyle("hovpath"); }}));
     else ensureKids(idx[id].parent || "").then(function (fc) {
       var f = fc.features.filter(function (f) { return f.properties.id === id; })[0];

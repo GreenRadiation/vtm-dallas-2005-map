@@ -246,19 +246,19 @@ details summary{cursor:pointer;font-weight:600}
 .lg-tip b{color:var(--ink)}
 
 /* DART: линии поездов и станции поверх карты, справка в углу */
-.dart-case{fill:none;stroke:var(--paper);stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.9}
-.dart-case.dart-tun{stroke:var(--ink);stroke-width:11;stroke-dasharray:5 4;stroke-linecap:butt;stroke-opacity:.55}
-.dart-red,.dart-blue,.dart-tre{fill:none;stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
-.dart-red{stroke:#d63a2e}.dart-blue{stroke:#2b6fd6}.dart-tre{stroke:#8a6a2c;stroke-width:4.5}
-.dart-dash{stroke-dasharray:14 14;stroke-linecap:butt}
+.dart-case{fill:none;stroke:var(--paper);stroke-width:20;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.9}
+.dart-case.dart-tun{stroke:var(--ink);stroke-width:22;stroke-dasharray:10 8;stroke-linecap:butt;stroke-opacity:.55}
+.dart-red,.dart-blue,.dart-tre{fill:none;stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
+.dart-red{stroke:#d63a2e}.dart-blue{stroke:#2b6fd6}.dart-tre{stroke:#8a6a2c;stroke-width:9}
+.dart-dash{stroke-dasharray:28 28;stroke-linecap:butt}
 .dart-tun{stroke-opacity:.6}
-.dart-tandy{fill:none;stroke:#8f6fb3;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
-.dart-st.closed{fill:var(--line);stroke:#8f6fb3;stroke-width:2.4}
+.dart-tandy{fill:none;stroke:#8f6fb3;stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+.dart-st.closed{fill:var(--line);stroke:#8f6fb3;stroke-width:3.5}
 /* выбранная и найденная линия поездов: широкая подсветка под линией */
-.selline{fill:none;stroke:var(--accent);stroke-width:12;stroke-opacity:.45;stroke-linecap:round;stroke-linejoin:round}
-.hovline{fill:none;stroke:var(--accent);stroke-width:12;stroke-opacity:.35;stroke-dasharray:10 6;stroke-linecap:round;stroke-linejoin:round}
-.dart-st{fill:var(--paper);stroke:var(--ink);stroke-width:2;fill-opacity:1}
-.dart-st.big{stroke-width:2.6}
+.selline{fill:none;stroke:var(--accent);stroke-width:24;stroke-opacity:.45;stroke-linecap:round;stroke-linejoin:round}
+.hovline{fill:none;stroke:var(--accent);stroke-width:24;stroke-opacity:.35;stroke-dasharray:10 6;stroke-linecap:round;stroke-linejoin:round}
+.dart-st{fill:var(--paper);stroke:var(--ink);stroke-width:3;fill-opacity:1}
+.dart-st.big{stroke-width:3.6}
 .leaflet-tooltip.dart-tip{width:max-content;max-width:280px;white-space:normal}
 .dart-tip span{display:block;font-weight:500;font-size:12px;line-height:1.4;margin-top:3px}
 .dart-box{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;font-size:12.5px;line-height:1.45;
@@ -272,7 +272,7 @@ details summary{cursor:pointer;font-weight:600}
 .dart-box ul{list-style:none;margin:8px 0 2px;padding:0;display:grid;gap:3px}
 .dart-box li{display:flex;align-items:center;gap:7px}
 .dart-box svg{flex:none;overflow:visible}
-.dart-box svg .dart-red,.dart-box svg .dart-blue,.dart-box svg .dart-tre{stroke-width:4.5}
+.dart-box svg .dart-red,.dart-box svg .dart-blue,.dart-box svg .dart-tre,.dart-box svg .dart-tandy{stroke-width:4.5}
 .dart-box svg .dart-dash{stroke-dasharray:5 5}
 .dart-box svg .dart-tun{stroke-dasharray:4 3}
 .dart-box svg .dart-st{stroke-width:1.8}
