@@ -789,18 +789,46 @@ function setDart(on) {
 }
 
 // ---------- карта ----------
-// Зум без анимации (решено с автором): каждый щелчок колеса — мгновенный шаг на WHEEL_STEP уровня, карта, подписи
-// и метки перерисовываются в одном кадре. Анимация Leaflet в Firefox расходилась: линии, текст и метки ехали
-// вразнобой. Проекция: меркатор каждой вершины считается один раз, при зуме остаётся умножение.
-// Запас отрисовки: холст рисуется с запасом VEC_PAD экрана с каждой стороны (у Leaflet 10%), а при перетаскивании
-// за запас перерисовывается на ходу (followDrag), иначе были видны пустые куски.
-var VEC_PAD = 0.3, WHEEL_STEP = 0.375;
+// Плавный зум без рассинхрона. Анимация Leaflet растягивает старую картинку холста CSS-преобразованием с переходом,
+// а подписи и метки двигает своими переходами: в Firefox они расходились, а линии до конца анимации мыльные.
+// Здесь CSS-переходов нет вовсе: на каждое событие zoom (колесо, кнопки, перелёт flyTo, щипок на телефоне) холст
+// в том же кадре заново проецирует и рисует все слои, а Leaflet в том же кадре ставит подписи и метки. Один кадр —
+// одна картинка, разъехаться нечему. Полная отрисовка карты — единицы миллисекунд.
+// Колесо: щелчок сдвигает цель на WHEEL_STEP уровня, масштаб догоняет цель по экспоненте с постоянной WHEEL_TAU мс,
+// точка под курсором стоит на месте. Пока масштаб меняется, холст рисуется почти без запаса (ANIM_PAD), в конце —
+// с полным запасом VEC_PAD (у Leaflet 10%), а при перетаскивании за запас перерисовывается на ходу (followDrag).
+// Проекция: меркатор каждой вершины считается один раз, при зуме остаётся умножение.
+var VEC_PAD = 0.3, ANIM_PAD = 0.02, WHEEL_STEP = 0.5, WHEEL_TAU = 85, zooming = false;
 (function () {
   L.Map.prototype._createRenderer = function (o) { return L.canvas(L.extend({padding: VEC_PAD}, o)); };
+  var C = L.Canvas.prototype, update = C._update;
+  // zoom и viewreset: всё спроецировать и нарисовать сейчас, без CSS-растяжения
+  C._onZoom = C._reset = function () {
+    for (var id in this._layers) this._layers[id]._project();
+    this._update(true);
+  };
+  C._onZoomEnd = function () {}; // проекция уже сделана на zoom или viewreset
+  // moveend после зума или сброса вида, когда холст уже на месте, не перерисовывает его ещё раз
+  C._update = function (force) {
+    var m = this._map;
+    if (!force && this._bounds && this._zoom === m.getZoom()) {
+      var p = this.options.padding, size = m.getSize(), min = m.containerPointToLayerPoint(size.multiplyBy(-p)).round();
+      if (min.equals(this._bounds.min) && min.add(size.multiplyBy(1 + p * 2)).round().equals(this._bounds.max)) return;
+    }
+    update.call(this);
+  };
+  // У Leaflet после синхронной отрисовки оставался запрос кадра, и холст рисовался второй раз в следующем кадре
+  C._updatePaths = function () {
+    if (this._postponeUpdatePaths) return;
+    this._redrawBounds = null;
+    for (var id in this._layers) this._layers[id]._update();
+    L.Util.cancelAnimFrame(this._redrawRequest);
+    this._redraw();
+  };
   // Наведение на холсте: Leaflet обрабатывает движение мыши не чаще раза в 32 мс, а промежуточные выбрасывает —
   // подсказки и подсветка шли рывками на 30 кадрах. Берём последнее положение мыши раз в кадр и ищем слой
   // сверху вниз до первого попадания.
-  var C = L.Canvas.prototype, out = C._handleMouseOut;
+  var out = C._handleMouseOut;
   C._handleMouseHover = function (e, point) {
     this._hoverAt = [e, point];
     if (this._hoverRaf) return;
@@ -813,21 +841,13 @@ var VEC_PAD = 0.3, WHEEL_STEP = 0.375;
         if (hit) { L.DomUtil.addClass(this._container, "leaflet-interactive"); this._fireEvent([hit], e, "mouseover"); this._hoveredLayer = hit; }
       }
       this._fireEvent(this._hoveredLayer ? [this._hoveredLayer] : false, e);
+      // подсветка наведения — в этом же кадре, а не в следующем
+      if (this._redrawRequest) { L.Util.cancelAnimFrame(this._redrawRequest); this._redraw(); }
     }, this);
   };
   C._handleMouseOut = function (e) {
     if (e && e.type === "mouseout" && this._hoverRaf) { L.Util.cancelAnimFrame(this._hoverRaf); this._hoverRaf = null; }
     out.call(this, e);
-  };
-  L.Map.ScrollWheelZoom.prototype._performZoom = function () {
-    // _delta — прокрутка за 40 мс; щелчок колеса — около 50. Больше двух щелчков за раз не берём, чтобы
-    // прокрутка, накопленная пока страница подвисла, не прыгала; мелкая прокрутка тачпада — малыми шагами
-    var m = this._map, d = this._delta, a = Math.abs(d), n = a >= 25 ? Math.min(2, Math.round(a / 50) || 1) : a / 50;
-    this._delta = 0; this._startTime = null;
-    if (!d) return;
-    var snap = m.options.zoomSnap, z = m.getZoom(), dz = Math.max(snap, Math.round(n * WHEEL_STEP / snap) * snap);
-    var to = m._limitZoom(z + (d > 0 ? dz : -dz));
-    if (to !== z) m.setZoomAround(this._lastMousePos, to);
   };
   L.Polyline.prototype._projectLatlngs = function (latlngs, result, bounds) {
     var i;
@@ -843,8 +863,9 @@ var VEC_PAD = 0.3, WHEEL_STEP = 0.375;
 })();
 
 function buildMap() {
-  map = L.map("map", {zoomSnap: 0.125, zoomDelta: 0.5, zoomAnimation: false, wheelPxPerZoomLevel: 90, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
+  map = L.map("map", {zoomSnap: 0.125, zoomDelta: 0.5, zoomAnimation: false, scrollWheelZoom: false, minZoom: 9, maxZoom: 16, maxBounds: L.latLngBounds(BOUNDS).pad(0.15),
     maxBoundsViscosity: 0.8, attributionControl: true, doubleClickZoom: false, preferCanvas: true});
+  smoothZoom();
   map.attributionControl.setPrefix(false).addAttribution('Геоданные © участники <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, перепись США 2000');
   // все векторные слои — на одном холсте в панели vec (события мыши получает только верхний холст), порядок задаёт stack()
   [["vec", 300], ["pins", 445], ["labels", 450]].forEach(function (p) { map.createPane(p[0]).style.zIndex = p[1]; });
@@ -875,14 +896,60 @@ function buildMap() {
   map.on("move", followDrag);
   home(false);
   stack();
+  // ширина подписей, измеренная до загрузки шрифта, неверна: перемерить, когда шрифты придут
+  if (document.fonts) document.fonts.ready.then(function () { for (var k in labelCache) delete labelCache[k].sz; placeLabels(); });
   window.vtmMap = map; // для отладки из консоли
 }
 
+function renderers() {
+  return Object.keys(map._paneRenderers).map(function (k) { return map._paneRenderers[k]; }).concat(map._renderer ? [map._renderer] : []);
+}
+// Плавный зум колесом и кнопками +/−; как он рисуется — см. выше «карта»
+function smoothZoom() {
+  var raf = null, last = 0, goal = 0, acc = 0, at = null, anchor = null;
+  function pad(p) { renderers().forEach(function (r) { r.options.padding = p; }); }
+  // любой зум (наш, flyTo, щипок): пока идёт — холст без запаса и без догоняющей перерисовки при перетаскивании
+  map.on("zoomstart", function () { zooming = true; pad(ANIM_PAD); });
+  map.on("zoomend", function () { zooming = false; pad(VEC_PAD); });
+  function frame(t) {
+    var z = map.getZoom(), nz = goal;
+    if (Math.abs(goal - z) > 0.002) nz = z + (goal - z) * (1 - Math.exp(-Math.min(t - last, 50) / WHEEL_TAU));
+    last = t;
+    // центр такой, чтобы anchor остался в точке at
+    var c = map.unproject(map.project(anchor, nz).subtract(at.subtract(map.getSize().divideBy(2))), nz);
+    map._move(map._limitCenter(c, nz, map.options.maxBounds), nz);
+    if (nz === goal) { raf = null; map._moveEnd(true); } else raf = L.Util.requestAnimFrame(frame);
+  }
+  function zoomBy(dz, point) {
+    at = point; anchor = map.containerPointToLatLng(point);
+    if (!raf) {
+      map._stop(); map._moveStart(true, false);
+      acc = map.getZoom(); last = performance.now(); raf = L.Util.requestAnimFrame(frame);
+    }
+    acc = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), acc + dz));
+    goal = map._limitZoom(acc);
+  }
+  var stop = map._stop;
+  map._stop = function () { // перетаскивание, перелёт или setView посреди зума: остаться где есть
+    if (raf) { L.Util.cancelAnimFrame(raf); raf = null; map._moveEnd(true); }
+    return stop.call(this);
+  };
+  L.DomEvent.on(map.getContainer(), "wheel", function (e) {
+    L.DomEvent.stop(e);
+    // щелчок колеса — около 50 px; прокрутку, накопленную пока страница подвисла, режем до трёх щелчков
+    var d = L.DomEvent.getWheelDelta(e) / 50;
+    if (d) zoomBy(Math.max(-3, Math.min(3, d)) * WHEEL_STEP, map.mouseEventToContainerPoint(e));
+  });
+  map.zoomIn = function (d) { zoomBy(d || map.options.zoomDelta, map.getSize().divideBy(2)); return map; };
+  map.zoomOut = function (d) { zoomBy(-(d || map.options.zoomDelta), map.getSize().divideBy(2)); return map; };
+}
+
 // Холст не знает CSS-классов, поэтому стиль слоя читается из style.css: на невидимый пробный <path> внутри карты
-// вешаются классы слоя, а поверх — умолчания Leaflet атрибутами, как было в SVG. Кеш — по классам, масштабу, линзе и теме.
+// вешаются классы слоя, а поверх — умолчания Leaflet атрибутами, как было в SVG. Кеш — по классам, линзе и теме,
+// а масштабу — только для рек: больше от zN в style.css ничего не зависит, и кеш не сбрасывается на каждом уровне.
 var probe = null, styleCache = {};
 function cssStyle(cls, line) {
-  var box = map.getContainer(), key = (line ? "l " : "a ") + cls + "|" + (box.className.match(/\b(z\d+|lensed|has-sel)\b/g) || []).join(" ") + "|" + document.documentElement.dataset.theme;
+  var box = map.getContainer(), key = (line ? "l " : "a ") + cls + "|" + (box.className.match(/river/.test(cls) ? /\b(z\d+|lensed)\b/g : /\blensed\b/g) || []).join(" ") + "|" + document.documentElement.dataset.theme;
   if (styleCache[key]) return styleCache[key];
   if (!probe) {
     var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
@@ -894,7 +961,8 @@ function cssStyle(cls, line) {
   probe.setAttribute("class", cls);
   var c = getComputedStyle(probe), op = +c.opacity, dash = c.strokeDasharray;
   return styleCache[key] = {cls: cls, stroke: c.stroke !== "none", color: c.stroke, weight: parseFloat(c.strokeWidth), opacity: +c.strokeOpacity * op,
-    fill: c.fill !== "none", fillColor: c.fill, fillOpacity: +c.fillOpacity * op, fillRule: c.fillRule,
+    // прозрачную заливку (регионы под линзой) холст не заливает вовсе; на клики и наведение это не влияет
+    fill: c.fill !== "none" && +c.fillOpacity * op > 0, fillColor: c.fill, fillOpacity: +c.fillOpacity * op, fillRule: c.fillRule,
     dashArray: dash && dash !== "none" ? dash.replace(/px/g, "") : null, lineCap: c.strokeLinecap, lineJoin: c.strokeLinejoin};
 }
 function geoStyle() { return function (f) { return cssStyle(f.properties.cls, /LineString/.test(f.geometry.type)); }; }
@@ -921,12 +989,10 @@ function restyleAll() {
 var followAt = 0;
 function followDrag() {
   var now = Date.now();
-  if (map._animatingZoom || now - followAt < 80) return;
+  if (zooming || now - followAt < 80) return; // во время зума холст и так перерисовывается каждый кадр
   var size = map.getSize(), m = size.multiplyBy(VEC_PAD / 3);
   var need = L.bounds(map.containerPointToLayerPoint(m.multiplyBy(-1)), map.containerPointToLayerPoint(size.add(m)));
-  var rs = Object.keys(map._paneRenderers).map(function (k) { return map._paneRenderers[k]; }).concat(map._renderer ? [map._renderer] : []);
-  // только когда масштаб не меняется: при перелёте по поиску вершины спроецированы на старый масштаб
-  rs.forEach(function (r) { if (r._bounds && r._zoom === map.getZoom() && !r._bounds.contains(need)) { r._update(); followAt = now; } });
+  renderers().forEach(function (r) { if (r._bounds && r._zoom === map.getZoom() && !r._bounds.contains(need)) { r._update(); followAt = now; } });
 }
 
 function home(fly) {
