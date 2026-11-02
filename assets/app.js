@@ -115,7 +115,11 @@ function activeSlot() { return slotOf(marks.active) || marks.slots[0] || null; }
 function newSlot(name) { var s = {id: uid(), name: name, on: true, tags: {}, pins: [], regions: {}}; marks.slots.push(s); return s; }
 function pinOf(s) { var slot = s && slotOf(s.slot); return slot ? slot.pins.filter(function (p) { return p.id === s.id; })[0] || null : null; }
 function validKey(k) { var g = k.split(":"), id = g.slice(1).join(":"); return (g[0] === "n" && !!idx[id]) || (g[0] === "nat" && !!natFeat(id)); }
-function natFeat(id) { return geo.nature.features.filter(function (f) { return f.properties.id === id; })[0] || null; }
+var natIdx = null; // id озера или парка → объект; нужен каждой подсказке через refOf
+function natFeat(id) {
+  if (!natIdx) { natIdx = {}; geo.nature.features.forEach(function (f) { natIdx[f.properties.id] = f; }); }
+  return natIdx[id] || null;
+}
 function keyName(k) { var g = k.split(":"), id = g.slice(1).join(":"); return g[0] === "n" ? idx[id].name : natFeat(id).properties.name; }
 function keyCenter(k) { var g = k.split(":"), id = g.slice(1).join(":"), p = g[0] === "n" ? idx[id] : natFeat(id).properties; return [p.ly, p.lx]; }
 function fixKey(k) { return validKey(k) ? k : aliases[k] && idx[aliases[k]] ? "n:" + aliases[k] : null; }
@@ -245,37 +249,45 @@ var PIN = {
 var PIN_NAME = {dot: "точка", home: "дом", glass: "бокал", building: "здание", eye: "глаз", star: "звезда", users: "люди", skull: "череп",
   drop: "капля", heart: "сердце", shield: "щит", crown: "корона", flag: "флаг", key: "ключ", alert: "опасность", moon: "луна",
   cross: "крест", coin: "деньги", blade: "клинок", question: "вопрос"};
-var pinLayer = null, lastPinClick = {};
+var pinLayer = null, lastPinClick = {}, pinMarks = {}; // pinMarks: "слот/метка" → {sig, m}
 function pinSvg(name) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (PIN[name] || PIN.dot).map(function (d) { return '<path d="' + d + '"/>'; }).join("") + '</svg>'; }
 function isLight(hex) { var n = parseInt(hex.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) > 160; }
 function pinHtml(p) { return '<span class="pinb' + (isLight(p.color) ? " lt" : "") + '" style="background:' + p.color + '">' + pinSvg(p.icon) + '</span>'; }
+// Маркер метки пересоздаётся, только когда у неё изменилось что-то видимое (значок, подсказка, место, выбор);
+// раньше на каждый выбор и каждую букву в форме метки заново строились все маркеры с подсказками
 function drawPins() {
   if (!pinLayer) pinLayer = L.layerGroup().addTo(map);
-  pinLayer.clearLayers();
-  var list = [];
+  var list = [], keep = {};
   allSlots().forEach(function (slot) { if (slot.on) slot.pins.forEach(function (p) { list.push([slot, p]); }); });
   if (draft && sel && sel.k === "pin" && isNewPin) list.push([slotOf(sel.slot), draft]);
   list.forEach(function (q) {
-    var slot = q[0], p = q[1], on = sel && sel.k === "pin" && sel.slot === slot.id && sel.id === p.id, drag = on && editing;
+    var slot = q[0], p = q[1], pid = q[1].id, on = sel && sel.k === "pin" && sel.slot === slot.id && sel.id === p.id, drag = on && editing;
     if (on && draft) p = draft;
+    var key = slot.id + "/" + pid, html = pinHtml(p);
+    var tip = "<b>" + esc(p.title || "Метка") + "</b><small>" + esc((p.tags.length ? p.tags.join(", ") + " · " : "") + slot.name) + "</small>" +
+      tripTip({k: "pin", slot: slot.id, id: p.id}, p.ll);
+    var sig = [on, drag, html, tip, p.ll[0], p.ll[1]].join("|"), old = pinMarks[key];
+    keep[key] = 1;
+    if (old && old.sig === sig) return;
+    if (old) pinLayer.removeLayer(old.m);
     var m = L.marker(p.ll, {pane: "pins", keyboard: false, draggable: drag, zIndexOffset: on ? 1000 : 0, riseOnHover: true,
-      icon: L.divIcon({className: "pin" + (on ? " on" : "") + (drag ? " drag" : ""), html: pinHtml(p), iconSize: [26, 26], iconAnchor: [13, 13]})});
-    m.bindTooltip("<b>" + esc(p.title || "Метка") + "</b><small>" + esc((p.tags.length ? p.tags.join(", ") + " · " : "") + slot.name) + "</small>" +
-      tripTip({k: "pin", slot: slot.id, id: p.id}, p.ll),
-      {direction: "top", className: "tip", offset: [0, -14]});
+      icon: L.divIcon({className: "pin" + (on ? " on" : "") + (drag ? " drag" : ""), html: html, iconSize: [26, 26], iconAnchor: [13, 13]})});
+    m.bindTooltip(tip, {direction: "top", className: "tip", offset: [0, -14]});
     m.on("click", function (e) {
       L.DomEvent.stopPropagation(e);
       if (placeAt(e.latlng)) return;
       // двойной клик ловим по двум быстрым кликам: первый клик перерисовывает значок, и браузерный dblclick уходит в пустоту
-      var key = slot.id + "/" + q[1].id, now = Date.now();
-      if (lastPinClick.key === key && now - lastPinClick.t < 450) { lastPinClick = {}; openAt(q[1].ll); return; }
+      var now = Date.now();
+      if (lastPinClick.key === key && now - lastPinClick.t < 450) { lastPinClick = {}; openAt((pinOf({slot: slot.id, id: pid}) || q[1]).ll); return; }
       lastPinClick = {key: key, t: now};
-      selectPin(slot.id, q[1].id, false);
+      selectPin(slot.id, pid, false);
     });
     m.on("dblclick", function (e) { L.DomEvent.stopPropagation(e); });
     m.on("dragend", function () { var ll = m.getLatLng(); if (draft) draft.ll = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)]; });
+    pinMarks[key] = {sig: sig, m: m};
     pinLayer.addLayer(m);
   });
+  Object.keys(pinMarks).forEach(function (k) { if (!keep[k]) { pinLayer.removeLayer(pinMarks[k].m); delete pinMarks[k]; } });
   renderRef(); // имя метки-отсчёта могло поменяться
 }
 function selectPin(slotId, id, fly) {
@@ -565,7 +577,12 @@ function tagVal(s, k) {
   if (v == null) return null;
   return Array.isArray(v) ? Math.round((v[0] + v[1]) / 2) : v;
 }
-function raceHex(i) { return getComputedStyle(document.documentElement).getPropertyValue(["--race-w", "--race-h", "--race-b", "--race-a", "--race-o"][i]).trim(); }
+var raceCache = {}; // тема → цвета групп; getComputedStyle на каждый лист линзы был дорогим
+function raceHex(i) {
+  var t = document.documentElement.dataset.theme, cs;
+  if (!raceCache[t]) { cs = getComputedStyle(document.documentElement); raceCache[t] = ["--race-w", "--race-h", "--race-b", "--race-a", "--race-o"].map(function (v) { return cs.getPropertyValue(v).trim(); }); }
+  return raceCache[t][i];
+}
 
 // Полосатые заливки, создаются по требованию: SVG-узор для легенды и такой же узор холста для карты (canvasPat)
 var patterns = {}, canvasPat = {};
@@ -628,6 +645,7 @@ function lensFill(s) {
 }
 // Линза красит самые мелкие области: слой всех листьев лежит под регионами, а у регионов заливка прозрачная,
 // так что видны границы раскрытой ветки, а цвет — по листьям
+var lensPainted = ""; // линза и тема, в которых листья уже покрашены
 function syncLensLeaves() {
   if (!view.lens) { if (lensLayer) show(lensLayer, false); return; }
   lensReady = lensReady || ensureAll().then(function () {
@@ -638,6 +656,9 @@ function syncLensLeaves() {
   lensReady.then(function () {
     if (!view.lens) return;
     show(lensLayer, true);
+    var sig = view.lens + "|" + document.documentElement.dataset.theme;
+    if (sig === lensPainted) return; // раскрытие и выбор цвет листьев не меняют
+    lensPainted = sig;
     lensLayer.eachLayer(function (l) { paint(l, "lensleaf", lensFill({k: "n", id: l.feature.properties.id})); });
   });
 }
@@ -654,8 +675,15 @@ function inFeat(f, x, y) {
   var g = f.geometry, polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
   return polys.some(function (p) { return inRing(x, y, p[0]) && !p.slice(1).some(function (h) { return inRing(x, y, h); }); });
 }
+var leavesOf = {}; // узел → его листья; считается один раз
 function leafAt(id, ll) {
-  return descendants(id).filter(function (d) { return !idx[d].n && featOf.n[d] && inFeat(featOf.n[d], ll.lng, ll.lat); })[0] || null;
+  var list = leavesOf[id] || (leavesOf[id] = descendants(id).filter(function (d) { return !idx[d].n; }));
+  for (var i = 0; i < list.length; i++) {
+    var d = list[i], b = idx[d].bbox; // сначала по рамке, полигон — только если точка в ней
+    if (b && (ll.lng < b[0] || ll.lng > b[2] || ll.lat < b[1] || ll.lat > b[3])) continue;
+    if (featOf.n[d] && inFeat(featOf.n[d], ll.lng, ll.lat)) return d;
+  }
+  return null;
 }
 function lensTip(s) {
   if (!view.lens) return "";
@@ -677,7 +705,7 @@ function legendItems() {
   } else if (L0.kind === "police") {
     Object.keys(POLICE_COLOR).forEach(function (k) { out.push([POLICE_COLOR[k], POLICE_NAME[k], POLICE_DESC[k]]); });
   } else {
-    for (var v = L0.from; v < L0.from + L0.n; v++) out.push([L0.colors[v - L0.from], (L0.from === 0 ? v : v) + " · " + L0.label(v), L0.desc(v)]);
+    for (var v = L0.from; v < L0.from + L0.n; v++) out.push([L0.colors[v - L0.from], v + " · " + L0.label(v), L0.desc(v)]);
   }
   out.push([stripes([["#d9d9d9", 50], ["#f2f2f2", 50]]), "нет данных", L0.kind === "race" || view.lens === "wealth" ?
     "Здесь почти никто не живёт: рынки, склады, больницы, парки." : "Этот регион ещё не описан."]);
@@ -891,7 +919,7 @@ function buildMap() {
 
   map.on("click", function (e) { placeAt(e.latlng); });
   map.on("contextmenu", function (e) { placeStart(); placeAt(e.latlng); }); // правый клик (на телефоне — долгое нажатие) ставит метку
-  map.on("zoomend", refresh);
+  map.on("zoomend", function () { refresh(true); });
   map.on("moveend", placeLabels);
   map.on("move", followDrag);
   home(false);
@@ -1059,8 +1087,9 @@ function show(layer, on) { if (on) { if (!map.hasLayer(layer)) { layer.addTo(map
 function syncLayers() {
   var want = view.leaves ? parents() : [""].concat(open);
   Object.keys(regLayer).forEach(function (p) { if (want.indexOf(p) < 0) show(regLayer[p], false); });
-  want.forEach(function (p) { if (regLayer[p] && map.hasLayer(regLayer[p])) map.removeLayer(regLayer[p]); });
-  want.forEach(function (p) { if (regLayer[p]) regLayer[p].addTo(map); });
+  // уже показанные слои не снимаем (это заново проецировало все вершины и закрывало подсказку), а только
+  // переставляем: каждый следующий в want — поверх предыдущих
+  want.forEach(function (p) { var g = regLayer[p]; if (g) { if (map.hasLayer(g)) g.bringToFront(); else g.addTo(map); } });
   refreshStyles(); drawSel(); stack();
   syncCollapse();
 }
@@ -1083,14 +1112,14 @@ function collapseTo(id) {
   syncLayers(); placeLabels(); renderPanel(); syncHash();
 }
 
-// Всё, что зависит от масштаба
-function refresh() {
+// Всё, что зависит от масштаба; noLabels — подписи расставит moveend, который идёт сразу за zoomend
+function refresh(noLabels) {
   var z = map.getZoom(), el = map.getContainer(), was = el.className;
   el.className = el.className.replace(/\bz\d+\b/g, "").replace(/\s+/g, " ").trim() + " z" + Math.floor(z);
-  if (el.className !== was) { restyle(extra.water); restyle(extra.creek); } // толщина рек зависит от масштаба
+  if (el.className !== was) restyle(extra.water); // толщина рек зависит от масштаба
   show(extra.creek, z >= 13);
   if (gridLabels) show(gridLabels, gridOn() && z >= 10.5);
-  placeLabels();
+  if (noLabels !== true) placeLabels();
 }
 
 // Подписи без наложения. Сначала выбранный регион, потом регионы раскрытой ветки (крупные раньше), потом соседи,
@@ -1224,8 +1253,8 @@ function styleNat(id) {
   var l = layerOf.nat[id], c = regionColor("nat:" + id), s = {k: "nat", id: id};
   if (l) paint(l, "nat k-" + featOf.nat[id].properties.kind + (c ? " painted" : "") + (l._hov ? " hov" : ""), view.lens ? lensFill(s) : c);
 }
-function refreshStyles() {
-  Object.keys(layerOf.n).forEach(styleReg);
+function refreshStyles() { // слои не на карте не трогаем: syncLayers перекрашивает их, когда добавляет
+  Object.keys(layerOf.n).forEach(function (id) { if (map.hasLayer(layerOf.n[id])) styleReg(id); });
   syncLensLeaves();
   Object.keys(layerOf.nat).forEach(styleNat);
 }
@@ -1794,9 +1823,14 @@ function setupSlots() {
     else if (s && b.hasAttribute("data-imp-yes")) applyImport(s, slotUi.pending);
     else if (b.hasAttribute("data-imp-no")) { slotUi.pending = null; renderSlots(); }
   });
+  var nameTimer = 0;
   pop.addEventListener("input", function (e) {
     var s = slotOf(slotUi.edit);
-    if (s && e.target.id === "se-name") { s.name = e.target.value.slice(0, 60) || "Без названия"; saveMarks(); drawPins(); renderPanel(); }
+    // сохранение пишет в localStorage все слоты целиком: не на каждую букву, а когда набор затих
+    if (s && e.target.id === "se-name") {
+      s.name = e.target.value.slice(0, 60) || "Без названия";
+      clearTimeout(nameTimer); nameTimer = setTimeout(function () { saveMarks(); drawPins(); renderPanel(); }, 300);
+    }
   });
   pop.addEventListener("change", function (e) {
     var s = slotOf(slotUi.edit), f = e.target.files && e.target.files[0];
