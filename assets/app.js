@@ -402,8 +402,9 @@ function tripTip(s, ll) {
 // ---------- линейка ----------
 // Кнопка под зумом включает линейку: зажми мышь или палец на карте и веди — пунктир от точки нажатия до курсора
 // и плашка с расстоянием по прямой, примерно по дорогам (та же оценка, что у точки отсчёта) и временем в пути.
-// Отпустил — замер остаётся на карте до следующего. Пока линейка включена, карта не таскается и клики не выбирают
-// регионы; Esc или кнопка выключают её.
+// Отпустил — замер остаётся на карте до следующего. Пока линейка включена, левая кнопка и палец мерят, а не таскают
+// карту (их нажатие перехватывается до Leaflet); средней кнопкой карту по-прежнему можно двигать. Клики не выбирают
+// регионы; Esc или кнопка выключают линейку.
 var RULER_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l4 4l-14 14l-4 -4z"/><path d="M16 7l-1.5 -1.5"/><path d="M13 10l-1.5 -1.5"/><path d="M10 13l-1.5 -1.5"/><path d="M7 16l-1.5 -1.5"/></svg>';
 var ruler = {on: false, a: null, id: null, line: null, dots: null, label: null, svg: null, btn: null};
 function rulerLen(k) { return k < 1 ? Math.max(10, Math.round(k * 100) * 10) + " м" : km1(k) + " км"; }
@@ -427,7 +428,7 @@ function rulerDraw(b) {
 }
 function rulerSet(on) {
   ruler.on = on; ruler.id = null;
-  if (on) { placeStop(); map.dragging.disable(); } else { map.dragging.enable(); rulerClear(); }
+  if (on) placeStop(); else rulerClear();
   map.getContainer().classList.toggle("measuring", on);
   ruler.btn.classList.toggle("on", on); ruler.btn.setAttribute("aria-pressed", on);
   document.getElementById("ruler-hint").hidden = !on;
@@ -452,6 +453,9 @@ function setupRuler() {
     ruler.id = e.pointerId; ruler.a = map.mouseEventToLatLng(e);
     rulerClear(); rulerDraw(ruler.a);
   }, true);
+  // те же нажатия в старых событиях мыши и касания тоже не пускаем к Leaflet, иначе он начнёт таскать карту
+  box.addEventListener("mousedown", function (e) { if (ruler.on && e.button === 0 && !e.target.closest(".leaflet-control")) e.stopPropagation(); }, true);
+  box.addEventListener("touchstart", function (e) { if (ruler.on && e.touches.length === 1 && !e.target.closest(".leaflet-control")) e.stopPropagation(); }, true);
   window.addEventListener("pointermove", function (e) { if (e.pointerId === ruler.id) rulerDraw(map.mouseEventToLatLng(e)); });
   ["pointerup", "pointercancel"].forEach(function (t) { window.addEventListener(t, function (e) { if (e.pointerId === ruler.id) ruler.id = null; }); });
   // пока линейка включена, клики по карте не выбирают регионы и не ставят метки
