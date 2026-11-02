@@ -895,11 +895,16 @@ var DART_TEXT = [
   "Нажми на станцию или линию — откроется карточка: к ней можно оставить заметку и считать от неё расстояния."];
 var dartLayer = null, dartEl = null;
 function stSelect(id) { return function (e) { L.DomEvent.stopPropagation(e); if (!placeAt(e.latlng)) select({k: "st", id: id}, false); }; }
+// Линии и станции ловят клик и подсказку с запасом в несколько пикселей вокруг рисунка: рисуем аккуратно, попадать легко
+function hitPad() { return this.options.weight / 2 + 6; }
 function dartLayers(fc) {
   var g = L.featureGroup(), lines = fc.features.filter(function (f) { return f.properties.kind === "line"; });
   function draw(f, cls, tip) {
     var l = L.geoJSON(f, {pane: "vec", interactive: !!tip, style: cssStyle(cls, true)});
-    if (tip) l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip", offset: [0, -6]}).on("click", stSelect(f.properties.id));
+    if (tip) {
+      l.eachLayer(function (x) { x._clickTolerance = hitPad; });
+      l.bindTooltip(tip, {sticky: true, direction: "top", className: "tip dart-tip", offset: [0, -6]}).on("click", stSelect(f.properties.id));
+    }
     l.addTo(g);
   }
   function lineTip(p) {
@@ -908,8 +913,7 @@ function dartLayers(fc) {
     return "<b>" + esc(p.name) + "</b><small>" + esc(DART_LINE[p.line]) + "</small>" +
       (p.id === "shared-tunnel" ? "<small>Под землёй, около пяти километров</small>" : "");
   }
-  // широкая подложка под линией тоже ловит клик и подсказку: в тонкую цветную линию мышью попасть трудно
-  lines.forEach(function (f) { draw(f, "dart-case" + (f.properties.tunnel ? " dart-tun" : ""), lineTip(f.properties)); });
+  lines.forEach(function (f) { draw(f, "dart-case" + (f.properties.tunnel ? " dart-tun" : "")); });
   lines.forEach(function (f) {
     var p = f.properties, t = (p.tunnel ? " dart-tun" : ""), tip = lineTip(p);
     layerOf.st[p.id] = true;
@@ -921,8 +925,9 @@ function dartLayers(fc) {
     if (p.kind !== "station") return;
     var c = f.geometry.coordinates, big = p.lines.length > 1;
     layerOf.st[p.id] = true;
-    L.circleMarker([c[1], c[0]], L.extend({pane: "vec", radius: big ? 13 : 9}, cssStyle("dart-st" + (big ? " big" : "") + (p.lines === "M" ? " closed" : ""))))
-      .bindTooltip(function () { return "<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
+    var st = L.circleMarker([c[1], c[0]], L.extend({pane: "vec", radius: big ? 10 : 7}, cssStyle("dart-st" + (big ? " big" : "") + (p.lines === "M" ? " closed" : ""))));
+    st._clickTolerance = hitPad;
+    st.bindTooltip(function () { return "<b>" + esc(p.name) + "</b><small>" + esc(p.lines.split("").map(function (x) { return DART_CODE[x]; }).join(", ") +
         (p.en !== p.name ? " · " + p.en : "")) + "</small><span>" + esc(p.note) + "</span>" + tripTip({k: "st", id: p.id}, [c[1], c[0]]); }, {direction: "top", className: "tip dart-tip", offset: [0, -6]})
       .on("click", stSelect(p.id))
       .addTo(g);
@@ -938,8 +943,8 @@ function renderDartBox() {
     dartEl.innerHTML = "<summary><b>DART</b> — поезда весной 2005</summary>" +
       '<p class="hours"><b>Метро:</b> каждый день примерно с 5:00 до 1:00 ночи.<br><b>TRE:</b> по будням примерно с 5:30 до 23:00, в субботу реже, в воскресенье не ходит.</p>' + DART_TEXT.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
       '<ul><li>' + sw("dart-red") + 'красная линия</li><li>' + sw("dart-blue") + 'синяя линия</li><li>' + sw("dart-red") .replace("</svg>", '<line x1="2" y1="5" x2="20" y2="5" class="dart-blue dart-dash"/></svg>') +
-      'обе линии</li><li>' + sw("dart-tre") + 'TRE до Форт-Уэрта</li><li>' + sw("dart-red dart-tun") + 'под землёй</li>' +
-      '<li>' + sw("dart-tandy dart-tun") + 'метро Tandy, закрыто в 2002</li>' +
+      'обе линии</li><li>' + sw("dart-tre") + 'TRE до Форт-Уэрта</li><li>' + sw("dart-case dart-tun").replace("</svg>", '<line x1="2" y1="5" x2="20" y2="5" class="dart-red"/></svg>') + 'под землёй</li>' +
+      '<li>' + sw("dart-tandy") + 'метро Tandy, закрыто в 2002</li>' +
       '<li><svg width="22" height="10" aria-hidden="true"><circle cx="11" cy="5" r="4" class="dart-st"/></svg>станция — нажми, чтобы открыть карточку</li></ul>';
   }
   dartEl.hidden = !view.dart;
@@ -1384,7 +1389,7 @@ function drawSel() {
   var cls = "selpath" + (sel.k === "n" && isOpen(sel.id) ? " selopen" : "");
   selLayer = L.geoJSON(sel.k === "st" ? stFeat(sel.id) : featOf[sel.k][sel.id], {pane: "vec", interactive: false,
     style: function (f) { return /LineString/.test(f.geometry.type) ? cssStyle("selline", true) : cssStyle(cls); },
-    pointToLayer: function (f, ll) { return L.circleMarker(ll, {pane: "vec", interactive: false, radius: 20}); }}).addTo(map);
+    pointToLayer: function (f, ll) { return L.circleMarker(ll, {pane: "vec", interactive: false, radius: 15}); }}).addTo(map);
   stack();
   map.getContainer().classList.add("has-sel");
 }
@@ -1642,7 +1647,7 @@ function setupSearch() {
     function draw(layer) { if (hovKey === key) { hov = extra.hov = layer.addTo(map); stack(); } }
     if (k === "pin") { var p = pinOf({slot: b.getAttribute("data-slot"), id: id}); if (p) draw(L.circleMarker(p.ll, L.extend({pane: "vec", interactive: false, radius: 20}, cssStyle("hovpath")))); }
     else if (k === "nat") draw(L.geoJSON(featOf.nat[id], opt));
-    else if (k === "st") draw(L.geoJSON(stFeat(id), {pane: "vec", interactive: false, pointToLayer: function (f, ll) { return L.circleMarker(ll, {pane: "vec", interactive: false, radius: 24}); },
+    else if (k === "st") draw(L.geoJSON(stFeat(id), {pane: "vec", interactive: false, pointToLayer: function (f, ll) { return L.circleMarker(ll, {pane: "vec", interactive: false, radius: 18}); },
       style: function (f) { return /LineString/.test(f.geometry.type) ? cssStyle("hovline", true) : cssStyle("hovpath"); }}));
     else ensureKids(idx[id].parent || "").then(function (fc) {
       var f = fc.features.filter(function (f) { return f.properties.id === id; })[0];
