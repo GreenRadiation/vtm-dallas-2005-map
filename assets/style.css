@@ -137,6 +137,19 @@ h1{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;ma
 .leaflet-control-attribution{background:color-mix(in srgb,var(--paper) 80%,transparent)!important;color:var(--muted)!important;font-size:10.5px}
 .leaflet-control-attribution a{color:var(--muted)!important}
 .leaflet-bar a{background:var(--paper);color:var(--ink);border-color:var(--line)}
+/* линейка: кнопка под зумом, пунктир и плашка с расстоянием (app.js, setupRuler) */
+.ruler-ctl a{display:flex;align-items:center;justify-content:center}
+.ruler-ctl svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ruler-ctl a.on,.ruler-ctl a.on:hover{background:var(--accent);color:var(--on-accent)}
+.measuring,.measuring .leaflet-interactive{cursor:crosshair!important;touch-action:none}
+.ruler-line{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:9 6;stroke-linecap:round}
+.ruler-dot{fill:var(--paper);fill-opacity:1;stroke:var(--accent);stroke-width:2.5}
+.ruler-lbl{background:none;border:0;pointer-events:none}
+.ruler-lbl div{position:absolute;left:14px;top:-10px;transform:translateY(-100%);width:max-content;max-width:240px;padding:5px 9px;border-radius:7px;
+  background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.35;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.ruler-lbl.left div{left:auto;right:14px}
+.ruler-lbl b{display:block;font-size:15px}
+.ruler-lbl small{display:block;font-size:12px;opacity:.85}
 
 /* ---------- карточка ---------- */
 .panel h2{font-family:var(--display);font-weight:700;font-size:23px;line-height:1.12;margin:6px 0 6px;text-wrap:balance}

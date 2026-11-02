@@ -326,6 +326,7 @@ function fillWhere(p) {
 }
 // Поставить метку: кнопка в карточке включает режим, следующий клик по карте ставит точку; правый клик ставит сразу
 function placeStart() {
+  if (ruler.on) rulerSet(false);
   placing = true; map.getContainer().classList.add("placing");
   var h = document.getElementById("place-hint"); if (h) h.hidden = false;
 }
@@ -370,9 +371,13 @@ function setRef(s) {
 function km1(k) { return k < 10 ? k.toFixed(1).replace(".", ",") : String(Math.round(k)); }
 function trip(ll) {
   var r = refOf(); if (!r) return null;
-  var dx = (ll[1] - r.ll[1]) * 93.6, dy = (ll[0] - r.ll[0]) * 111, line = Math.sqrt(dx * dx + dy * dy), road = line * (1.2 + 0.2 * Math.max(0, 1 - line / 20));
+  var t = tripBetween(r.ll, ll); t.name = r.name; return t;
+}
+// Расстояние между двумя точками [широта, долгота]: по прямой, примерно по дорогам, минуты на машине и пешком
+function tripBetween(a, b) {
+  var dx = (b[1] - a[1]) * 93.6, dy = (b[0] - a[0]) * 111, line = Math.sqrt(dx * dx + dy * dy), road = line * (1.2 + 0.2 * Math.max(0, 1 - line / 20));
   var car = 2 + road / (30 + 60 * Math.min(1, road / 40)) * 60, walk = road / 5 * 60;
-  return {name: r.name, line: line, road: road, car: car, walk: walk};
+  return {line: line, road: road, car: car, walk: walk};
 }
 function mins(m) {
   if (m < 2) return "пара минут";
@@ -394,6 +399,70 @@ function tripTip(s, ll) {
   var t = trip(ll); if (!t || isRef(s)) return "";
   return "<small>" + (t.line < 0.4 ? "рядом с точкой отсчёта" : km1(t.road) + " км, " + mins(t.car) + " на машине") + "</small>";
 }
+// ---------- линейка ----------
+// Кнопка под зумом включает линейку: зажми мышь или палец на карте и веди — пунктир от точки нажатия до курсора
+// и плашка с расстоянием по прямой, примерно по дорогам (та же оценка, что у точки отсчёта) и временем в пути.
+// Отпустил — замер остаётся на карте до следующего. Пока линейка включена, карта не таскается и клики не выбирают
+// регионы; Esc или кнопка выключают её.
+var RULER_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l4 4l-14 14l-4 -4z"/><path d="M16 7l-1.5 -1.5"/><path d="M13 10l-1.5 -1.5"/><path d="M10 13l-1.5 -1.5"/><path d="M7 16l-1.5 -1.5"/></svg>';
+var ruler = {on: false, a: null, id: null, line: null, dots: null, label: null, svg: null, btn: null};
+function rulerLen(k) { return k < 1 ? Math.max(10, Math.round(k * 100) * 10) + " м" : km1(k) + " км"; }
+function rulerClear() {
+  [ruler.line, ruler.label].concat(ruler.dots || []).forEach(function (l) { if (l) map.removeLayer(l); });
+  ruler.line = ruler.label = ruler.dots = null;
+}
+function rulerDraw(b) {
+  var a = ruler.a, t = tripBetween([a.lat, a.lng], [b.lat, b.lng]);
+  if (!ruler.line) {
+    ruler.svg = ruler.svg || L.svg({pane: "ruler", padding: 0.3});
+    var o = {pane: "ruler", renderer: ruler.svg, interactive: false};
+    ruler.line = L.polyline([a, b], L.extend({className: "ruler-line"}, o)).addTo(map);
+    ruler.dots = [a, b].map(function (p) { return L.circleMarker(p, L.extend({radius: 4.5, className: "ruler-dot"}, o)).addTo(map); });
+    ruler.label = L.marker(b, {pane: "ruler", interactive: false, keyboard: false, icon: L.divIcon({className: "ruler-lbl", html: "<div></div>", iconSize: null})}).addTo(map);
+  } else { ruler.line.setLatLngs([a, b]); ruler.dots[1].setLatLng(b); ruler.label.setLatLng(b); }
+  var el = ruler.label.getElement(), box = el.firstChild;
+  box.innerHTML = "<b>" + rulerLen(t.line) + "</b>" + (t.line < 0.2 ? "" : "<small>по дорогам около " + rulerLen(t.road) + "<br>" +
+    mins(t.car) + " на машине" + (t.road < 5 ? ", " + mins(t.walk) + " пешком" : "") + "</small>");
+  el.classList.toggle("left", map.latLngToContainerPoint(b).x > map.getSize().x - 230); // у правого края плашка слева от курсора
+}
+function rulerSet(on) {
+  ruler.on = on; ruler.id = null;
+  if (on) { placeStop(); map.dragging.disable(); } else { map.dragging.enable(); rulerClear(); }
+  map.getContainer().classList.toggle("measuring", on);
+  ruler.btn.classList.toggle("on", on); ruler.btn.setAttribute("aria-pressed", on);
+  document.getElementById("ruler-hint").hidden = !on;
+}
+function setupRuler() {
+  var box = map.getContainer();
+  map.createPane("ruler").style.zIndex = 455;
+  map.getPane("ruler").style.pointerEvents = "none";
+  var Ctl = L.Control.extend({options: {position: "topleft"}, onAdd: function () {
+    var d = L.DomUtil.create("div", "leaflet-bar ruler-ctl");
+    var b = ruler.btn = L.DomUtil.create("a", "", d);
+    b.href = "#"; b.setAttribute("role", "button"); b.setAttribute("aria-pressed", "false");
+    b.title = "Линейка: зажми и веди по карте"; b.setAttribute("aria-label", "Линейка"); b.innerHTML = RULER_ICON;
+    L.DomEvent.disableClickPropagation(d);
+    L.DomEvent.on(b, "click", function (e) { L.DomEvent.preventDefault(e); rulerSet(!ruler.on); });
+    return d;
+  }});
+  new Ctl().addTo(map);
+  box.addEventListener("pointerdown", function (e) {
+    if (!ruler.on || ruler.id != null || e.button !== 0 || e.target.closest(".leaflet-control")) return;
+    e.preventDefault(); e.stopPropagation();
+    ruler.id = e.pointerId; ruler.a = map.mouseEventToLatLng(e);
+    rulerClear(); rulerDraw(ruler.a);
+  }, true);
+  window.addEventListener("pointermove", function (e) { if (e.pointerId === ruler.id) rulerDraw(map.mouseEventToLatLng(e)); });
+  ["pointerup", "pointercancel"].forEach(function (t) { window.addEventListener(t, function (e) { if (e.pointerId === ruler.id) ruler.id = null; }); });
+  // пока линейка включена, клики по карте не выбирают регионы и не ставят метки
+  ["click", "dblclick", "contextmenu"].forEach(function (t) {
+    box.addEventListener(t, function (e) {
+      if (!ruler.on || e.target.closest(".leaflet-control")) return;
+      e.stopPropagation(); if (t === "contextmenu") e.preventDefault();
+    }, true);
+  });
+}
+
 // Плашка в шапке: от чего сейчас считаем; имя открывает точку, крестик убирает отсчёт
 function renderRef() {
   var el = document.getElementById("ref"), r = refOf();
@@ -1273,6 +1342,7 @@ var INTRO = '<div class="pmeta"><span>Даллас, Форт-Уэрт и при�
   '<p>Озёра, парки и заповедники видны всегда, их тоже можно открыть.</p>' +
   '<p>«Линза» в шапке перекрашивает карту по одному признаку: достаток, кто живёт, опасность улиц, свидетели, ночная жизнь, застройка, полиция. Что значит цвет — в легенде в углу карты.</p>' +
   '<p>Кнопка «DART» показывает поезда 2005 года: линии лёгкого метро, пригородный поезд до Форт-Уэрта и станции.</p>' +
+  '<p>Линейка — кнопка под зумом: зажми мышь на карте и веди, чтобы узнать расстояние и сколько ехать.</p>' +
   '<p>Метки — точки на карте со своим значком, цветом, тегами и текстом. Поставить: «Поставить метку» в карточке региона и клик по карте, или правый клик по карте. К региону можно добавить заметку и перекрасить его своим цветом.</p>' +
   '<p>Метки лежат в слотах — меню «Метки» в шапке. Слот можно скрыть, сохранить в файл и загрузить у другого игрока или мастера: загрузка заменяет только этот слот. Всё хранится только в твоём браузере.</p></div>' +
   '<div class="about"><div class="legend"><span><i class="sw" style="background:var(--water)"></i>озеро</span><span><i class="sw" style="background:var(--park-strong)"></i>природная зона</span></div>' +
@@ -1896,7 +1966,7 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   regLayer[""] = L.geoJSON(loaded[""], {pane: "vec", style: function (f) { return cssStyle(regClass(f.properties.id, f.properties)); }, onEachFeature: function (f, l) { hook(f, l); }});
   extra.city = L.geoJSON({type: "FeatureCollection", features: loaded[""].features.filter(function (f) { return f.properties.id === "dallas" || f.properties.id === "fortworth"; })},
     {pane: "vec", interactive: false, style: cssStyle("cityline")}).addTo(map);
-  syncLayers(); refresh(); setupSearch(); setupSlots(); setupRef(); drawPins(); renderPanel();
+  syncLayers(); refresh(); setupSearch(); setupSlots(); setupRef(); setupRuler(); drawPins(); renderPanel();
   var lt = document.getElementById("leaf-tog");
   function setLeaves(on) {
     view.leaves = on; lt.checked = on; store(VIEW_KEY, JSON.stringify(view));
@@ -1914,6 +1984,7 @@ Promise.all(files.map(function (n) { return fetch(GEO + n + ".geojson").then(fun
   document.getElementById("collapse").addEventListener("click", function () { collapseTo(null); clearSel(); }); // и выбор снимаем, чтобы ссылка не тянула к региону
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && placing) { placeStop(); return; }
+    if (e.key === "Escape" && ruler.on) { rulerSet(false); return; }
     if (e.key === "Escape" && slotUi.open) { setSlotsOpen(false); return; }
     if (e.key !== "Escape" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !open.length || view.leaves) return;
     var last = open[open.length - 1]; collapseTo(last); select({k: "n", id: last}, false);
